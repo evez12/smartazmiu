@@ -43,6 +43,7 @@ class TokenFactory:
         given_name: str = "Aysel",
         family_name: str = "Məmmədova",
         email: str | None = "aysel.mammadova@smartazmiu.test",
+        email_verified: bool = True,
         lifetime_seconds: int = 900,
         headers: dict[str, Any] | None = None,
         **overrides: Any,
@@ -59,6 +60,7 @@ class TokenFactory:
             "family_name": family_name,
             "name": f"{given_name} {family_name}",
             "email": email,
+            "email_verified": email_verified,
             "realm_access": {"roles": roles if roles is not None else ["student"]},
         }
         claims.update(overrides)

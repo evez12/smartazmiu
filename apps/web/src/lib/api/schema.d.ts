@@ -4,6 +4,75 @@
  */
 
 export interface paths {
+  "/api/v1/admin/imports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Imports */
+    get: operations["listImports"];
+    put?: never;
+    /** Upload a CSV/XLSX file and validate it (dry run) */
+    post: operations["createImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/imports/templates/{kind}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Empty CSV template with the expected header */
+    get: operations["downloadImportTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/imports/{import_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Import */
+    get: operations["readImport"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/imports/{import_id}/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Apply a validated import in one transaction */
+    post: operations["applyImport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me": {
     parameters: {
       query?: never;
@@ -21,10 +90,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/academics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My group and current subjects */
+    get: operations["readMyAcademics"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** Body_createImport */
+    Body_createImport: {
+      encoding?: components["schemas"]["FileEncoding"] | null;
+      /** File */
+      file: string;
+      kind: components["schemas"]["ImportKind"];
+    };
+    /** CourseOut */
+    CourseOut: {
+      /** Groups */
+      groups: string[];
+      /** Offering Code */
+      offering_code: string;
+      /** Offering Id */
+      offering_id: string;
+      semester: components["schemas"]["SemesterRef"];
+      subject: components["schemas"]["SubjectRef"];
+      /** Teachers */
+      teachers: string[];
+    };
     /** ErrorBody */
     ErrorBody: {
       /** Code */
@@ -46,6 +152,136 @@ export interface components {
       error: components["schemas"]["ErrorBody"];
     };
     /**
+     * FileEncoding
+     * @enum {string}
+     */
+    FileEncoding: "utf-8" | "windows-1254" | "windows-1251";
+    /** GroupPlacementOut */
+    GroupPlacementOut: {
+      /** Admission Year */
+      admission_year: number;
+      /** Code */
+      code: string;
+      faculty: components["schemas"]["NamedCode"];
+      language: components["schemas"]["InstructionLanguage"];
+      specialty: components["schemas"]["NamedCode"];
+    };
+    /** ImportCounts */
+    ImportCounts: {
+      /**
+       * Created
+       * @default 0
+       */
+      created: number;
+      /**
+       * Unchanged
+       * @default 0
+       */
+      unchanged: number;
+      /**
+       * Updated
+       * @default 0
+       */
+      updated: number;
+    };
+    /** ImportDetail */
+    ImportDetail: {
+      /** Applied At */
+      applied_at: string | null;
+      applied_by: components["schemas"]["PersonRef"] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by: components["schemas"]["PersonRef"] | null;
+      encoding: components["schemas"]["FileEncoding"] | null;
+      /** Error Count */
+      error_count: number;
+      /** Errors */
+      errors: components["schemas"]["ImportIssueOut"][];
+      /** Expires At */
+      expires_at: string | null;
+      /** File Name */
+      file_name: string;
+      /** Id */
+      id: string;
+      kind: components["schemas"]["ImportKind"];
+      /** Previously Applied At */
+      previously_applied_at: string | null;
+      /** Row Count */
+      row_count: number;
+      status: components["schemas"]["ImportStatus"];
+      summary: components["schemas"]["ImportCounts"];
+    };
+    /** ImportIssueOut */
+    ImportIssueOut: {
+      /** Code */
+      code: string;
+      /** Column */
+      column: string | null;
+      /** Row */
+      row: number | null;
+    };
+    /**
+     * ImportKind
+     * @description One CSV/XLSX template per entity, applied in this order (later kinds reference earlier ones).
+     * @enum {string}
+     */
+    ImportKind:
+      | "faculties"
+      | "specialties"
+      | "subjects"
+      | "semesters"
+      | "teachers"
+      | "groups"
+      | "students"
+      | "offerings"
+      | "enrollments";
+    /** ImportOut */
+    ImportOut: {
+      /** Applied At */
+      applied_at: string | null;
+      applied_by: components["schemas"]["PersonRef"] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by: components["schemas"]["PersonRef"] | null;
+      encoding: components["schemas"]["FileEncoding"] | null;
+      /** Error Count */
+      error_count: number;
+      /** Expires At */
+      expires_at: string | null;
+      /** File Name */
+      file_name: string;
+      /** Id */
+      id: string;
+      kind: components["schemas"]["ImportKind"];
+      /** Row Count */
+      row_count: number;
+      status: components["schemas"]["ImportStatus"];
+      summary: components["schemas"]["ImportCounts"];
+    };
+    /** ImportPageOut */
+    ImportPageOut: {
+      /** Items */
+      items: components["schemas"]["ImportOut"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * ImportStatus
+     * @enum {string}
+     */
+    ImportStatus: "ready" | "invalid" | "applied" | "failed";
+    /**
+     * InstructionLanguage
+     * @enum {string}
+     */
+    InstructionLanguage: "az" | "en" | "ru";
+    /**
      * MeResponse
      * @description The signed-in user's own account. Contact details are omitted until a screen needs them.
      */
@@ -65,6 +301,66 @@ export interface components {
       status: components["schemas"]["UserStatus"];
     };
     /**
+     * MyAcademicsResponse
+     * @description The signed-in user's group and current subjects. Grades are never part of this payload (§5.4).
+     */
+    MyAcademicsResponse: {
+      /** Courses */
+      courses: components["schemas"]["CourseOut"][];
+      group: components["schemas"]["GroupPlacementOut"] | null;
+      /** Teaching */
+      teaching: components["schemas"]["TeachingCourseOut"][];
+    };
+    /** NamedCode */
+    NamedCode: {
+      /** Code */
+      code: string;
+      /** Name */
+      name: string;
+    };
+    /** PersonRef */
+    PersonRef: {
+      /** Display Name */
+      display_name: string;
+      /** Id */
+      id: string;
+    };
+    /** SemesterRef */
+    SemesterRef: {
+      term: components["schemas"]["SemesterTerm"];
+      /** Year */
+      year: number;
+    };
+    /**
+     * SemesterTerm
+     * @enum {string}
+     */
+    SemesterTerm: "fall" | "spring" | "summer";
+    /** SubjectRef */
+    SubjectRef: {
+      /** Code */
+      code: string;
+      /** Credits */
+      credits: number;
+      /** Name */
+      name: string;
+    };
+    /** TeachingCourseOut */
+    TeachingCourseOut: {
+      /** Groups */
+      groups: string[];
+      /** Offering Code */
+      offering_code: string;
+      /** Offering Id */
+      offering_id: string;
+      semester: components["schemas"]["SemesterRef"];
+      /** Student Count */
+      student_count: number;
+      subject: components["schemas"]["SubjectRef"];
+      /** Teachers */
+      teachers: string[];
+    };
+    /**
      * UserStatus
      * @enum {string}
      */
@@ -78,6 +374,354 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  listImports: {
+    parameters: {
+      query?: {
+        kind?: components["schemas"]["ImportKind"] | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImportPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": components["schemas"]["Body_createImport"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImportDetail"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description File larger than 5 MB */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  downloadImportTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        kind: components["schemas"]["ImportKind"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description CSV header row */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": unknown;
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImportDetail"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  applyImport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        import_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ImportDetail"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   readMe: {
     parameters: {
       query?: never;
@@ -94,6 +738,71 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["MeResponse"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readMyAcademics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyAcademicsResponse"];
         };
       };
       /** @description Missing, expired or invalid access token */

@@ -79,6 +79,10 @@ logs: ## Follow container logs
 migrate: ## Apply database migrations
 	$(UV) run alembic upgrade head
 
+.PHONY: seed
+seed: ## Load the sample academic data (groups 764a1, 765a1, 765a2) through the import pipeline
+	$(UV) run python -m app.modules.academics.seed ../../infra/seed/academics
+
 .PHONY: migration
 migration: ## Create a migration: make migration m="add enrollments"
 	@test -n "$(m)" || (echo 'usage: make migration m="message"' >&2; exit 1)
