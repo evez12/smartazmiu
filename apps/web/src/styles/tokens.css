@@ -1,0 +1,53 @@
+/*
+ * Design tokens (§12.2) — the only place colour values live. Components use the Tailwind utilities mapped in
+ * globals.css (e.g. `bg-surface`, `text-muted`), never raw values. A unit test checks every text/background
+ * pair for WCAG contrast and that the Keycloak login theme mirrors these values.
+ */
+
+:root,
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-subtle: #f5f6f8;
+  --surface: #ffffff;
+  --border: #d9dde3;
+  --border-strong: #b8bfc9;
+  /* Outline of form controls; must reach 3:1 against every surface (WCAG 1.4.11, DECISIONS D-021). */
+  --border-control: #858e9b;
+  --text: #1b2430;
+  --text-muted: #5b6675;
+  --primary: #1f3a5f;
+  --primary-hover: #17304f;
+  --primary-contrast: #ffffff;
+  --accent: #8a6d1f;
+  --success: #1e6b3a;
+  --warning: #8a5a00;
+  --danger: #a12a2a;
+  --info: #1f4e8c;
+  --focus-ring: #1f3a5f;
+  --shadow-overlay: 0 4px 16px rgba(15, 20, 26, 0.12);
+  --backdrop: rgba(15, 20, 26, 0.48);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0f141a;
+  --bg-subtle: #141a21;
+  --surface: #161d26;
+  --border: #2a3441;
+  --border-strong: #3a4656;
+  --border-control: #5e6a79;
+  --text: #e6eaf0;
+  --text-muted: #9aa6b5;
+  --primary: #6f9bd1;
+  --primary-hover: #8ab0e0;
+  --primary-contrast: #0f141a;
+  --accent: #c9a94f;
+  --success: #4db27a;
+  --warning: #d9a441;
+  --danger: #e06b6b;
+  --info: #6f9bd1;
+  --focus-ring: #8ab0e0;
+  --shadow-overlay: 0 4px 16px rgba(15, 20, 26, 0.12);
+  --backdrop: rgba(5, 8, 12, 0.64);
+  color-scheme: dark;
+}
