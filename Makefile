@@ -124,3 +124,20 @@ test-api: test-deps ## Run backend tests with coverage
 .PHONY: test-web
 test-web: ## Run frontend unit tests
 	$(PNPM) test
+
+.PHONY: e2e
+e2e: ## Run Playwright functional and accessibility tests (starts the dev server if needed)
+	$(PNPM) exec playwright test --project=functional
+
+# Screenshot baselines exist only for the pinned Linux image (DECISIONS D-007). The container keeps its own
+# node_modules and .next so it never touches the host's Windows builds.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.64.1-noble
+VISUAL_RUN = MSYS_NO_PATHCONV=1 docker run --rm --ipc=host -e CI=1 	-v "$(CURDIR)/$(WEB_DIR):/work" -v smartazmiu-visual-node-modules:/work/node_modules 	-v smartazmiu-visual-next:/work/.next -w /work $(PLAYWRIGHT_IMAGE) 	bash -c "npm install --global --silent pnpm@12.15.0 && pnpm install --frozen-lockfile --silent && pnpm exec playwright test --project=visual $(1)"
+
+.PHONY: visual
+visual: ## Compare screenshots with the baselines (Docker)
+	$(call VISUAL_RUN)
+
+.PHONY: visual-update
+visual-update: ## Re-record screenshot baselines after an intended UI change (Docker)
+	$(call VISUAL_RUN,--update-snapshots)

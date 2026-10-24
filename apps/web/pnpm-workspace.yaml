@@ -1,3 +1,6 @@
 # Explicit allowlist for dependency install scripts (pnpm blocks them by default).
+# These packages ship prebuilt platform binaries, so their install scripts are not needed.
 allowBuilds:
+  "@parcel/watcher": false
+  "@swc/core": false
   unrs-resolver: false

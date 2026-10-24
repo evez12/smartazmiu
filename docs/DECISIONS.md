@@ -136,8 +136,8 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Images | `postgres:16.15-alpine3.24`, `redis:7.4.11-alpine`, `quay.io/keycloak/keycloak:26.8.1`, `chrislusf/seaweedfs:4.48`, `axllent/mailpit:v1.32.0`, `nginx:1.30.6-alpine` |
   | API | fastapi 0.162.0, uvicorn 0.54.0, sqlalchemy 2.1.6, asyncpg 0.32.0, alembic 1.20.1, pydantic 2.14.1, pydantic-settings 2.16.1, pyjwt 2.15.1, redis 8.1.0, structlog 26.1.0, sentry-sdk 2.73.0, httpx 0.28.1 |
   | API dev | pytest 9.1.1, pytest-asyncio 1.4.0, pytest-cov 7.1.0, ruff 0.17.2, mypy 2.4.0, pre-commit 4.7.0, asgi-lifespan 2.1.0 |
-  | Web | next 16.4.3, react / react-dom 19.3.1 |
-  | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, vitest 5.0.5, jsdom 30.1.3, @testing-library/react 16.3.3 |
+  | Web | next 16.4.3, react / react-dom 19.3.1, tailwindcss + @tailwindcss/postcss 4.3.3, radix-ui 1.8.1, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, lucide-react 1.61.0, next-intl 4.14.9, next-themes 0.4.6, @fontsource/ibm-plex-sans + ibm-plex-mono 5.3.0 |
+  | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0 |
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
@@ -198,3 +198,32 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `leyla.hasanova` (teacher), `elvin.quliyev` (staff), `tural.babayev` (admin). E-mails use the reserved `.test` TLD.
 - **Consequences:** the realm file contains no secrets; Keycloak substitutes `${...}` placeholders from the
   container environment at import.
+
+## D-021 · 2026-10-25 · Contrast of control borders and the modal backdrop
+
+- **Context:** §12.2 requires 3:1 for UI borders, but the specified `--border-strong` reaches only 1.85:1 (light)
+  and 1.77:1 (dark) against the surfaces, so inputs drawn with it would fail WCAG 1.4.11. The spec also gives no
+  backdrop colour for dialogs.
+- **Options:** darken `--border-strong` (changes every divider); add a dedicated control-border token.
+- **Decision:** the §12.2 values stay unchanged. A new token `--border-control` (`#858E9B` light, `#5E6A79` dark —
+  the lightest blends of `--border-strong` toward `--text-muted` that reach 3:1 on every surface) outlines inputs,
+  selects, checkboxes, radios, switches and secondary buttons. `--backdrop` dims the page behind dialogs in both
+  themes. The contrast unit test covers both.
+- **Consequences:** `--border` and `--border-strong` remain decorative dividers only.
+
+## D-022 · 2026-10-25 · Shapes that the 6 px radius rule does not cover
+
+- **Context:** §12.2 allows nothing rounder than 6 px except avatars.
+- **Decision:** radio buttons and their dots are circular, because the shape is how users tell them from checkboxes.
+  Switches are rectangular (4 px), which keeps them consistent with the other controls. The design-rules test
+  allows `rounded-full` and fails on any other radius above 6 px.
+- **Consequences:** presence dots (Sprint 5) follow the same circular exception.
+
+## D-023 · 2026-10-25 · Font delivery and internal design-system page
+
+- **Context:** §12.3 requires self-hosted IBM Plex with Latin, Latin Extended and Cyrillic; Azerbaijani needs both
+  the Latin (`ı`, `ç`, `ö`, `ü`) and Latin Extended (`ə`, `İ`, `ş`, `ğ`) subsets.
+- **Decision:** fonts come from the pinned `@fontsource` packages and are bundled by Next.js (no runtime request to
+  Google). Sans ships 400/500/600 for Latin, Latin Extended and Cyrillic; Mono ships 400. `/design-system` returns
+  404 unless `DESIGN_SYSTEM_ENABLED=true` (enabled in local `.env`, off by default elsewhere).
+- **Consequences:** the glyph specimen and an e2e check verify every weight; visual baselines cover each section.
