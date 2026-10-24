@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.11.16"
+  NODE_VERSION: "24.22.1"
+
+jobs:
+  api:
+    name: API · lint, types, tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - run: uv --directory apps/api sync --frozen
+      - run: make lint-api
+      # Starts postgres and redis from docker-compose.yml and runs pytest with the coverage gate.
+      - run: make test-api
+
+  web:
+    name: Web · lint, types, unit tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm --dir apps/web install --frozen-lockfile
+      - run: make lint-web
+      # Includes the design-token contrast checks and the §12 design-rule guards.
+      - run: make test-web
+      - run: pnpm --dir apps/web build
+
+  openapi:
+    name: OpenAPI client drift
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: uv --directory apps/api sync --frozen
+      - run: pnpm --dir apps/web install --frozen-lockfile
+      # Regenerates openapi.json and the TypeScript client; any diff means they were not committed together.
+      - run: make openapi-check
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: make audit
+
+  images:
+    name: Build images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        app: [api, web]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/build-push-action@v7.4.0
+        with:
+          context: apps/${{ matrix.app }}
+          push: false
+          tags: smartazmiu-${{ matrix.app }}:ci
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  e2e:
+    name: E2E and accessibility (full stack)
+    needs: [api, web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: apps/web/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm --dir apps/web install --frozen-lockfile
+      - run: pnpm --dir apps/web exec playwright install --with-deps chromium
+      # Same path as the Sprint 1 acceptance test: fresh .env, `make up`, sign in through nginx.
+      - run: make up
+      - run: make e2e
+        env:
+          E2E_BASE_URL: http://localhost
+      - name: Container logs
+        if: failure()
+        run: docker compose --profile app logs --no-color --tail=200
+      - uses: actions/upload-artifact@v7.0.2
+        if: failure()
+        with:
+          name: playwright-e2e
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7
+
+  visual:
+    name: Visual regression
+    needs: [web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # Runs in the pinned Playwright image the baselines were recorded with (DECISIONS D-007).
+      - run: make visual
+      - uses: actions/upload-artifact@v7.0.2
+        if: failure()
+        with:
+          name: playwright-visual
+          path: apps/web/test-results
+          retention-days: 7
