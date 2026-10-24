@@ -262,3 +262,18 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   detection. Sign-out ends the Keycloak session through the back-channel logout endpoint (no confirmation page).
 - **Consequences:** with several web replicas a rare parallel refresh across replicas can sign a user out; sticky
   sessions or a shared refresh lock is revisited before multi-replica deployment (Phase 4).
+
+## D-027 · 2026-10-25 · Continuous integration
+
+- **Context:** Sprint 1 requires CI for lint, type checks, tests, image builds and an OpenAPI client drift check;
+  §14 adds dependency scanning and §16 an accessibility smoke test and visual regression.
+- **Decision:** one workflow (`.github/workflows/ci.yml`) with parallel jobs that call the same `make` targets
+  developers use: `api` (ruff, mypy, pytest with the 80 % coverage gate against compose Postgres/Redis), `web`
+  (eslint, prettier, tsc, Vitest incl. contrast and design-rule guards, production build), `openapi`
+  (`make openapi-check`), `audit` (pip-audit 2.10.1 and `pnpm audit --audit-level high`), `images` (Buildx with
+  GitHub cache), `e2e` (`make up` from a fresh `.env`, then the Playwright suite through nginx, i.e. the Sprint 1
+  acceptance path) and `visual` (`make visual` in the pinned Playwright image). Dependabot opens weekly grouped
+  updates for uv, npm, GitHub Actions, Dockerfiles and compose images. Actions are pinned to exact release tags.
+- **Consequences:** E2E and visual jobs run on every push and pull request rather than only for `apps/web`
+  changes, because Sprint 1 auth spans the API, Keycloak and the web app; this can be narrowed with path filters
+  once the suite grows.

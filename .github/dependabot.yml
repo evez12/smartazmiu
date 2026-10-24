@@ -1,0 +1,41 @@
+# Dependency scanning and updates (§14). Minor and patch updates are grouped to keep review load low;
+# every update still has to pass CI, and pinned versions are recorded in docs/DECISIONS.md.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      api-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      web-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/api
+      - /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

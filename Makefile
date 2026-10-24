@@ -84,6 +84,16 @@ migration: ## Create a migration: make migration m="add enrollments"
 	@test -n "$(m)" || (echo 'usage: make migration m="message"' >&2; exit 1)
 	$(UV) run alembic revision --autogenerate -m "$(m)"
 
+.PHONY: audit
+audit: ## Check dependencies for known vulnerabilities
+	$(UV) export --frozen --no-hashes --no-emit-project --format requirements-txt > $(API_DIR)/.audit-requirements.txt
+	uvx pip-audit@2.10.1 --strict --requirement $(API_DIR)/.audit-requirements.txt; status=$$?; rm -f $(API_DIR)/.audit-requirements.txt; exit $$status
+	$(PNPM) audit --audit-level high
+
+.PHONY: openapi-check
+openapi-check: openapi ## Fail if the committed OpenAPI document or web client is out of date
+	git diff --exit-code -- $(API_DIR)/openapi.json $(WEB_DIR)/src/lib/api/schema.d.ts
+
 .PHONY: openapi
 openapi: ## Export the OpenAPI document and regenerate the typed web client
 	$(UV) run python -m app.openapi > $(API_DIR)/openapi.json
@@ -100,11 +110,15 @@ dev-web: ## Run the web app with reload on :3000
 
 # --- Quality ------------------------------------------------------------------
 
-.PHONY: lint
-lint: ## Lint, format-check and type-check both apps
+.PHONY: lint lint-api lint-web
+lint: lint-api lint-web ## Lint, format-check and type-check both apps
+
+lint-api:
 	$(UV) run ruff check .
 	$(UV) run ruff format --check .
 	$(UV) run mypy
+
+lint-web:
 	$(PNPM) lint --max-warnings=0
 	$(PNPM) format:check
 	$(PNPM) typecheck

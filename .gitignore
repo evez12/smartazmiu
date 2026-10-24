@@ -33,3 +33,6 @@ playwright-report/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Temporary dependency export for make audit
+.audit-requirements.txt
