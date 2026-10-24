@@ -14,25 +14,32 @@ PNPM := pnpm --dir $(WEB_DIR)
 COMPOSE := docker compose
 
 # Connection settings for the natively running api/web processes (Docker uses its own values).
-DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
-TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@localhost:$(POSTGRES_PORT)/smartazmiu_test
-REDIS_URL ?= redis://localhost:$(REDIS_PORT)/0
-TEST_REDIS_URL ?= redis://localhost:$(REDIS_PORT)/15
+# 127.0.0.1 rather than localhost: on Windows the IPv6 attempt adds ~2 s per new connection.
+DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)
+TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/smartazmiu_test
+REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
+TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
 OIDC_ISSUER ?= $(OIDC_PUBLIC_URL)/realms/$(KEYCLOAK_REALM)
 OIDC_INTERNAL_URL ?= $(OIDC_ISSUER)
 OIDC_JWKS_URL ?= $(OIDC_INTERNAL_URL)/protocol/openid-connect/certs
 APP_URL ?= $(WEB_DEV_URL)
-API_INTERNAL_URL ?= http://localhost:8000
+API_INTERNAL_URL ?= http://127.0.0.1:8000
 
 .PHONY: help
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
 
 .env: .env.example
-	@if [ -f .env ]; then echo ".env is older than .env.example; compare them manually." >&2; touch .env; exit 0; fi
-	@cp .env.example .env
-	@while grep -q '=generate$$' .env; do sed -i "0,/=generate$$/s//=$$(openssl rand -hex 24)/" .env; done
-	@echo "Created .env with fresh local secrets."
+	@if [ -f .env ]; then \
+		echo ".env is older than .env.example; review the new settings manually." >&2; \
+		touch .env; \
+	else \
+		cp .env.example .env; \
+		while grep -q '=generate$$' .env; do \
+			sed -i "0,/=generate$$/s//=$$(openssl rand -hex 24)/" .env; \
+		done; \
+		echo "Created .env with fresh local secrets."; \
+	fi
 
 .PHONY: env
 env: .env ## Create .env from .env.example with generated secrets

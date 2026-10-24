@@ -1,0 +1,446 @@
+/*
+ * SmartAzMİU login theme. Token values mirror apps/web/src/styles/tokens.css (§12.2); a web unit test
+ * fails if the two drift apart.
+ */
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-sans-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f5f6f8;
+  --surface: #ffffff;
+  --border: #d9dde3;
+  --border-strong: #b8bfc9;
+  --text: #1b2430;
+  --text-muted: #5b6675;
+  --primary: #1f3a5f;
+  --primary-hover: #17304f;
+  --primary-contrast: #ffffff;
+  --success: #1e6b3a;
+  --danger: #a12a2a;
+  --info: #1f4e8c;
+  --focus-ring: #1f3a5f;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a;
+    --bg-subtle: #141a21;
+    --surface: #161d26;
+    --border: #2a3441;
+    --border-strong: #3a4656;
+    --text: #e6eaf0;
+    --text-muted: #9aa6b5;
+    --primary: #6f9bd1;
+    --primary-hover: #8ab0e0;
+    --primary-contrast: #0f141a;
+    --success: #4db27a;
+    --danger: #e06b6b;
+    --info: #6f9bd1;
+    --focus-ring: #8ab0e0;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text);
+  background: var(--bg-subtle);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.sa-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -64px;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  z-index: 10;
+}
+.sa-skip-link:focus {
+  top: 8px;
+}
+
+.sa-topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.sa-wordmark {
+  font-size: 16px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.sa-main {
+  flex: 1;
+  width: 100%;
+  max-width: 432px;
+  margin: 0 auto;
+  padding: 48px 16px 32px;
+  outline: none;
+}
+
+.sa-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 24px;
+}
+
+.sa-title {
+  margin: 0 0 24px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.sa-help,
+.sa-required-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+.sa-help {
+  margin: 16px 0 0;
+}
+.sa-required-note {
+  margin: -16px 0 16px;
+}
+.sa-required {
+  color: var(--danger);
+}
+
+.sa-attempted-user {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  margin: -16px 0 24px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.sa-link,
+.sa-panel a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sa-link:hover,
+.sa-panel a:hover {
+  color: var(--primary-hover);
+}
+
+.sa-banner {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: 4px;
+  background: var(--surface);
+}
+.sa-banner-error {
+  border-left-color: var(--danger);
+}
+.sa-banner-error .sa-icon {
+  color: var(--danger);
+}
+.sa-banner-success {
+  border-left-color: var(--success);
+}
+.sa-banner-success .sa-icon {
+  color: var(--success);
+}
+.sa-banner-info,
+.sa-banner-warning {
+  border-left-color: var(--info);
+}
+.sa-banner-info .sa-icon,
+.sa-banner-warning .sa-icon {
+  color: var(--info);
+}
+
+.sa-field {
+  margin: 0 0 16px;
+}
+.sa-label {
+  display: block;
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+.sa-input-group {
+  display: flex;
+}
+.sa-input {
+  display: block;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+}
+.sa-input:hover {
+  border-color: var(--text-muted);
+}
+.sa-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.sa-input-group .sa-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.sa-field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.sa-password-toggle {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 0;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+.sa-password-toggle:hover {
+  color: var(--text);
+}
+
+.sa-options:empty,
+.sa-options-wrapper:empty {
+  display: none;
+}
+
+.sa-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 500;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+.sa-button-primary {
+  color: var(--primary-contrast);
+  background: var(--primary);
+}
+.sa-button-primary:hover {
+  background: var(--primary-hover);
+}
+.sa-button-secondary {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+.sa-button-tertiary {
+  padding: 0;
+  color: var(--primary);
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sa-button-block {
+  width: 100%;
+}
+.sa-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+#kc-form-buttons {
+  margin-top: 24px;
+}
+
+.sa-icon {
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+.sa-icon-eye {
+  --icon: url("../img/icons/eye.svg");
+}
+.sa-icon-eye-off {
+  --icon: url("../img/icons/eye-off.svg");
+}
+.sa-icon-alert {
+  --icon: url("../img/icons/circle-alert.svg");
+}
+.sa-icon-info {
+  --icon: url("../img/icons/info.svg");
+}
+.sa-icon-check {
+  --icon: url("../img/icons/circle-check.svg");
+}
+.sa-icon-smartphone {
+  --icon: url("../img/icons/smartphone.svg");
+}
+
+/* TOTP enrolment */
+#kc-totp-settings {
+  margin: 0 0 24px;
+  padding-left: 20px;
+}
+#kc-totp-settings > li {
+  margin-bottom: 12px;
+}
+#kc-totp-settings p {
+  margin: 0 0 8px;
+}
+#kc-totp-supported-apps {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-muted);
+}
+#kc-totp-secret-qr-code {
+  display: block;
+  width: 192px;
+  height: 192px;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  /* QR codes need a light quiet zone to scan, also in dark mode. */
+  background: #ffffff;
+}
+#kc-totp-secret-key {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+/* OTP device picker (more than one registered authenticator) */
+.sa-otp-device-input {
+  position: absolute;
+  opacity: 0;
+}
+.sa-otp-device {
+  display: block;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.sa-otp-device-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sa-otp-device-input:checked + .sa-otp-device {
+  padding: 7px 11px;
+  border: 2px solid var(--primary);
+}
+.sa-otp-device-input:focus-visible + .sa-otp-device {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
