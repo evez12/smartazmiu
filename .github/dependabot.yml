@@ -26,6 +26,8 @@ updates:
       interval: weekly
       day: monday
 
+  # Runtime versions are fixed by the spec (§4: Python 3.12, PostgreSQL 16, Redis 7); only patch-level image
+  # updates are proposed automatically. Moving to a new runtime line is a deliberate decision (DECISIONS.md).
   - package-ecosystem: docker
     directories:
       - /apps/api
@@ -33,9 +35,24 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: node
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
       day: monday
+    ignore:
+      - dependency-name: postgres
+        update-types: [version-update:semver-major]
+      - dependency-name: redis
+        update-types: [version-update:semver-major]
+      - dependency-name: quay.io/keycloak/keycloak
+        update-types: [version-update:semver-major]
+      # Odd nginx minors are the mainline branch; the stack follows the stable (even) line.
+      - dependency-name: nginx
+        update-types: [version-update:semver-minor]
