@@ -1,0 +1,76 @@
+[project]
+name = "smartazmiu-api"
+version = "0.1.0"
+description = "SmartAzMİU backend (FastAPI modular monolith)"
+requires-python = "==3.12.*"
+dependencies = [
+    "alembic==1.20.1",
+    "asyncpg==0.32.0",
+    "fastapi==0.162.0",
+    "httpx==0.28.1",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
+    "pyjwt[crypto]==2.15.1",
+    "redis==8.1.0",
+    "sentry-sdk[fastapi]==2.73.0",
+    "sqlalchemy[asyncio]==2.1.6",
+    "structlog==26.1.0",
+    "uvicorn[standard]==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "asgi-lifespan==2.1.0",
+    "mypy==2.4.0",
+    "pre-commit==4.7.0",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S", "SIM", "RUF", "N", "PT"]
+ignore = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+"alembic/versions/**" = ["N999"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["asgi_lifespan.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests", "app"]
+python_files = ["test_*.py", "tests.py"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true

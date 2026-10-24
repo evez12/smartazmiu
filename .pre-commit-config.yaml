@@ -1,0 +1,46 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=600"]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv --directory apps/api run mypy
+        language: system
+        files: ^apps/api/.*\.py$
+        pass_filenames: false
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd apps/web && pnpm exec eslint --max-warnings=0 --fix "${@#apps/web/}"' --
+        language: system
+        files: ^apps/web/.*\.(ts|tsx|mjs)$
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd apps/web && pnpm exec prettier --write --ignore-unknown "${@#apps/web/}"' --
+        language: system
+        files: ^apps/web/
+      - id: typescript
+        name: tsc
+        entry: pnpm --dir apps/web typecheck
+        language: system
+        files: ^apps/web/.*\.(ts|tsx)$
+        pass_filenames: false

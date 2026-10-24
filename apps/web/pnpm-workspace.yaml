@@ -1,0 +1,3 @@
+# Explicit allowlist for dependency install scripts (pnpm blocks them by default).
+allowBuilds:
+  unrs-resolver: false
