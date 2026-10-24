@@ -24,6 +24,18 @@ make dev-web                   # http://localhost:3000 (second terminal)
 
 `make help` lists every target.
 
+### Test users
+
+Keycloak seeds six made-up users that share the password in `.env` (`KEYCLOAK_TEST_USER_PASSWORD`):
+
+| Username | Role |
+|---|---|
+| `aysel.mammadova`, `ramin.aliyev` | student |
+| `nigar.ismayilova` | student + moderator |
+| `leyla.hasanova` | teacher |
+| `elvin.quliyev` | staff (asks for an authenticator app on first sign-in) |
+| `tural.babayev` | admin (asks for an authenticator app on first sign-in) |
+
 ## Architecture
 
 A modular monolith: one FastAPI app and one Next.js app.

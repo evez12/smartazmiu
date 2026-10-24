@@ -1,13 +1,59 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+import httpx
 from fastapi import FastAPI
+from redis.asyncio import Redis
+
+from app.core.config import Settings, get_settings
+from app.core.db import Database
+from app.core.errors import register_error_handlers
+from app.core.logging import configure_logging
+from app.core.middleware import RequestContextMiddleware
+from app.core.observability import init_sentry
+from app.core.security import JWKSKeySource, TokenVerifier
+from app.modules.health.router import router as health_router
+from app.modules.users.router import router as users_router
+
+API_PREFIX = "/api/v1"
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="SmartAzMİU API", version="0.1.0")
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    configure_logging(settings.log_level)
+    init_sentry(settings)
 
-    @app.get("/healthz", include_in_schema=False)
-    async def healthz() -> dict[str, str]:
-        return {"status": "ok"}
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.database = Database(str(settings.database_url))
+        app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
+        app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
+        app.state.token_verifier = TokenVerifier(
+            issuer=settings.oidc_issuer,
+            audience=settings.oidc_audience,
+            keys=JWKSKeySource(settings.oidc_jwks_url, app.state.http),
+        )
+        try:
+            yield
+        finally:
+            await app.state.http.aclose()
+            await app.state.redis.aclose()
+            await app.state.database.dispose()
 
+    show_docs = not settings.is_production
+    app = FastAPI(
+        title="SmartAzMİU API",
+        version="0.1.0",
+        lifespan=lifespan,
+        openapi_url=f"{API_PREFIX}/openapi.json" if show_docs else None,
+        docs_url=f"{API_PREFIX}/docs" if show_docs else None,
+        redoc_url=None,
+    )
+    app.add_middleware(RequestContextMiddleware)
+    register_error_handlers(app)
+
+    app.include_router(health_router)
+    app.include_router(users_router, prefix=API_PREFIX)
     return app
 
 

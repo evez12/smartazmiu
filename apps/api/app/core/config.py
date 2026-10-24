@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: PostgresDsn = Field(
-        default=PostgresDsn("postgresql+asyncpg://smartazmiu:smartazmiu@localhost:5433/smartazmiu")
+        default=PostgresDsn("postgresql+asyncpg://smartazmiu:smartazmiu@127.0.0.1:5433/smartazmiu")
     )
-    redis_url: RedisDsn = Field(default=RedisDsn("redis://localhost:6379/0"))
+    redis_url: RedisDsn = Field(default=RedisDsn("redis://127.0.0.1:6379/0"))
 
     # The issuer is the browser-facing Keycloak URL; JWKS may be fetched over the internal network.
     oidc_issuer: str = "http://localhost:8080/realms/smartazmiu"

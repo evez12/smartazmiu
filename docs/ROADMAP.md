@@ -512,8 +512,8 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] docker compose: postgres, redis, minio, keycloak, mailpit, api, web, nginx.
 - [ ] GitHub Actions: lint, type-check, test, build images, OpenAPI client drift check.
 - [ ] Keycloak realm (roles, test users), OIDC login in Next.js, JWT validation in FastAPI.
-- [ ] `users`, `roles`, `permissions`, RBAC dependency `require_permission(...)`.
-- [ ] Sentry + structured logging; `/healthz`, `/readyz`.
+- [x] `users`, `roles`, `permissions`, RBAC dependency `require_permission(...)`.
+- [x] Sentry + structured logging; `/healthz`, `/readyz`.
 - [ ] **Design tokens + primitives (§12.2–12.4)** implemented in `tokens.css` and `components/ui/*`; internal `/design-system` page (non-production) showing every primitive in light/dark, all states, and an Azerbaijani glyph specimen.
 - [ ] Frontend shell: layout, sidebar, top bar, theme (light/dark), i18n (`az.json`).
 **Acceptance:** fresh clone → `make up` → login with test student → see empty dashboard; `/design-system` passes the §12.9 visual checklist.
