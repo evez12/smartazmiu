@@ -201,5 +201,66 @@
       "forbiddenBody": "Səhifə yalnız dekanlıq əməkdaşları üçündür. İcazə lazımdırsa, dekanlığa müraciət edin.",
       "back": "Ana səhifəyə qayıdın"
     }
+  },
+  "login": {
+    "metaTitle": "Giriş",
+    "title": "SmartAzMİU-ya daxil olun",
+    "description": "Platformaya universitet hesabınızla daxil olun. Dərs cədvəli, materiallar, elanlar və fənn kanalları bir yerdədir.",
+    "signIn": "Universitet hesabı ilə daxil olun",
+    "help": "Hesabınızla bağlı problem varsa, dekanlığa və ya universitetin İT xidmətinə müraciət edin.",
+    "signedOutTitle": "Hesabdan çıxdınız",
+    "signedOutBody": "Yenidən daxil olmaq üçün aşağıdakı düyməni basın.",
+    "signinFailedTitle": "Giriş tamamlanmadı",
+    "signinFailedBody": "Yenidən daxil olmağa cəhd edin. Problem təkrarlanarsa, İT xidmətinə müraciət edin.",
+    "signinExpiredTitle": "Giriş üçün ayrılan vaxt bitdi",
+    "signinExpiredBody": "Təhlükəsizlik üçün giriş 10 dəqiqə ərzində tamamlanmalıdır. Yenidən daxil olun.",
+    "sessionExpiredTitle": "Sessiyanızın müddəti bitib",
+    "sessionExpiredBody": "Davam etmək üçün yenidən daxil olun.",
+    "footer": "AzMİU tələbələri, müəllimləri və əməkdaşları üçün platforma."
+  },
+  "shell": {
+    "skipToContent": "Əsas məzmuna keçin",
+    "mainNavigation": "Əsas naviqasiya",
+    "openNavigation": "Menyunu açın",
+    "navigationTitle": "Menyu",
+    "collapseNavigation": "Yan menyunu kiçildin",
+    "expandNavigation": "Yan menyunu genişləndirin",
+    "profileMenu": "Profil menyusu",
+    "signOut": "Çıxış edin",
+    "sections": {
+      "main": "Əsas"
+    },
+    "nav": {
+      "home": "Ana səhifə"
+    }
+  },
+  "roles": {
+    "student": "Tələbə",
+    "teacher": "Müəllim",
+    "staff": "Dekanlıq əməkdaşı",
+    "moderator": "Moderator",
+    "admin": "Sistem administratoru",
+    "guest": "Qonaq",
+    "none": "Rol təyin edilməyib"
+  },
+  "dashboard": {
+    "title": "Ana səhifə",
+    "description": "Bugünkü dərslər, yaxın imtahanlar, elanlar və oxunmamış mesajlar bu səhifədə toplanacaq.",
+    "academicDataTitle": "Akademik məlumatlar",
+    "noAcademicData": "Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb.",
+    "noAcademicDataHint": "Məlumatlar dekanlıq tərəfindən əlavə olunduqdan sonra burada avtomatik görünəcək. Sualınız varsa, dekanlığa müraciət edin."
+  },
+  "status": {
+    "loading": "Yüklənir",
+    "errorTitle": "Səhifəni göstərmək mümkün olmadı",
+    "errorBody": "Gözlənilməz xəta baş verdi. Yenidən cəhd edin; problem təkrarlanarsa, İT xidmətinə müraciət edin.",
+    "retry": "Yenidən cəhd edin",
+    "unavailableTitle": "Xidmət müvəqqəti əlçatan deyil",
+    "unavailableBody": "Məlumatları yükləmək mümkün olmadı. Bir neçə dəqiqədən sonra yenidən cəhd edin.",
+    "inactiveTitle": "Hesabınız aktiv deyil",
+    "inactiveBody": "Akademik məzuniyyət, məzunluq və ya digər səbəbdən hesabınız deaktiv edilib. Ətraflı məlumat üçün dekanlığa müraciət edin.",
+    "notFoundTitle": "Səhifə tapılmadı",
+    "notFoundBody": "Ünvan səhv yazılıb və ya səhifə silinib.",
+    "goHome": "Ana səhifəyə keçin"
   }
 }

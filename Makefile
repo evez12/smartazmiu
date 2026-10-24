@@ -84,6 +84,12 @@ migration: ## Create a migration: make migration m="add enrollments"
 	@test -n "$(m)" || (echo 'usage: make migration m="message"' >&2; exit 1)
 	$(UV) run alembic revision --autogenerate -m "$(m)"
 
+.PHONY: openapi
+openapi: ## Export the OpenAPI document and regenerate the typed web client
+	$(UV) run python -m app.openapi > $(API_DIR)/openapi.json
+	$(PNPM) exec openapi-typescript ../api/openapi.json --output src/lib/api/schema.d.ts
+	$(PNPM) exec prettier --write --log-level warn src/lib/api/schema.d.ts
+
 .PHONY: dev-api
 dev-api: ## Run the API with reload on :8000
 	$(UV) run uvicorn app.main:app --reload --port 8000 --no-access-log

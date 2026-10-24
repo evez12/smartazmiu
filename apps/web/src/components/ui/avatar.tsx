@@ -15,10 +15,12 @@ type AvatarProps = {
   name: string;
   src?: string;
   size?: keyof typeof sizes;
+  /** Set when the name is already shown next to the avatar, so screen readers do not hear it twice. */
+  decorative?: boolean;
   className?: string;
 };
 
-export function Avatar({ name, src, size = 32, className }: AvatarProps) {
+export function Avatar({ name, src, size = 32, decorative = false, className }: AvatarProps) {
   return (
     <AvatarPrimitive.Root
       className={cn(
@@ -29,7 +31,7 @@ export function Avatar({ name, src, size = 32, className }: AvatarProps) {
     >
       {src ? <AvatarPrimitive.Image src={src} alt="" className="size-full object-cover" /> : null}
       <AvatarPrimitive.Fallback aria-hidden="true">{initials(name)}</AvatarPrimitive.Fallback>
-      <span className="sr-only">{name}</span>
+      {decorative ? null : <span className="sr-only">{name}</span>}
     </AvatarPrimitive.Root>
   );
 }

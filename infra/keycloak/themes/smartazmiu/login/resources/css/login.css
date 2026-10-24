@@ -64,6 +64,7 @@
   --surface: #ffffff;
   --border: #d9dde3;
   --border-strong: #b8bfc9;
+  --border-control: #858e9b;
   --text: #1b2430;
   --text-muted: #5b6675;
   --primary: #1f3a5f;
@@ -83,6 +84,7 @@
     --surface: #161d26;
     --border: #2a3441;
     --border-strong: #3a4656;
+    --border-control: #5e6a79;
     --text: #e6eaf0;
     --text-muted: #9aa6b5;
     --primary: #6f9bd1;
@@ -264,7 +266,7 @@ body {
   font: inherit;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   border-radius: 4px;
 }
 .sa-input:hover {
@@ -294,7 +296,7 @@ body {
   justify-content: center;
   color: var(--text-muted);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   border-left: 0;
   border-radius: 0 4px 4px 0;
   cursor: pointer;
@@ -333,7 +335,7 @@ body {
 .sa-button-secondary {
   color: var(--text);
   background: var(--surface);
-  border-color: var(--border-strong);
+  border-color: var(--border-control);
 }
 .sa-button-tertiary {
   padding: 0;
@@ -421,7 +423,7 @@ body {
   display: block;
   margin-bottom: 8px;
   padding: 8px 12px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-control);
   border-radius: 4px;
   cursor: pointer;
 }
