@@ -1,0 +1,247 @@
+{
+  "realm": "smartazmiu",
+  "displayName": "SmartAzMİU",
+  "enabled": true,
+  "sslRequired": "external",
+  "loginTheme": "smartazmiu",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["az"],
+  "defaultLocale": "az",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "passwordPolicy": "length(12) and notUsername and notEmail",
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 43200,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@smartazmiu.test",
+    "fromDisplayName": "SmartAzMİU"
+  },
+  "roles": {
+    "realm": [
+      { "name": "student", "description": "Tələbə" },
+      { "name": "teacher", "description": "Müəllim" },
+      {
+        "name": "staff",
+        "description": "Dekanlıq əməkdaşı",
+        "composite": true,
+        "composites": { "realm": ["mfa_required"] }
+      },
+      { "name": "moderator", "description": "Moderator" },
+      {
+        "name": "admin",
+        "description": "Sistem administratoru",
+        "composite": true,
+        "composites": { "realm": ["mfa_required"] }
+      },
+      { "name": "mfa_required", "description": "Requires a second factor at sign-in (§14)" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "smartazmiu-web",
+      "name": "SmartAzMİU",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${OIDC_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": false,
+      "rootUrl": "${APP_PUBLIC_URL}",
+      "baseUrl": "${APP_PUBLIC_URL}/",
+      "redirectUris": ["${APP_PUBLIC_URL}/auth/callback", "${WEB_DEV_URL}/auth/callback"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${APP_PUBLIC_URL}/*##${WEB_DEV_URL}/*",
+        "backchannel.logout.session.required": "true"
+      },
+      "fullScopeAllowed": true,
+      "defaultClientScopes": ["basic", "profile", "email", "roles", "acr"],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "smartazmiu-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "browserFlow": "smartazmiu browser",
+  "authenticationFlows": [
+    {
+      "alias": "smartazmiu browser",
+      "description": "Password sign-in; staff and administrators must also pass TOTP.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "authenticatorFlow": true,
+          "autheticatorFlow": true,
+          "flowAlias": "smartazmiu browser forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "smartazmiu browser forms",
+      "description": "Username and password, then the role-conditional second factor.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "authenticatorFlow": true,
+          "autheticatorFlow": true,
+          "flowAlias": "smartazmiu staff otp",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "smartazmiu staff otp",
+      "description": "TOTP for users holding mfa_required (granted through the staff and admin roles).",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-role",
+          "authenticatorConfig": "requires mfa role",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": true
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "requires mfa role",
+      "config": { "condUserRole": "mfa_required", "negate": "false" }
+    }
+  ],
+  "users": [
+    {
+      "username": "aysel.mammadova",
+      "email": "aysel.mammadova@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Aysel",
+      "lastName": "Məmmədova",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["student"]
+    },
+    {
+      "username": "ramin.aliyev",
+      "email": "ramin.aliyev@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Ramin",
+      "lastName": "Əliyev",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["student"]
+    },
+    {
+      "username": "nigar.ismayilova",
+      "email": "nigar.ismayilova@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Nigar",
+      "lastName": "İsmayılova",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["student", "moderator"]
+    },
+    {
+      "username": "leyla.hasanova",
+      "email": "leyla.hasanova@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Leyla",
+      "lastName": "Həsənova",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["teacher"]
+    },
+    {
+      "username": "elvin.quliyev",
+      "email": "elvin.quliyev@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Elvin",
+      "lastName": "Quliyev",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["staff"]
+    },
+    {
+      "username": "tural.babayev",
+      "email": "tural.babayev@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Tural",
+      "lastName": "Babayev",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["admin"]
+    }
+  ]
+}
