@@ -1,10 +1,13 @@
 import uuid
 from dataclasses import dataclass
 
+import structlog
 from sqlalchemy import Uuid, delete, literal, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import AppError
 from app.core.ids import uuid7
 from app.core.security import TokenClaims
 from app.modules.users.models import (
@@ -16,6 +19,8 @@ from app.modules.users.models import (
     UserRole,
     UserStatus,
 )
+
+logger = structlog.get_logger(__name__)
 
 # Global roles the identity provider may grant; anything else in the token is ignored.
 IDP_MANAGED_ROLES = frozenset(code.value for code in RoleCode if code is not RoleCode.GUEST)
@@ -50,6 +55,21 @@ class UserService:
         role-to-permission bundles. Writes happen only when something changed, so the common path is
         two reads.
         """
+        try:
+            return await self._sync(claims)
+        except IntegrityError:
+            await self.session.rollback()
+        # A concurrent first request for the same subject can lose the insert race on the e-mail index
+        # instead of the subject index; once the winner has committed, the retry takes the update path.
+        try:
+            return await self._sync(claims)
+        except IntegrityError as exc:
+            await self.session.rollback()
+            # Another account already owns this e-mail: never merge identities silently (§13.1).
+            logger.warning("identity_conflict", subject=claims.subject)
+            raise AppError("auth.identity_conflict", 409) from exc
+
+    async def _sync(self, claims: TokenClaims) -> CurrentUser:
         user = await self.session.scalar(select(User).where(User.idp_subject == claims.subject))
         if user is None or _profile_differs(user, claims):
             user = await self._upsert_profile(claims)

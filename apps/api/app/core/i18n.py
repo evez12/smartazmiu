@@ -15,6 +15,10 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Hesabınız aktiv deyil. Ətraflı məlumat üçün dekanlığa müraciət edin.",
         "en": "Your account is not active. Contact the dean's office for details.",
     },
+    "auth.identity_conflict": {
+        "az": "Hesabınızın e-poçt ünvanı başqa bir hesabda istifadə olunur. İT xidmətinə müraciət edin.",
+        "en": "Your account's e-mail address is used by another account. Contact IT support.",
+    },
     "request.validation_failed": {
         "az": "Göndərilən məlumatlarda səhv var. Sahələri yoxlayıb yenidən cəhd edin.",
         "en": "Some of the submitted data is invalid. Check the fields and try again.",
