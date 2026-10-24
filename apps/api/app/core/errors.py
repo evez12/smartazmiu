@@ -5,6 +5,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.i18n import error_message, negotiate_language
@@ -16,6 +17,28 @@ HTTP_STATUS_CODES = {
     403: "auth.forbidden",
     404: "request.not_found",
     405: "request.method_not_allowed",
+}
+
+
+class ErrorBody(BaseModel):
+    code: str
+    message: str
+    details: dict[str, Any]
+    request_id: str | None
+
+
+class ErrorResponse(BaseModel):
+    """The envelope of every non-2xx response (§4.2)."""
+
+    error: ErrorBody
+
+
+# Declared on routers so the generated TypeScript client knows the error shape.
+COMMON_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    401: {"model": ErrorResponse, "description": "Missing, expired or invalid access token"},
+    403: {"model": ErrorResponse, "description": "Authenticated but not allowed"},
+    422: {"model": ErrorResponse, "description": "Request validation failed"},
+    500: {"model": ErrorResponse, "description": "Unexpected server error"},
 }
 
 

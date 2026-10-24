@@ -53,11 +53,13 @@ Postgres `localhost:5433`.
 ## Testing
 
 ```bash
-make lint test
+make lint test     # linters, type checks, backend (pytest) and frontend (Vitest) tests
+make e2e           # Playwright: sign-in flow, accessibility, keyboard and mobile checks (needs the stack running)
+make visual        # screenshot comparison in the pinned Linux Playwright image (Docker)
 ```
 
 Backend tests run against the `smartazmiu_test` database in the Docker Postgres; `make test` starts the containers
-it needs.
+it needs. After changing an API schema, run `make openapi` to regenerate the typed web client.
 
 ## Adding a backend module
 

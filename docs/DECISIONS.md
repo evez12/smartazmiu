@@ -136,8 +136,8 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Images | `postgres:16.15-alpine3.24`, `redis:7.4.11-alpine`, `quay.io/keycloak/keycloak:26.8.1`, `chrislusf/seaweedfs:4.48`, `axllent/mailpit:v1.32.0`, `nginx:1.30.6-alpine` |
   | API | fastapi 0.162.0, uvicorn 0.54.0, sqlalchemy 2.1.6, asyncpg 0.32.0, alembic 1.20.1, pydantic 2.14.1, pydantic-settings 2.16.1, pyjwt 2.15.1, redis 8.1.0, structlog 26.1.0, sentry-sdk 2.73.0, httpx 0.28.1 |
   | API dev | pytest 9.1.1, pytest-asyncio 1.4.0, pytest-cov 7.1.0, ruff 0.17.2, mypy 2.4.0, pre-commit 4.7.0, asgi-lifespan 2.1.0 |
-  | Web | next 16.4.3, react / react-dom 19.3.1, tailwindcss + @tailwindcss/postcss 4.3.3, radix-ui 1.8.1, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, lucide-react 1.61.0, next-intl 4.14.9, next-themes 0.4.6, @fontsource/ibm-plex-sans + ibm-plex-mono 5.3.0 |
-  | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0 |
+  | Web | next 16.4.3, react / react-dom 19.3.1, tailwindcss + @tailwindcss/postcss 4.3.3, radix-ui 1.8.1, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, lucide-react 1.61.0, next-intl 4.14.9, next-themes 0.4.6, @fontsource/ibm-plex-sans + ibm-plex-mono 5.3.0, openid-client 6.8.8, jose 6.2.13, openapi-fetch 0.17.0, server-only 0.0.1, @sentry/nextjs 11.9.0 |
+  | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0, openapi-typescript 7.13.0 |
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
@@ -227,3 +227,38 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   Google). Sans ships 400/500/600 for Latin, Latin Extended and Cyrillic; Mono ships 400. `/design-system` returns
   404 unless `DESIGN_SYSTEM_ENABLED=true` (enabled in local `.env`, off by default elsewhere).
 - **Consequences:** the glyph specimen and an e2e check verify every weight; visual baselines cover each section.
+
+## D-024 · 2026-10-25 · App shell slots for features that do not exist yet
+
+- **Context:** §12.4 puts global search and a notifications bell in the top bar, and §12.6 lists five bottom tabs
+  (Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). In Sprint 1 only the dashboard exists.
+- **Options:** render all entries as dead links or "coming soon" pages; show only what works.
+- **Decision:** navigation is data-driven (`features/shell/nav.ts`); only implemented sections are listed, in both
+  the sidebar and the tab bar. Search, the bell and the remaining tabs are added by the sprints that build them
+  (search: Sprint 10, notifications: Sprint 4, schedule: Sprint 3, chat: Sprint 5, profile: Sprint 2). The profile
+  menu holds the theme choice and sign-out.
+- **Consequences:** in Sprint 1 the tab bar has a single entry. No placeholder pages exist.
+
+## D-025 · 2026-10-25 · Browser-side API calls and browser error reporting
+
+- **Context:** D-005 describes the Next.js server forwarding access tokens to the API. Sprint 1 pages fetch all
+  data during server rendering; nothing in the browser calls the API yet. §7 asks for Sentry on the frontend too.
+- **Decision:** the typed client (`lib/api/server.ts`, generated from OpenAPI by `make openapi`) is used on the
+  server only. The same-origin `/api/v1/*` proxy for browser requests, with CSRF checks, is added with the first
+  feature that needs client-side mutations (Sprint 2 profile). Server-side errors go to Sentry when `SENTRY_DSN` is
+  set; browser reporting needs a public DSN and a CSP `connect-src` entry and is scheduled with pilot hardening
+  (Sprint 6).
+- **Consequences:** no unused proxy code ships in Sprint 1. Sign-out is the only cookie-authenticated mutation; it
+  checks the per-session CSRF token embedded in the form and the `Origin` header.
+
+## D-026 · 2026-10-25 · Session cookies and token refresh in the web server
+
+- **Context:** tokens must not be readable by page JavaScript (D-005); Keycloak access tokens are ~1.2 KB, refresh
+  tokens ~0.8 KB, and refresh tokens rotate with reuse detection (D-018).
+- **Decision:** two encrypted httpOnly cookies: `sa_session` (refresh token, subject, CSRF token; lifetime = Keycloak
+  session idle timeout) and `sa_access` (access token; lifetime = token lifetime). `proxy.ts` refreshes the access
+  token when it has under 60 s left and passes the new cookie both to the page render and the browser. Concurrent
+  refreshes of the same refresh token share one grant inside the process, so parallel requests do not trip reuse
+  detection. Sign-out ends the Keycloak session through the back-channel logout endpoint (no confirmation page).
+- **Consequences:** with several web replicas a rare parallel refresh across replicas can sign a user out; sticky
+  sessions or a shared refresh lock is revisited before multi-replica deployment (Phase 4).

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
+// localhost, not 127.0.0.1: it must match the redirect URI registered in Keycloak.
+const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 /*
  * Functional and accessibility tests run anywhere. Screenshot comparisons run only in the pinned Linux

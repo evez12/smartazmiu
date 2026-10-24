@@ -511,7 +511,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Monorepo scaffold (`apps/web`, `apps/api`), Makefile, pre-commit (ruff, mypy, eslint, prettier), `CLAUDE.md`, `docs/DECISIONS.md`.
 - [x] docker compose: postgres, redis, minio, keycloak, mailpit, api, web, nginx.
 - [ ] GitHub Actions: lint, type-check, test, build images, OpenAPI client drift check.
-- [ ] Keycloak realm (roles, test users), OIDC login in Next.js, JWT validation in FastAPI.
+- [x] Keycloak realm (roles, test users), OIDC login in Next.js, JWT validation in FastAPI.
 - [x] `users`, `roles`, `permissions`, RBAC dependency `require_permission(...)`.
 - [x] Sentry + structured logging; `/healthz`, `/readyz`.
 - [x] **Design tokens + primitives (§12.2–12.4)** implemented in `tokens.css` and `components/ui/*`; internal `/design-system` page (non-production) showing every primitive in light/dark, all states, and an Azerbaijani glyph specimen.
