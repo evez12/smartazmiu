@@ -34,7 +34,8 @@ export const env = {
     if (secret.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
     return secret;
   },
+  /** Optional on purpose: the proxy asks on every request, including where auth is not configured. */
   get isHttps() {
-    return this.appUrl.startsWith("https://");
+    return (process.env.APP_URL ?? "").startsWith("https://");
   },
 };

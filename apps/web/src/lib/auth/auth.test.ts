@@ -109,3 +109,18 @@ describe("scrubEvent", () => {
     expect(event.user).toEqual({ id: "0190" });
   });
 });
+
+describe("session readers without configuration", () => {
+  it("return null without touching SESSION_SECRET when no cookie is present", async () => {
+    const { readSession, readAccess } = await import("./session");
+    const secret = process.env.SESSION_SECRET;
+    delete process.env.SESSION_SECRET;
+    try {
+      const emptyJar = { get: () => undefined };
+      expect(await readSession(emptyJar)).toBeNull();
+      expect(await readAccess(emptyJar)).toBeNull();
+    } finally {
+      process.env.SESSION_SECRET = secret;
+    }
+  });
+});
