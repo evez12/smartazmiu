@@ -1,4 +1,4 @@
-FROM node:24.22.1-alpine3.24 AS base
+FROM node:26.12.0-alpine3.24 AS base
 RUN npm install --global pnpm@12.15.0
 WORKDIR /srv/web
 
@@ -12,7 +12,7 @@ COPY --from=deps /srv/web/node_modules ./node_modules
 COPY . .
 RUN pnpm build
 
-FROM node:24.22.1-alpine3.24
+FROM node:26.12.0-alpine3.24
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 WORKDIR /srv/web
 RUN addgroup -S -g 10001 web && adduser -S -u 10001 -G web web
