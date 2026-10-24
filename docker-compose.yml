@@ -14,7 +14,7 @@ x-api-env: &api-env
 
 services:
   postgres:
-    image: postgres:16.15-alpine3.24
+    image: postgres:18.4-alpine3.24
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
