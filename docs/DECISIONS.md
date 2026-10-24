@@ -99,3 +99,51 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Context:** product owner instruction.
 - **Decision:** commits and PR descriptions never include `Co-Authored-By` or "Generated with" trailers.
 - **Consequences:** none.
+
+## D-012 · 2026-10-24 · GitHub remote and branch workflow
+
+- **Context:** the product owner created `github.com/evez12/smartazmiu` and asked for all code to be pushed there,
+  split over several branches. Previously no remote existed.
+- **Options:** commit on `main`; one long-lived sprint branch; several scoped feature branches.
+- **Decision:** each group of related Sprint 1 tasks gets its own branch (`feat/scaffold`, `feat/api-auth-rbac`,
+  `feat/design-system`, `feat/app-shell`, `ci/github-actions`). A branch is merged into `main` with `--no-ff` once
+  `make lint test` passes, and both the branch and `main` are pushed. CI runs on GitHub from now on.
+- **Consequences:** history shows one merge per task group; PRs can be opened later from the pushed branches.
+
+## D-013 · 2026-10-24 · S3-compatible object storage instead of the MinIO image
+
+- **Context:** §4 names MinIO. Official MinIO container images are no longer publicly available (Docker Hub
+  repository removed; `quay.io/minio/minio` requires authentication), so a fresh clone could not run `make up`.
+- **Options:** build MinIO from source in our Dockerfile; pin an unofficial mirror; use another S3-compatible
+  server (SeaweedFS, Garage, RustFS).
+- **Decision:** SeaweedFS `4.48` (`weed server -s3`), the most mature of the alternatives, as the compose service
+  `s3`. Application code only uses the S3 API (presigned URLs), so the server can be swapped without code changes.
+  Credentials are rendered from environment variables at container start.
+- **Consequences:** documentation says "S3-compatible storage" where the spec says MinIO. The production object store
+  (MinIO, Ceph or another S3 service) remains an infrastructure choice for Phase 4.
+
+## D-014 · 2026-10-24 · Pinned toolchain and dependency versions
+
+- **Context:** §4 requires exact versions at scaffold time, recorded here. Lockfiles (`apps/api/uv.lock`,
+  `apps/web/pnpm-lock.yaml`) pin transitive dependencies.
+- **Decision:** latest stable releases on 2026-10-24, with two deliberate exceptions:
+  TypeScript `6.0.3` (not 7.x — `typescript-eslint` 8.72 supports `<6.1`) and ESLint `9.39.5` (not 10.x —
+  `eslint-plugin-react`, used by `eslint-config-next`, supports `^9.7` at most).
+
+  | Area | Versions |
+  |---|---|
+  | Runtimes | Python 3.12 (image `python:3.12.15-slim-bookworm`), Node 24 (image `node:24.22.1-alpine3.24`), uv 0.11.16, pnpm 12.15.0 |
+  | Images | `postgres:16.15-alpine3.24`, `redis:7.4.11-alpine`, `quay.io/keycloak/keycloak:26.8.1`, `chrislusf/seaweedfs:4.48`, `axllent/mailpit:v1.32.0`, `nginx:1.30.6-alpine` |
+  | API | fastapi 0.162.0, uvicorn 0.54.0, sqlalchemy 2.1.6, asyncpg 0.32.0, alembic 1.20.1, pydantic 2.14.1, pydantic-settings 2.16.1, pyjwt 2.15.1, redis 8.1.0, structlog 26.1.0, sentry-sdk 2.73.0, httpx 0.28.1 |
+  | API dev | pytest 9.1.1, pytest-asyncio 1.4.0, pytest-cov 7.1.0, ruff 0.17.2, mypy 2.4.0, pre-commit 4.7.0, asgi-lifespan 2.1.0 |
+  | Web | next 16.4.3, react / react-dom 19.3.1 |
+  | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, vitest 5.0.5, jsdom 30.1.3, @testing-library/react 16.3.3 |
+  | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
+
+- **Consequences:** later sprints add dependencies to this table when they introduce them.
+
+## D-015 · 2026-10-24 · Host ports for local infrastructure
+
+- **Context:** the dev box runs a native PostgreSQL service on port 5432.
+- **Decision:** the Docker Postgres is published on host port `5433`. Every published port is overridable in `.env`.
+- **Consequences:** native processes connect to `localhost:5433`; containers still use `postgres:5432`.

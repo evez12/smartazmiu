@@ -29,7 +29,7 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
 ## Local environment (agreed with product owner, 2026-10-24)
 
 - Windows 11 dev box; repo path must stay ASCII (`C:\Users\User\Projects\smartazmiu`).
-- Infra (postgres, redis, minio, keycloak, mailpit) runs in Docker; `api` and `web` run natively for development.
+- Infra (postgres, redis, S3-compatible store, keycloak, mailpit) runs in Docker; `api` and `web` run natively for development.
   `make up` must still start the full stack (including api, web, nginx) in Docker.
 - Single `Makefile` (GNU make via winget `ezwinports.make`); no PowerShell task scripts. Package manager: pnpm.
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
@@ -40,7 +40,9 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
 - Commit after each finished task. Conventional Commits, English, imperative, scoped:
   `feat(chat): add exam-mode read-only enforcement`. No emoji.
 - **Never add `Co-Authored-By` or "Generated with" trailers to commits or PR text** (product owner's rule).
-- No GitHub remote yet; CI workflows are written but not run remotely.
+- Remote: `github.com/evez12/smartazmiu` (`origin`). Work happens on scoped branches
+  (`feat/...`, `ci/...`), merged into `main` with `--no-ff` once green, then pushed. CI runs on GitHub.
+- Run `make` from Git Bash; on this box `make` lives in the winget package dir (not on PATH for agents).
 
 ## UI Design Standard (§12) — official, institutional, not template-looking
 
