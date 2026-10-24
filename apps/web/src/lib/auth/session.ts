@@ -94,16 +94,23 @@ export async function sessionCookies(
   ];
 }
 
+// The secret is read only when a cookie is present, so pages that never see a session (e.g. /design-system
+// in the screenshot container) work without auth configuration.
+async function readSealed<T>(jar: CookieJar, name: string): Promise<T | null> {
+  const value = jar.get(name)?.value;
+  return value ? unseal<T>(value, env.sessionSecret) : null;
+}
+
 export function readSession(jar: CookieJar): Promise<SessionData | null> {
-  return unseal<SessionData>(jar.get(SESSION_COOKIE)?.value, env.sessionSecret);
+  return readSealed<SessionData>(jar, SESSION_COOKIE);
 }
 
 export function readAccess(jar: CookieJar): Promise<AccessData | null> {
-  return unseal<AccessData>(jar.get(ACCESS_COOKIE)?.value, env.sessionSecret);
+  return readSealed<AccessData>(jar, ACCESS_COOKIE);
 }
 
 export function readOidcFlow(jar: CookieJar): Promise<OidcFlowData | null> {
-  return unseal<OidcFlowData>(jar.get(OIDC_COOKIE)?.value, env.sessionSecret);
+  return readSealed<OidcFlowData>(jar, OIDC_COOKIE);
 }
 
 export async function oidcFlowCookie(flow: OidcFlowData): Promise<CookieWrite> {

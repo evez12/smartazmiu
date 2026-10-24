@@ -124,3 +124,17 @@ async def test_inactive_account_is_refused(
     error = response.json()["error"]
     assert error["code"] == "auth.account_inactive"
     assert error["message"] == "Your account is not active. Contact the dean's office for details."
+
+
+async def test_second_identity_with_the_same_email_is_rejected(
+    client: AsyncClient, tokens: TokenFactory, db: AsyncSession
+) -> None:
+    first = await client.get("/api/v1/me", headers=bearer(tokens.issue(str(uuid.uuid4()))))
+    assert first.status_code == 200
+
+    # E.g. the account was recreated in the identity provider: same e-mail, new subject.
+    response = await client.get("/api/v1/me", headers=bearer(tokens.issue(str(uuid.uuid4()))))
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "auth.identity_conflict"
+    assert await db.scalar(select(func.count()).select_from(User)) == 1

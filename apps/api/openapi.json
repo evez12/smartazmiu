@@ -156,6 +156,16 @@
             },
             "description": "Authenticated but not allowed"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
           "422": {
             "content": {
               "application/json": {

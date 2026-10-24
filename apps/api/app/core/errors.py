@@ -37,6 +37,7 @@ class ErrorResponse(BaseModel):
 COMMON_ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     401: {"model": ErrorResponse, "description": "Missing, expired or invalid access token"},
     403: {"model": ErrorResponse, "description": "Authenticated but not allowed"},
+    409: {"model": ErrorResponse, "description": "Conflicts with existing data"},
     422: {"model": ErrorResponse, "description": "Request validation failed"},
     500: {"model": ErrorResponse, "description": "Unexpected server error"},
 }
