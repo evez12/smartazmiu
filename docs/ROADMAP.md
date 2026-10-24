@@ -509,7 +509,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 
 #### Sprint 1 (2026-11-30 → 12-11) — Infrastructure & Auth
 - [x] Monorepo scaffold (`apps/web`, `apps/api`), Makefile, pre-commit (ruff, mypy, eslint, prettier), `CLAUDE.md`, `docs/DECISIONS.md`.
-- [ ] docker compose: postgres, redis, minio, keycloak, mailpit, api, web, nginx.
+- [x] docker compose: postgres, redis, minio, keycloak, mailpit, api, web, nginx.
 - [ ] GitHub Actions: lint, type-check, test, build images, OpenAPI client drift check.
 - [ ] Keycloak realm (roles, test users), OIDC login in Next.js, JWT validation in FastAPI.
 - [ ] `users`, `roles`, `permissions`, RBAC dependency `require_permission(...)`.
