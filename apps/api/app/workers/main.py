@@ -13,6 +13,7 @@ from app.core.jobs import DISPATCH_NOTIFICATIONS, SYNC_AUDIENCES
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.modules.announcements import service as announcements
+from app.modules.chat import partitions
 from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
@@ -55,6 +56,9 @@ async def startup(ctx: dict[str, Any]) -> None:
         mail_window=timedelta(seconds=settings.mail_batch_interval_seconds),
     )
     ctx["mail_interval"] = settings.mail_batch_interval_seconds
+    # A worker started after a long outage must not wait for the nightly run to create this month.
+    async with database.sessionmaker() as session:
+        await partitions.ensure_partitions(session)
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:
@@ -86,6 +90,22 @@ async def sync_audiences(ctx: dict[str, Any]) -> int:
     return added
 
 
+async def ensure_message_partitions(ctx: dict[str, Any]) -> int:
+    """Keeps this month and the next three partitions of ``messages`` (ADR 0002)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        created = await partitions.ensure_partitions(session)
+        await partitions.warn_if_running_out(session)
+    return len(created)
+
+
+async def purge_message_client_ids(ctx: dict[str, Any]) -> int:
+    """Forgets duplicate-send keys older than seven days (D-058)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        return await partitions.purge_client_ids(session)
+
+
 class WorkerSettings:
     functions: ClassVar = [dispatch_notifications, sync_audiences]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
@@ -93,6 +113,9 @@ class WorkerSettings:
         cron(dispatch_notifications, name=f"{DISPATCH_NOTIFICATIONS}_cron"),
         # Imports wake the sync directly; this catches people added any other way.
         cron(sync_audiences, name=f"{SYNC_AUDIENCES}_cron", minute=set(range(0, 60, 5))),
+        # Daily, at night in Baku (UTC+4); both are idempotent, so a retried or doubled run is harmless.
+        cron(ensure_message_partitions, hour={22}, minute={10}),
+        cron(purge_message_client_ids, hour={22}, minute={20}),
     ]
     on_startup = startup
     on_shutdown = shutdown
