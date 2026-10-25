@@ -38,13 +38,15 @@ async function expectNoSeriousViolations(page: Page) {
 /*
  * Sprint 3 acceptance: a student opens the homepage, sees today's classes, taps the room and the map highlights
  * it. The day the suite runs may have no classes in the sample timetable, so the test imports its own: a
- * throwaway student in 765a2 with one offering that meets today in room 1-305. The subject has no other offering
- * for 765a2 in these semesters, so the sample enrollment file (which picks offerings by group) stays unambiguous.
+ * throwaway student in 765a2 with one offering that meets today in room 1-305, removed again when the test ends.
+ * The subject has no other offering for 765a2 in these semesters, so the sample enrollment file (which picks
+ * offerings by group) stays unambiguous.
  */
 test("student goes from today's classes to the room on the map", async ({
   page,
   browser,
   accounts,
+  records,
 }) => {
   test.setTimeout(240_000);
   const today = bakuToday();
@@ -53,7 +55,8 @@ test("student goes from today's classes to the room on the map", async ({
   const { year, term } = semester!;
 
   const student = await accounts.create("student", { givenName: "Nərmin", familyName: "Şükürova" });
-  const code = `E2E-${randomBytes(4).toString("hex")}`;
+  const code = records.offering(`E2E-${randomBytes(4).toString("hex")}`);
+  records.person(student.email);
   await signInWithSecondFactor(page, await accounts.create("staff", STAFF_NAME), "/admin/imports");
   await importSeed(page, [...REGISTRY, ...CAMPUS]);
   const rows = {

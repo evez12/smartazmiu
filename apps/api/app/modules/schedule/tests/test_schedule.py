@@ -1,11 +1,12 @@
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import date
+from datetime import UTC, date, datetime, tzinfo
 from typing import Any
 
 import pytest
 from httpx import AsyncClient
 
+from app.core import time as clock
 from app.modules.academics.models import ImportKind
 from app.modules.academics.tests.conftest import SEED_DIR, Upload
 from app.modules.schedule import imports, router
@@ -264,6 +265,48 @@ async def test_range_defaults_to_this_week_and_is_bounded(
     # Between semesters a day has no parity.
     summer = (await week(client, aysel, "2026-07-06", "2026-07-06"))["days"][0]
     assert summer == {"date": "2026-07-06", "parity": None, "classes": []}
+
+
+@pytest.mark.parametrize(
+    ("utc", "today", "week", "parity"),
+    [
+        # Baku is UTC+4: from 20:00 UTC on, it is already the next calendar day there.
+        ("2026-10-25T19:59:59", "2026-10-25", ("2026-10-19", "2026-10-25"), "lower"),
+        ("2026-10-25T20:00:00", "2026-10-26", ("2026-10-26", "2026-11-01"), "upper"),
+        ("2026-10-25T23:59:59", "2026-10-26", ("2026-10-26", "2026-11-01"), "upper"),
+    ],
+)
+async def test_today_week_and_parity_follow_the_baku_date_around_midnight(
+    client: AsyncClient,
+    seed: Seed,
+    aysel: Headers,
+    monkeypatch: pytest.MonkeyPatch,
+    utc: str,
+    today: str,
+    week: tuple[str, str],
+    parity: str,
+) -> None:
+    await seed(ImportKind.SCHEDULE)
+    instant = datetime.fromisoformat(utc).replace(tzinfo=UTC)
+
+    class FrozenClock(datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> "FrozenClock":
+            return cls.fromtimestamp(instant.timestamp(), tz)
+
+    # The real conversion from the UTC clock, not the fixed date the other tests use.
+    monkeypatch.setattr(clock, "datetime", FrozenClock)
+    monkeypatch.setattr(router, "baku_today", clock.baku_today)
+
+    body = (await client.get("/api/v1/me/schedule", headers=aysel)).json()
+    assert body["today"] == today
+    assert (body["start"], body["end"]) == week
+    assert {day["parity"] for day in body["days"]} == {parity}
+    lessons = next(day for day in body["days"] if day["date"] == today)["classes"]
+    expected_weekday = date.fromisoformat(today).isoweekday()
+    assert all(
+        date.fromisoformat(item["date"]).isoweekday() == expected_weekday for item in lessons
+    )
 
 
 async def test_schedule_requires_sign_in(client: AsyncClient) -> None:

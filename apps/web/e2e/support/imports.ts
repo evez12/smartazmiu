@@ -2,6 +2,8 @@ import path from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
+import { openPage } from "./auth";
+
 export const SEED_DIR = path.resolve(__dirname, "../../../../infra/seed/academics");
 
 type KindOption = { label: string } | { value: string };
@@ -13,7 +15,7 @@ type UploadedFile = { name: string; content: string };
  */
 export async function importFile(page: Page, kind: KindOption, file: string | UploadedFile) {
   const name = typeof file === "string" ? path.basename(file) : file.name;
-  await page.goto("/admin/imports/new");
+  await openPage(page, "/admin/imports/new");
   await page.getByRole("combobox", { name: /Məlumat növü/ }).selectOption(kind);
   await page
     .getByLabel(/^Fayl/, { exact: false })

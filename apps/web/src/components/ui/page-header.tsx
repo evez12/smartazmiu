@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import { HydrationMark } from "@/lib/hydration-mark";
 
 import { Icon } from "./icon";
 
@@ -57,6 +58,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className={cn("flex flex-col gap-2 pb-6", className)}>
+      <HydrationMark />
       {breadcrumb?.length ? <Breadcrumb items={breadcrumb} /> : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">

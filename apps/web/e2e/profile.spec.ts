@@ -22,9 +22,8 @@ test("student sets a photo, bio and privacy settings", async ({ page, accounts }
   await picker.setInputFiles({ name: "ramin.png", mimeType: "image/png", buffer: PIXEL });
   await expect(page.getByText("Şəkil yeniləndi").first()).toBeVisible();
   await expect(page.getByLabel("Şəkli dəyişin")).toBeAttached();
-  const photo = await page.request.get(
-    (await page.locator("main img").first().getAttribute("src"))!,
-  );
+  const photoUrl = (await page.locator("main img").first().getAttribute("src"))!;
+  const photo = await page.request.get(photoUrl);
   expect(photo.headers()["content-type"]).toBe("image/webp");
 
   const bio = `Statistika üzrə qeydlərimi paylaşa bilərəm. ${Date.now()}`;
@@ -39,6 +38,13 @@ test("student sets a photo, bio and privacy settings", async ({ page, accounts }
   await expect(page.getByRole("radio", { name: "Bütün istifadəçilər" })).toBeChecked();
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+
+  // Removing the photo deletes the stored object too, so the run leaves nothing in object storage.
+  await page.getByRole("button", { name: "Şəkli silin" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Şəkli silin" }).click();
+  await expect(page.getByText("Şəkil silindi").first()).toBeVisible();
+  await expect(page.getByLabel("Şəkil yükləyin")).toBeAttached();
+  expect((await page.request.get(photoUrl)).status()).toBe(404);
 });
 
 test("the photo controls work from the keyboard", async ({ page, accounts }) => {
