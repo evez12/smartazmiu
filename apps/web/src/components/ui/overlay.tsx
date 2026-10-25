@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import {
   Dialog as DialogPrimitive,
   DropdownMenu as MenuPrimitive,
+  Popover as PopoverPrimitive,
   Tooltip as TooltipPrimitive,
 } from "radix-ui";
 import type { ComponentProps, ReactNode } from "react";
@@ -35,6 +36,32 @@ export function Tooltip({ content, children }: { content: ReactNode; children: R
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
+  );
+}
+
+// --- Popover ---------------------------------------------------------------------------------
+
+/** For panels with links and buttons (the notification bell); a menu would wrap them in `role="menu"`. */
+export const Popover = PopoverPrimitive.Root;
+export const PopoverTrigger = PopoverPrimitive.Trigger;
+export const PopoverClose = PopoverPrimitive.Close;
+
+export function PopoverContent({
+  className,
+  sideOffset = 4,
+  align = "end",
+  ...rest
+}: ComponentProps<typeof PopoverPrimitive.Content>) {
+  return (
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Content
+        sideOffset={sideOffset}
+        align={align}
+        collisionPadding={8}
+        className={cn(overlaySurface, className)}
+        {...rest}
+      />
+    </PopoverPrimitive.Portal>
   );
 }
 

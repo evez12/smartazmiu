@@ -24,6 +24,7 @@ import {
   Sheet,
   Tooltip,
 } from "@/components/ui/overlay";
+import { NotificationBell } from "@/features/notifications/bell";
 import { cn } from "@/lib/cn";
 
 import {
@@ -101,6 +102,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
           <Wordmark />
         </Link>
         <div className="flex-1" />
+        <NotificationBell />
         <ProfileMenu user={user} onSignOut={() => signOutForm.current?.requestSubmit()} />
         <form ref={signOutForm} action="/auth/signout" method="post" hidden>
           <input type="hidden" name="csrf" value={csrfToken} />

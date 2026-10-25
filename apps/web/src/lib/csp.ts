@@ -19,6 +19,8 @@ export function contentSecurityPolicy({
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
+    // The push service worker (`public/sw.js`); without this it would fall back to the nonce-only script-src.
+    "worker-src 'self'",
     `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
     "object-src 'none'",
     "base-uri 'self'",

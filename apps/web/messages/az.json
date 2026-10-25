@@ -246,7 +246,8 @@
       "users": "İstifadəçilər",
       "audit": "Audit jurnalı",
       "schedule": "Cədvəl",
-      "map": "Kampus xəritəsi"
+      "map": "Kampus xəritəsi",
+      "notifications": "Bildirişlər"
     }
   },
   "roles": {
@@ -757,6 +758,61 @@
       "library": "Kitabxana",
       "office": "Xidməti otaq",
       "service": "Yardımçı sahə"
+    }
+  },
+  "notifications": {
+    "title": "Bildirişlər",
+    "description": "Elanlar, tədbirlər və dərs cədvəlindəki dəyişikliklər haqqında bildirişləriniz.",
+    "bell": "{count, plural, =0 {Bildirişlər} other {Bildirişlər, # oxunmamış}}",
+    "kinds": {
+      "announcementPublished": "Yeni elan",
+      "eventPublished": "Yeni tədbir",
+      "eventChanged": "Tədbirdə dəyişiklik",
+      "eventCancelled": "Tədbir ləğv edildi",
+      "scheduleChanged": "Dərs cədvəlində dəyişiklik"
+    },
+    "unread": "Oxunmayıb",
+    "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
+    "loadFailed": "Bildirişləri yükləmək mümkün olmadı. Yenidən cəhd edin.",
+    "retry": "Yenidən cəhd edin",
+    "markAllRead": "Hamısını oxunmuş kimi qeyd edin",
+    "markedAllRead": "Bütün bildirişlər oxunmuş kimi qeyd olundu",
+    "viewAll": "Bütün bildirişlər",
+    "openSettings": "Bildiriş ayarları",
+    "loadMore": "Daha çox yükləyin",
+    "settings": {
+      "title": "Bildiriş ayarları",
+      "description": "Bildirişləri hansı yolla almaq istədiyinizi seçin. Saytdakı bildirişlər həmişə göstərilir.",
+      "channelsTitle": "Kanallar",
+      "push": "Brauzer bildirişi",
+      "email": "E-poçt",
+      "categories": {
+        "announcements": "Elanlar",
+        "events": "Tədbirlər",
+        "schedule": "Dərs cədvəlində dəyişikliklər"
+      },
+      "quietTitle": "Sakit saatlar",
+      "quietHint": "Bu saatlarda brauzer bildirişləri göndərilmir. Saytdakı bildirişlər və e-poçt dəyişmir. Vaxt Bakı vaxtı ilə göstərilir.",
+      "quietEnabled": "Sakit saatlardan istifadə edin",
+      "quietStart": "Başlanğıc",
+      "quietEnd": "Son",
+      "quietSame": "Başlanğıc və son vaxt fərqli olmalıdır.",
+      "save": "Yadda saxlayın",
+      "saved": "Bildiriş ayarları yadda saxlanıldı",
+      "saveFailed": "Ayarlar yadda saxlanılmadı",
+      "deviceTitle": "Bu brauzer",
+      "deviceHint": "Brauzer bildirişləri bu cihazda sayt bağlı olanda da görünür. Hər cihazda ayrıca aktiv edilir.",
+      "deviceOn": "Bu brauzerdə bildirişlər aktivdir.",
+      "deviceOff": "Bu brauzerdə bildirişlər aktiv deyil.",
+      "devices": "{count, plural, =0 {Heç bir cihaz qeydiyyatda deyil.} one {# cihaz qeydiyyatdadır.} other {# cihaz qeydiyyatdadır.}}",
+      "enable": "Bu brauzerdə aktiv edin",
+      "disable": "Bu brauzerdə söndürün",
+      "enabled": "Bu brauzerdə bildirişlər aktiv edildi",
+      "disabled": "Bu brauzerdə bildirişlər söndürüldü",
+      "unsupported": "Bu brauzer veb bildirişlərini dəstəkləmir. Bildirişlər saytda və e-poçtla gəlir.",
+      "denied": "Bu sayt üçün bildirişlərə icazə verilməyib. İcazəni brauzerin sayt ayarlarından dəyişə bilərsiniz.",
+      "unavailable": "Brauzer bildirişləri hazırda istifadəyə verilməyib. Bildirişlər saytda və e-poçtla gəlir.",
+      "deviceFailed": "Brauzer bildirişlərini dəyişmək mümkün olmadı. Yenidən cəhd edin."
     }
   }
 }

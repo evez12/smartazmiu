@@ -35,9 +35,12 @@ export function createBrowserApi(csrfToken: string) {
 
 export type BrowserApi = ReturnType<typeof createBrowserApi>;
 
-/** The data of an openapi-fetch result, or an ApiRequestError built from the error envelope. */
+/**
+ * The data of an openapi-fetch result (undefined for 204 No Content), or an ApiRequestError built from the
+ * error envelope.
+ */
 export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
-  if (result.data !== undefined) return result.data;
+  if (result.response.ok) return result.data as T;
   const body = (result.error as { error?: Partial<ErrorBody> } | undefined)?.error;
   throw new ApiRequestError(
     result.response.status,
