@@ -503,3 +503,51 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     The invalid-import test runs after the roster import in a serial group, because it refers to imported data.
 - **Consequences:** a fresh database can run the full suite in parallel; repeated runs leave inactive `e2e-` rows in
   the user list until account deletion (§5.4) exists.
+
+## D-041 · 2026-10-25 · Timetable model, week parity and timetable imports
+
+- **Context:** Sprint 3 asks for a schedule with upper/lower weeks, changes and an import "from the source format".
+  AzMİU's timetable format is unknown (§6 of `AZMIU_ACADEMIC_DATA.md`); §6.1 fixes the entry fields and the parity
+  rule only loosely.
+- **Options:** a staff editor; a parser for an assumed export; CSV/XLSX templates in the existing import wizard.
+- **Decision:**
+  - Three new import kinds in the existing wizard (preview → apply, row errors, idempotent): `week_parity`,
+    `schedule`, `schedule_changes`. A parser for the university's own export can feed the same specs later.
+  - `schedule_entries`: offering, ISO weekday, wall-clock start/end, `every|upper|lower`, class type
+    (lecture/seminar/laboratory), room, optional teacher (default: all teachers of the offering) and an optional
+    group subset (`schedule_entry_groups`) for joint offerings (§13.1). Natural key: offering, weekday, start,
+    parity and group set; naming every group of the offering equals naming none.
+  - A timetable file is the complete timetable of the offerings it mentions: their entries missing from the file
+    are removed. While the semester runs, an edited or removed entry ends the day before the import
+    (`active_until`) and its replacement starts that day, so past weeks keep showing what actually happened. An
+    offering's first timetable, and edits before the semester starts or after it ends, cover the whole semester.
+  - Parity: the week containing the semester's first day is an upper week; weeks alternate from Monday to Monday.
+    A `week_parity_overrides` row restarts the alternation from its week (a holiday week that "does not count" is
+    one override). Days outside every semester have no parity.
+  - `schedule_changes`: one row per occurrence (entry + date) that cancels it or changes date, time, room or
+    teacher, with a note. Holidays are cancellations; there is no separate holiday table. A changed past day is
+    stored like any other change; notifications arrive in Sprint 4 and will not be sent for past days (§13.4).
+  - Reading: `GET /me/schedule?start&end` (default this week, at most 42 days) expands entries per day in SQL-
+    filtered visibility: active (not dropped) enrollment and, for group-restricted entries, the user's group;
+    teaching the entry; or substituting on that date (only those days). Moved classes appear on the original day
+    as "moved" and on the new day; the payload never contains grades or contact details.
+  - `GET /me/schedule.ics`: the current (or next) semester as one event per occurrence with `TZID=Asia/Baku` and a
+    VTIMEZONE; cancelled classes keep their UID with `STATUS:CANCELLED`, moved classes keep the UID of their
+    original occurrence, so a re-import updates calendars instead of duplicating events.
+- **Consequences:** imports compare against today's Baku date, so a preview and its apply on different days can
+  differ by one day of history. Timetable conflicts (two classes in one room at once) are not checked; the spec
+  does not ask for it.
+
+## D-042 · 2026-10-25 · Campus map data and floor plans
+
+- **Context:** §6 asks for buildings, floors, rooms with coordinates and SVG floor plans; no plans of AzMİU exist.
+  Uploaded SVG files are active content and would need sanitising (§14).
+- **Decision:** buildings, floors and rooms are imported like the academic registry (`buildings`, `floors`,
+  `rooms`). A floor has a frame in decimetres (`width × height`); each room is a rectangle inside it (checked on
+  import). The web app draws the plan as SVG from this data, so no uploaded markup is ever rendered. Room codes are
+  unique across the campus (`1-305`: building 1, room 305) and match the timetable's `room_code`. Room search
+  folds Azerbaijani letters like the user search. Campus endpoints require sign-in for now; the guest map belongs
+  to the public pages, which no sprint has scheduled yet. Seed: two made-up teaching buildings with three floors
+  each at the university's public address.
+- **Consequences:** plans are schematic (rectangles, no walls or doors); real plans can replace the seed data
+  through the same import.

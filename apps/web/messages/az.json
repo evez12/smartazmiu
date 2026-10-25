@@ -334,7 +334,7 @@
       "createdBy": "Yükləyən",
       "createdAt": "Tarix"
     },
-    "result": "{created} yeni, {updated} yenilənən, {unchanged} dəyişməyən",
+    "result": "{created} yeni, {updated} yenilənən, {unchanged} dəyişməyən{removed, plural, =0 {} other {, # silinən}}",
     "kinds": {
       "faculties": "Fakültələr",
       "specialties": "İxtisaslar",
@@ -344,7 +344,13 @@
       "groups": "Qruplar",
       "students": "Tələbələr",
       "offerings": "Fənn təyinatları",
-      "enrollments": "Fənn qeydiyyatları"
+      "enrollments": "Fənn qeydiyyatları",
+      "buildings": "Binalar",
+      "floors": "Mərtəbələr",
+      "rooms": "Otaqlar",
+      "week_parity": "Həftə növbəsi (üst və alt həftə)",
+      "schedule": "Dərs cədvəli",
+      "schedule_changes": "Cədvəl dəyişiklikləri"
     },
     "statuses": {
       "ready": "Tətbiqə hazırdır",
@@ -407,7 +413,9 @@
       "column": "Sütun",
       "problem": "Xəta",
       "wholeFile": "Bütün fayl",
-      "downloadReport": "Xəta hesabatını yükləyin"
+      "downloadReport": "Xəta hesabatını yükləyin",
+      "removed": "Cədvəldən çıxarılan dərslər",
+      "confirmConsequenceSchedule": "{created} dərs əlavə ediləcək, {updated} dərs dəyişəcək, faylda olmayan {removed} dərs cədvəldən çıxarılacaq. Dəyişikliklər bu gündən qüvvəyə minir, keçmiş həftələr dəyişmir."
     },
     "issues": {
       "required": "Xana boşdur. Dəyər daxil edin.",
@@ -437,6 +445,17 @@
       "empty_file": "Faylda məlumat yoxdur.",
       "too_many_rows": "Faylda 20 000-dən çox sətir var. Faylı hissələrə bölün.",
       "conflicting_data": "Tətbiq zamanı məlumatlar dəyişdi. Faylı yenidən yükləyin.",
+      "outside_floor_plan": "Otaq mərtəbə planından kənara çıxır. x, y, width və height dəyərlərini yoxlayın.",
+      "invalid_time": "Vaxtı SS:DD formatında yazın, məsələn 08:30.",
+      "not_monday": "Həftənin ilk günü bazar ertəsi olmalıdır.",
+      "outside_semester": "Tarix semestrin başlanğıc və bitmə tarixləri arasında olmalıdır.",
+      "times_out_of_order": "Bitmə vaxtı başlama vaxtından sonra olmalıdır.",
+      "teacher_not_in_offering": "Bu müəllim fənn təyinatına bağlı deyil. Əvvəlcə fənn təyinatlarını yeniləyin.",
+      "group_not_in_offering": "Qrup bu fənn təyinatına daxil deyil.",
+      "no_class_on_date": "Bu tarixdə və saatda həmin dərs cədvəldə yoxdur. Tarixi, saatı və həftə növbəsini yoxlayın.",
+      "ambiguous_class": "Bu vaxtda bir neçə dərs var. group_codes sütununu doldurun.",
+      "not_allowed_when_cancelled": "Ləğv olunan dərs üçün yeni tarix, vaxt, otaq və ya müəllim göstərilmir.",
+      "change_without_details": "Dəyişiklik üçün yeni tarix, vaxt, otaq və ya müəllim göstərin.",
       "unknown": "Sətirdə xəta var."
     }
   },

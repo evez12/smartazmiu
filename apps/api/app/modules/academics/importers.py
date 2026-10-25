@@ -741,19 +741,3 @@ class EnrollmentsImport(ImportSpec):
                 user_id=student.id,
                 course_offering_id=offering.id,
             )
-
-
-SPECS: dict[ImportKind, ImportSpec] = {
-    spec.kind: spec
-    for spec in (
-        FacultiesImport(),
-        SpecialtiesImport(),
-        SubjectsImport(),
-        SemestersImport(),
-        TeachersImport(),
-        GroupsImport(),
-        StudentsImport(),
-        OfferingsImport(),
-        EnrollmentsImport(),
-    )
-}

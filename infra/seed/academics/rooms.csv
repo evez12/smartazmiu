@@ -1,0 +1,67 @@
+code,building_code,floor_level,name_az,type,capacity,x,y,width,height
+1-101,1,1,Böyük mühazirə zalı,lecture_hall,120,0,0,160,80
+1-102,1,1,,classroom,30,160,0,80,80
+1-103,1,1,,classroom,30,240,0,80,80
+1-104,1,1,Kitabxana,library,,320,0,160,80
+1-105,1,1,Pilləkən,service,,480,0,50,80
+1-106,1,1,Mühafizə məntəqəsi,service,,530,0,70,80
+1-110,1,1,Tikinti iqtisadiyyatı fakültəsinin dekanlığı,office,,0,120,140,80
+1-111,1,1,,classroom,30,140,120,80,80
+1-112,1,1,,classroom,30,220,120,80,80
+1-113,1,1,Tədris şöbəsi,office,,300,120,120,80
+1-114,1,1,Pilləkən,service,,420,120,50,80
+1-115,1,1,,classroom,24,470,120,130,80
+1-201,1,2,,classroom,30,0,0,90,80
+1-202,1,2,,classroom,30,90,0,90,80
+1-203,1,2,Kompüter otağı,computer_lab,20,180,0,110,80
+1-204,1,2,,classroom,30,290,0,90,80
+1-205,1,2,Pilləkən,service,,380,0,50,80
+1-206,1,2,,classroom,24,430,0,80,80
+1-207,1,2,,classroom,24,510,0,90,80
+1-210,1,2,İqtisadi nəzəriyyə və marketinq kafedrası,office,,0,120,140,80
+1-211,1,2,,classroom,30,140,120,90,80
+1-212,1,2,,classroom,30,230,120,90,80
+1-213,1,2,Xarici dillər kafedrası,office,,320,120,110,80
+1-214,1,2,Pilləkən,service,,430,120,50,80
+1-215,1,2,,classroom,24,480,120,120,80
+1-301,1,3,Mühazirə zalı,lecture_hall,90,0,0,140,80
+1-302,1,3,,classroom,30,140,0,90,80
+1-303,1,3,,classroom,30,230,0,90,80
+1-304,1,3,,classroom,30,320,0,90,80
+1-305,1,3,,classroom,30,410,0,90,80
+1-306,1,3,Pilləkən,service,,500,0,100,80
+1-310,1,3,Biznesin idarə edilməsi kafedrası,office,,0,120,140,80
+1-311,1,3,,classroom,30,140,120,90,80
+1-312,1,3,,classroom,30,230,120,90,80
+1-313,1,3,,classroom,30,320,120,90,80
+1-314,1,3,Pilləkən,service,,410,120,50,80
+1-315,1,3,Oxu zalı,library,40,460,120,140,80
+2-101,2,1,Akt zalı,lecture_hall,250,0,0,200,80
+2-102,2,1,,classroom,30,200,0,100,80
+2-103,2,1,,classroom,30,300,0,100,80
+2-104,2,1,Pilləkən,service,,400,0,50,80
+2-105,2,1,Mülki müdafiə kabineti,classroom,30,450,0,150,80
+2-110,2,1,Həyat fəaliyyətinin təhlükəsizliyi kafedrası,office,,0,120,140,80
+2-111,2,1,,classroom,30,140,120,100,80
+2-112,2,1,,classroom,30,240,120,100,80
+2-113,2,1,Pilləkən,service,,340,120,50,80
+2-114,2,1,,classroom,24,390,120,210,80
+2-201,2,2,,classroom,30,0,0,100,80
+2-202,2,2,,classroom,30,100,0,100,80
+2-203,2,2,,classroom,30,200,0,100,80
+2-204,2,2,Statistika laboratoriyası,laboratory,24,300,0,100,80
+2-205,2,2,Pilləkən,service,,400,0,50,80
+2-206,2,2,,classroom,24,450,0,150,80
+2-210,2,2,Sosial elmlər kafedrası,office,,0,120,140,80
+2-211,2,2,,classroom,30,140,120,100,80
+2-212,2,2,,classroom,30,240,120,100,80
+2-213,2,2,Pilləkən,service,,340,120,50,80
+2-214,2,2,,classroom,30,390,120,210,80
+2-301,2,3,Memarlıq emalatxanası,studio,24,0,0,160,80
+2-302,2,3,Dizayn emalatxanası,studio,24,160,0,160,80
+2-303,2,3,Pilləkən,service,,320,0,50,80
+2-304,2,3,,classroom,30,370,0,230,80
+2-310,2,3,Kompüter otağı,computer_lab,24,0,120,150,80
+2-311,2,3,Kompüter otağı,computer_lab,24,150,120,150,80
+2-312,2,3,Pilləkən,service,,300,120,50,80
+2-313,2,3,,classroom,30,350,120,250,80

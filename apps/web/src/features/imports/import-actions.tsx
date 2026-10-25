@@ -51,7 +51,12 @@ export function ApplyImportButton({ record }: { record: ImportDetail }) {
         open={open}
         onOpenChange={setOpen}
         title={t("confirmTitle")}
-        consequence={t("confirmConsequence", record.summary)}
+        consequence={
+          // A timetable file replaces the timetable of its offerings; other kinds never remove anything.
+          record.kind === "schedule"
+            ? t("confirmConsequenceSchedule", record.summary)
+            : t("confirmConsequence", record.summary)
+        }
         confirmLabel={t("apply")}
         pending={apply.isPending}
         onConfirm={() => apply.mutate()}

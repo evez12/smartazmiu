@@ -14,8 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.time import utc_now
 from app.modules.academics.files import FileEncoding, Row, Table, read_table
-from app.modules.academics.importers import MAX_STORED_ISSUES, SPECS, ImportRun, RowIssue, process
+from app.modules.academics.importers import MAX_STORED_ISSUES, ImportRun, RowIssue, process
 from app.modules.academics.models import AcademicImport, ImportKind, ImportStatus
+from app.modules.academics.registry import SPECS
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 

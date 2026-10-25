@@ -3,7 +3,7 @@
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, time
 from enum import StrEnum
 from typing import Any
 
@@ -159,3 +159,38 @@ def calendar_date(value: str) -> date:
         return date(int(year), int(month), int(day))
     except ValueError as exc:
         raise CellError("invalid_date") from exc
+
+
+_CLOCK_TIME = re.compile(r"(\d{1,2}):(\d{2})(?::00)?")
+
+
+def clock_time(value: str) -> time:
+    """Baku wall-clock time ``08:30``; Excel writes ``08:30:00``."""
+    match = _CLOCK_TIME.fullmatch(value)
+    if not match:
+        raise CellError("invalid_time")
+    hour, minute = (int(part) for part in match.groups())
+    if hour > 23 or minute > 59:
+        raise CellError("invalid_time")
+    return time(hour, minute)
+
+
+_WEEKDAYS = {
+    "bazar ertesi": 1,
+    "cersenbe axsami": 2,
+    "cersenbe": 3,
+    "cume axsami": 4,
+    "cume": 5,
+    "senbe": 6,
+    "bazar": 7,
+}
+
+
+def weekday(value: str) -> int:
+    """ISO weekday from ``1``–``7`` or the Azerbaijani day name (``Çərşənbə axşamı`` is 2)."""
+    folded = normalize_az(value).folded
+    if folded in _WEEKDAYS:
+        return _WEEKDAYS[folded]
+    if folded.isdigit() and 1 <= int(folded) <= 7:
+        return int(folded)
+    raise CellError("invalid_choice")

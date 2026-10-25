@@ -32,3 +32,9 @@ def normalize_az(text: str) -> NormalizedText:
 def search_key(*parts: str | None) -> str:
     """Folded form of several fields, used for substring search over names and identifiers."""
     return normalize_az(" ".join(part for part in parts if part)).folded
+
+
+def like_pattern(text: str) -> str:
+    """Substring pattern for ``LIKE`` with a backslash escape; ``%`` and ``_`` in ``text`` match literally."""
+    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"

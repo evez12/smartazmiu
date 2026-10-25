@@ -11,8 +11,8 @@ from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep, require_permission
 from app.modules.academics.files import MAX_FILE_BYTES, FileEncoding, UnreadableFileError
 from app.modules.academics.import_service import ImportService, expires_at
-from app.modules.academics.importers import SPECS
 from app.modules.academics.models import AcademicImport, ImportKind
+from app.modules.academics.registry import SPECS
 from app.modules.academics.schemas import (
     CourseOut,
     GroupPlacementOut,

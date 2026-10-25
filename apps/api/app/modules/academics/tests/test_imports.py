@@ -54,11 +54,12 @@ async def test_sample_data_imports_and_reimport_is_a_no_op(
 
     assert await db.scalar(select(func.count()).select_from(Enrollment)) == 617
     audit = await db.scalars(select(AuditLog.details).where(AuditLog.action == "import.applied"))
-    assert {entry["kind"] for entry in audit} == {kind.value for kind in ImportKind}
+    registry = list(ImportKind)[: list(ImportKind).index(ImportKind.ENROLLMENTS) + 1]
+    assert {entry["kind"] for entry in audit} == {kind.value for kind in registry}
 
     again = await upload(ImportKind.ENROLLMENTS, (SEED_DIR / "enrollments.csv").read_bytes())
     assert again["status"] == "ready"
-    assert again["summary"] == {"created": 0, "updated": 0, "unchanged": 617}
+    assert again["summary"] == {"created": 0, "updated": 0, "unchanged": 617, "removed": 0}
     assert again["previously_applied_at"] is not None
 
 
@@ -83,7 +84,7 @@ async def test_header_problems_stop_validation(upload: Upload) -> None:
         (None, "kod", "unknown_column"),
         (None, "name_az", "duplicate_column"),
     ]
-    assert body["summary"] == {"created": 0, "updated": 0, "unchanged": 0}
+    assert body["summary"] == {"created": 0, "updated": 0, "unchanged": 0, "removed": 0}
 
 
 async def test_row_errors_are_reported_together(upload: Upload, db: AsyncSession) -> None:
@@ -236,7 +237,7 @@ async def test_group_transfer_and_academic_leave(
         "25765203,Hüseynov,Orxan,orxan.huseynov@smartazmiu.test,765a2,active\n",
         apply=True,
     )
-    assert body["summary"] == {"created": 0, "updated": 2, "unchanged": 1}
+    assert body["summary"] == {"created": 0, "updated": 2, "unchanged": 1, "removed": 0}
 
     aysel = await db.scalar(select(User).where(User.university_id == "25765201"))
     ramin = await db.scalar(select(User).where(User.university_id == "25765202"))
@@ -288,7 +289,7 @@ async def test_offerings_replace_groups_and_teachers(
         + "IQT-2102,2026,Payız,,765a2,T-10457\n",
         apply=True,
     )
-    assert body["summary"] == {"created": 0, "updated": 2, "unchanged": 1}
+    assert body["summary"] == {"created": 0, "updated": 2, "unchanged": 1, "removed": 0}
 
     micro = await db.scalar(
         select(CourseOffering)
@@ -428,7 +429,7 @@ async def test_retake_and_results_update_the_right_rows(
         "24764105,IQT-2101,2026,Payız,765a2,completed,bəli,64\n",
         apply=True,
     )
-    assert body["summary"] == {"created": 0, "updated": 1, "unchanged": 0}
+    assert body["summary"] == {"created": 0, "updated": 1, "unchanged": 0, "removed": 0}
     grades = await db.scalars(select(Enrollment.grade).where(Enrollment.user_id == anar.id))
     assert sorted(g for g in grades if g is not None) == [64]
 

@@ -141,6 +141,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/campus/buildings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Buildings with their floors */
+    get: operations["listBuildings"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/campus/buildings/{building_code}/floors/{level}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Floor plan: the floor's frame and its rooms */
+    get: operations["readFloorPlan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/campus/rooms": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Find rooms by code or name (at most 20) */
+    get: operations["searchRooms"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/campus/rooms/{code}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Room */
+    get: operations["readRoom"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me": {
     parameters: {
       query?: never;
@@ -260,6 +328,40 @@ export interface paths {
     head?: never;
     /** Update bio and privacy settings */
     patch: operations["updateMyProfile"];
+    trace?: never;
+  };
+  "/api/v1/me/schedule": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My classes per day (default: the current week) */
+    get: operations["readMySchedule"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/schedule.ics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My classes of the current semester as an iCalendar file */
+    get: operations["downloadMySchedule"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/users/{user_id}/photo": {
@@ -403,6 +505,65 @@ export interface components {
       /** File */
       file: string;
     };
+    /** BuildingOut */
+    BuildingOut: {
+      /** Address */
+      address: string;
+      /** Code */
+      code: string;
+      /** Floors */
+      floors: components["schemas"]["FloorRef"][];
+      /** Name */
+      name: string;
+    };
+    /** BuildingRef */
+    BuildingRef: {
+      /** Code */
+      code: string;
+      /** Name */
+      name: string;
+    };
+    /** ClassOut */
+    ClassOut: {
+      class_type: components["schemas"]["ClassType"];
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Ends At */
+      ends_at: string;
+      /** Groups */
+      groups: string[];
+      /** Id */
+      id: string;
+      moved_to: components["schemas"]["MovedToOut"] | null;
+      /** Note */
+      note: string;
+      /**
+       * Original Date
+       * Format: date
+       */
+      original_date: string;
+      /** Original Starts At */
+      original_starts_at: string;
+      room: components["schemas"]["ScheduleRoomOut"] | null;
+      /** Room Changed */
+      room_changed: boolean;
+      /** Starts At */
+      starts_at: string;
+      status: components["schemas"]["OccurrenceStatus"];
+      subject: components["schemas"]["ScheduleSubjectOut"];
+      /** Teacher Changed */
+      teacher_changed: boolean;
+      /** Teachers */
+      teachers: string[];
+    };
+    /**
+     * ClassType
+     * @enum {string}
+     */
+    ClassType: "lecture" | "seminar" | "laboratory";
     /**
      * ConsentPurpose
      * @description Processing the user agreed to or declined (Law "On Personal Data", §5.4).
@@ -472,6 +633,30 @@ export interface components {
      * @enum {string}
      */
     FileEncoding: "utf-8" | "windows-1254" | "windows-1251";
+    /**
+     * FloorPlanOut
+     * @description One storey drawn in a ``width × height`` frame (decimetres); rooms are rectangles inside it.
+     */
+    FloorPlanOut: {
+      building: components["schemas"]["BuildingRef"];
+      /** Height */
+      height: number;
+      /** Level */
+      level: number;
+      /** Name */
+      name: string;
+      /** Rooms */
+      rooms: components["schemas"]["RoomShape"][];
+      /** Width */
+      width: number;
+    };
+    /** FloorRef */
+    FloorRef: {
+      /** Level */
+      level: number;
+      /** Name */
+      name: string;
+    };
     /** GroupPlacementOut */
     GroupPlacementOut: {
       /** Admission Year */
@@ -489,6 +674,11 @@ export interface components {
        * @default 0
        */
       created: number;
+      /**
+       * Removed
+       * @default 0
+       */
+      removed: number;
       /**
        * Unchanged
        * @default 0
@@ -553,7 +743,13 @@ export interface components {
       | "groups"
       | "students"
       | "offerings"
-      | "enrollments";
+      | "enrollments"
+      | "buildings"
+      | "floors"
+      | "rooms"
+      | "week_parity"
+      | "schedule"
+      | "schedule_changes";
     /** ImportOut */
     ImportOut: {
       /** Applied At */
@@ -618,6 +814,18 @@ export interface components {
       roles: string[];
       status: components["schemas"]["UserStatus"];
     };
+    /** MovedToOut */
+    MovedToOut: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Ends At */
+      ends_at: string;
+      /** Starts At */
+      starts_at: string;
+    };
     /**
      * MyAcademicsResponse
      * @description The signed-in user's group and current subjects. Grades are never part of this payload (§5.4).
@@ -650,6 +858,11 @@ export interface components {
       /** Version */
       version: string;
     };
+    /**
+     * OccurrenceStatus
+     * @enum {string}
+     */
+    OccurrenceStatus: "scheduled" | "cancelled" | "changed" | "moved_away" | "moved_here";
     /** PersonRef */
     PersonRef: {
       /** Display Name */
@@ -707,6 +920,98 @@ export interface components {
       /** Roles */
       roles: components["schemas"]["AssignableRole"][];
     };
+    /** RoomOut */
+    RoomOut: {
+      building: components["schemas"]["BuildingRef"];
+      /** Capacity */
+      capacity: number | null;
+      /** Code */
+      code: string;
+      floor: components["schemas"]["FloorRef"];
+      /** Name */
+      name: string;
+      type: components["schemas"]["RoomType"];
+    };
+    /** RoomShape */
+    RoomShape: {
+      /** Capacity */
+      capacity: number | null;
+      /** Code */
+      code: string;
+      /** Height */
+      height: number;
+      /** Name */
+      name: string;
+      type: components["schemas"]["RoomType"];
+      /** Width */
+      width: number;
+      /** X */
+      x: number;
+      /** Y */
+      y: number;
+    };
+    /**
+     * RoomType
+     * @enum {string}
+     */
+    RoomType:
+      | "lecture_hall"
+      | "classroom"
+      | "laboratory"
+      | "computer_lab"
+      | "studio"
+      | "library"
+      | "office"
+      | "service";
+    /** ScheduleDayOut */
+    ScheduleDayOut: {
+      /** Classes */
+      classes: components["schemas"]["ClassOut"][];
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      parity: components["schemas"]["WeekParity"] | null;
+    };
+    /** ScheduleOut */
+    ScheduleOut: {
+      /** Days */
+      days: components["schemas"]["ScheduleDayOut"][];
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * Today
+       * Format: date
+       */
+      today: string;
+    };
+    /** ScheduleRoomOut */
+    ScheduleRoomOut: {
+      /** Building */
+      building: string;
+      /** Code */
+      code: string;
+      /** Floor */
+      floor: string;
+      /** Name */
+      name: string;
+    };
+    /** ScheduleSubjectOut */
+    ScheduleSubjectOut: {
+      /** Code */
+      code: string;
+      /** Name */
+      name: string;
+    };
     /** SemesterRef */
     SemesterRef: {
       term: components["schemas"]["SemesterTerm"];
@@ -747,6 +1052,12 @@ export interface components {
      * @enum {string}
      */
     UserStatus: "active" | "inactive";
+    /**
+     * WeekParity
+     * @description ``upper`` (üst) and ``lower`` (alt) weeks alternate; ``every`` entries take place in both.
+     * @enum {string}
+     */
+    WeekParity: "every" | "upper" | "lower";
   };
   responses: never;
   parameters: never;
@@ -1396,6 +1707,273 @@ export interface operations {
       };
     };
   };
+  listBuildings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BuildingOut"][];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readFloorPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        building_code: string;
+        level: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FloorPlanOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  searchRooms: {
+    parameters: {
+      query: {
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoomOut"][];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readRoom: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        code: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoomOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   readMe: {
     parameters: {
       query?: never;
@@ -1962,6 +2540,141 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ProfileOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readMySchedule: {
+    parameters: {
+      query?: {
+        /** @description First day; default Monday of this week */
+        start?: string | null;
+        /** @description Last day (inclusive); default start + 6 */
+        end?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScheduleOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  downloadMySchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description iCalendar file */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/calendar": unknown;
         };
       };
       /** @description Missing, expired or invalid access token */

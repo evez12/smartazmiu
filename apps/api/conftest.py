@@ -74,7 +74,7 @@ async def db(
         yield session
     async with engine.begin() as connection:
         # CASCADE reaches every table that references these roots (academic data, imports, audit log).
-        await connection.execute(text("TRUNCATE users, faculties, semesters CASCADE"))
+        await connection.execute(text("TRUNCATE users, faculties, semesters, buildings CASCADE"))
         await connection.execute(
             text("DELETE FROM permissions WHERE code <> ALL(:seeded)"),
             {"seeded": list(seeded_permissions)},
