@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.core.deps import RedisDep, SessionDep
+from app.modules.chat.partitions import current_partition_exists
 
 logger = structlog.get_logger(__name__)
 
@@ -41,7 +42,11 @@ async def readyz(session: SessionDep, redis: RedisDep) -> JSONResponse:
             results[name] = "unavailable"
 
     ready = all(result == "ok" for result in results.values())
-    return JSONResponse(
-        {"status": "ok" if ready else "unavailable", "checks": results},
-        status_code=200 if ready else 503,
-    )
+    if not ready:
+        return JSONResponse({"status": "unavailable", "checks": results}, status_code=503)
+    # Without this month's partition new messages cannot be stored, but everything else still works.
+    if not await current_partition_exists(session):
+        logger.warning("message_partition_missing")
+        results["message_partition"] = "missing"
+        return JSONResponse({"status": "degraded", "checks": results})
+    return JSONResponse({"status": "ok", "checks": results})

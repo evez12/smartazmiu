@@ -35,6 +35,16 @@ APP_TABLES = {
     "events",
     "event_recipients",
     "event_registrations",
+    "channels",
+    "channel_topics",
+    "channel_members",
+    "channel_reads",
+    "messages",
+    "message_client_ids",
+    "message_attachments",
+    "message_reactions",
+    "message_mentions",
+    "user_blocks",
 }
 APP_ENUMS = (
     "user_status",
@@ -56,6 +66,10 @@ APP_ENUMS = (
     "event_status",
     "registration_status",
     "check_in_method",
+    "channel_type",
+    "channel_member_role",
+    "notify_level",
+    "scan_status",
 )
 
 
