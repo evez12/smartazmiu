@@ -21,6 +21,7 @@ make infra     # postgres, redis, s3, keycloak, mailpit
 make migrate && make seed      # schema, sample groups 764a1/765a1/765a2, campus and timetable
 make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
+make dev-worker                # notification delivery and audience sync (third terminal)
 ```
 
 `make help` lists every target.
@@ -60,6 +61,20 @@ file is validated first and applied only after confirmation. The sample files in
 expected format. Rules: [docs/DECISIONS.md](docs/DECISIONS.md) D-029–D-031 (registry), D-041 (timetable: a schedule
 file replaces the timetable of the offerings it lists, from the day it is applied) and D-042 (campus).
 
+### Announcements, events and notifications
+
+Staff publish **Elanlar** (`/announcements`) and **Tədbirlər** (`/events`) to the whole university, a faculty, a
+specialty, a group or a course offering. People who join the audience later (a transfer, a late enrollment) receive
+announcements that are still active and events that have not ended (D-050, D-051). Students register for events
+and show the QR ticket from **Biletlərim** (`/events/tickets`); staff admit them at **Giriş qeydiyyatı** on the
+event page by scanner, camera (where the browser can read QR codes) or name.
+
+Notifications appear in the bell and at **Bildirişlər**; **Bildiriş ayarları** switches push and e-mail per topic
+and sets quiet hours (23:00–08:00 Baku time by default, D-049). The `worker` service sends them: e-mail goes to
+Mailpit locally (`http://localhost:8025`); Web Push needs a desktop Chrome, Edge or Firefox with notifications
+allowed for the site (headless test browsers refuse them). Timetable changes for today or later notify the people
+who have the class (D-052).
+
 ## Architecture
 
 A modular monolith: one FastAPI app and one Next.js app.
@@ -67,6 +82,7 @@ A modular monolith: one FastAPI app and one Next.js app.
 | Path | Contents |
 |---|---|
 | `apps/api` | FastAPI, SQLAlchemy 2 (async), Alembic. Domain code lives in `app/modules/<module>/`. |
+| `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync. |
 | `apps/web` | Next.js (App Router), TypeScript, Tailwind. Design tokens in `src/styles/tokens.css`. |
 | `infra/` | nginx, Keycloak realm and login theme, Postgres init scripts, object-storage entrypoint. |
 | `docs/` | Spec, decision log, ADRs. |
@@ -78,12 +94,15 @@ Postgres `localhost:5433`.
 
 ```bash
 make lint test     # linters, type checks, backend (pytest) and frontend (Vitest) tests
-make e2e           # Playwright: sign-in flow, accessibility, keyboard and mobile checks (needs the stack running)
+make e2e           # Playwright: user flows, accessibility, keyboard and mobile checks (needs the stack running)
 make visual        # screenshot comparison in the pinned Linux Playwright image (Docker)
 ```
 
 Backend tests run against the `smartazmiu_test` database in the Docker Postgres; `make test` starts the containers
 it needs. After changing an API schema, run `make openapi` to regenerate the typed web client.
+
+`make e2e` loads the sample data first and fails if a run leaves any seed table with a different row count: tests
+remove what they import, using throwaway `e2e-…` accounts and `E2E-…` codes (D-040, D-045).
 
 ## Adding a backend module
 

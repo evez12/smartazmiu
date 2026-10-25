@@ -534,9 +534,9 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** student opens homepage → sees today's classes → taps room → map highlights room.
 
 #### Sprint 4 (01-11 → 01-22) — Events, Announcements, Notifications
-- [ ] Announcements with target audience (university / faculty / specialty / group / course offering).
-- [ ] Events: list, filters, detail, RSVP, QR ticket, check-in screen for staff.
-- [ ] Notification service: in-app (bell), Web Push (VAPID), e-mail (ARQ), preferences + quiet hours.
+- [x] Announcements with target audience (university / faculty / specialty / group / course offering).
+- [x] Events: list, filters, detail, RSVP, QR ticket, check-in screen for staff.
+- [x] Notification service: in-app (bell), Web Push (VAPID), e-mail (ARQ), preferences + quiet hours.
 **Acceptance:** staff publishes an event for faculty X → students of X receive push + in-app; RSVP produces QR ticket.
 *(Exam session in January — keep releases to staging only.)*
 
