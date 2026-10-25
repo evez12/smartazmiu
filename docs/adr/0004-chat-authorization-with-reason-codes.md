@@ -1,7 +1,8 @@
 # ADR 0004 — One chat authorisation function with reason codes
 
-- Status: proposed (2026-10-26), awaiting product owner approval
-- Related: §5.1, §5.5, §5.9, §12.7, §13.2 ("slow mode + exam mode + mute interplay"), §13.4; DECISIONS D-003
+- Status: accepted (2026-10-26) with the product owner's changes (exam-window provider, everyone blocked)
+- Related: §5.1, §5.5, §5.9, §12.7, §13.2 ("slow mode + exam mode + mute interplay"), §13.4; DECISIONS D-003,
+  D-057, D-059
 
 ## Context
 
@@ -44,9 +45,8 @@ Reading is allowed for members in every state (archived and exam-mode channels s
 ### Who is exempt
 
 - Channel owners, moderators and the offering's teachers are exempt from **slow mode** (#7).
-- **Exam mode (#4) applies to everyone, including teachers.** Exam questions must not be discussed during the
-  exam, and teachers can still reach the class through announcements. *(Open question for the product owner:
-  should teachers of the offering keep posting during their own exam window?)*
+- **Exam mode (#4) applies to everyone, including the offering's teachers** (D-057). Exam questions must not be
+  discussed during the exam; teachers reach the class through announcements.
 - The global staff and admin roles get no implicit chat rights; moderation acts through moderator actions
   (Sprint 10), never through bypassing this function.
 
@@ -56,8 +56,12 @@ Reading is allowed for members in every state (archived and exam-mode channels s
   channel", §5.3). The moderation mute (§5.5, 1 h / 24 h / 7 d) is a separate column,
   `channel_members.posting_muted_until`, set only through moderation actions and audited in `moderation_actions`.
   The schema has both from Sprint 5; the moderator console that sets the second arrives in Sprint 10.
-- **Exam windows** come from `exam_slots`, which is built in Sprint 10. Until then the loader reports "no exam
-  window"; the reason code, the precedence and the tests (with a stub window) exist from Sprint 5.
+- **Exam windows** come through an injected provider interface, `ExamWindowProvider.windows(channel_ids, at)`.
+  Sprint 5 ships the interface and a stub that returns no windows; Sprint 10 plugs in an implementation backed by
+  `exam_slots` without touching any caller. Exam mode is always computed at read time from persisted data, never
+  from a flag that a scheduled job sets and clears: a missed or late job can therefore neither leave a channel
+  locked nor open it during an exam. The reason code, the precedence and the tests (with a fake provider) exist
+  from Sprint 5 (D-059).
 - **Slow mode** claims a Redis key on instance B, `chat:slow:<channel>:<user>`, with `SET NX EX
   slow_mode_seconds`. If that key is evicted, the user can post slightly early, which is harmless.
 - **Rate limit** uses the existing fixed-window limiter on instance B.

@@ -1,8 +1,8 @@
 # ADR 0002 — Messages: monthly partitions and snowflake ids
 
-- Status: proposed (2026-10-26), awaiting product owner approval
+- Status: accepted (2026-10-26) with the product owner's changes (lease timing, idempotency registry)
 - Related: §5.3, §5.7 (partitioning note), §5.9 (ordering), §13.2 (duplicate send, snowflake restart); DECISIONS
-  D-006, D-053
+  D-006, D-053, D-056, D-058
 
 ## Context
 
@@ -24,10 +24,13 @@ does not allow foreign keys that reference a partitioned table by `id` alone.
   <process uuid> NX EX 60`, starting at a random `n` and probing upward. Every API process and every ARQ worker
   leases its own id at start-up and renews it every 20 s with a compare-and-set script (renew only if the value is
   still ours).
+- **The TTL (60 s) is three renewal intervals (20 s)**, so a Redis A outage of up to about 40 s (two missed
+  renewals) does not stop id generation: the lease is still ours when Redis returns and the next renewal succeeds.
 - **A lease that cannot be confirmed stops the generator**: each id checks that the last successful renewal is
-  younger than 40 s (monotonic clock). If not, generating fails with a typed error (`chat.unavailable`, the client
-  retries) until a lease is held again. A process that was paused longer than the TTL therefore cannot collide
-  with the process that took over its worker id.
+  younger than 50 s (monotonic clock), which leaves a 10 s margin before the TTL could expire. If not, or if a
+  renewal finds the key gone or held by another process, generating fails with a typed error (`chat.unavailable`,
+  the client retries) until a lease is held again. A process that was paused longer than the TTL therefore cannot
+  collide with the process that took over its worker id.
 - **Clock regression**: the generator keeps the last millisecond it used. If the wall clock steps back by up to
   10 ms it waits until it catches up; beyond that it refuses to issue ids (`chat.unavailable`), logs an error and
   reports to Sentry, rather than risk an id that sorts before an earlier message. Sequence exhaustion within one
@@ -59,11 +62,16 @@ does not allow foreign keys that reference a partitioned table by `id` alone.
 ### Idempotent sends
 
 - §5.7's `UNIQUE (channel_id, client_msg_id)` cannot exist on the partitioned table without `created_at`, which
-  would make it useless (a retry has a new time). Instead an unpartitioned registry
-  `message_client_ids(channel_id, client_msg_id, message_id, message_created_at, PRIMARY KEY (channel_id,
-  client_msg_id))` is written in the same transaction as the message. On conflict the send returns the original
-  message and the same `ack` (§13.2). Entries older than seven days are deleted by a daily job; clients never retry
-  that late (an offline queue older than that is resent as new messages after a confirmation).
+  would make it useless (a retry has a new time). Instead an unpartitioned lookup table
+  `message_client_ids(channel_id, client_msg_id, message_id, message_created_at, created_at,
+  PRIMARY KEY (channel_id, client_msg_id))` maps a client id to its message. The send first claims the client id
+  with `INSERT … ON CONFLICT DO NOTHING` and inserts the message in the same transaction; when the claim finds a
+  row, the send returns the original message and the same `ack` (§13.2). Two concurrent sends of one
+  `client_msg_id` therefore produce exactly one message: the second waits on the first's uncommitted key and then
+  sees it.
+- Entries are kept seven days and purged by an idempotent daily ARQ job. The reconnect backfill window (§5.9) is
+  capped below that (three days), so a client never retries a send older than the registry remembers; an offline
+  queue older than that is resent as new messages only after the user confirms.
 
 ### Retention
 
@@ -74,9 +82,10 @@ does not allow foreign keys that reference a partitioned table by `id` alone.
 
 - History, cursors and backfill touch one or two partitions in the common case; old months stay cold.
 - Redis instance A becomes a hard dependency for sending messages (not for reading). If it is unreachable for more
-  than 40 s, sends fail with a typed error while reads continue.
+  than about 50 s, sends fail with a typed error while reads continue.
 - Every partition-aware query must go through the helper that adds the `created_at` bound; a unit test checks the
   plans of the history queries for partition pruning.
 - Tests: uniqueness across 4 generators × 50,000 ids, sequence overflow, clock regression of 5 ms (waits) and 1 s
-  (refuses), lease loss (refuses), partition job idempotency, insert into a missing month (typed error), duplicate
-  `client_msg_id` (same message, one row).
+  (refuses), a short Redis outage (keeps issuing), lease loss (refuses), partition job idempotency, insert into a
+  missing month (typed error), two concurrent sends of one `client_msg_id` (one message, the same ack), purge job
+  idempotency.

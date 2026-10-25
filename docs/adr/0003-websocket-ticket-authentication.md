@@ -1,7 +1,7 @@
 # ADR 0003 — WebSocket authentication with one-use tickets
 
-- Status: proposed (2026-10-26), awaiting product owner approval
-- Related: §5.9, §14; ADR 0001; DECISIONS D-037, D-040, D-053
+- Status: accepted (2026-10-26); the product owner approved the new `POST /ws/ticket` endpoint
+- Related: §5.9, §14; ADR 0001; DECISIONS D-037, D-040, D-053, D-056
 
 ## Context
 
@@ -18,9 +18,10 @@ silently when the 15-minute access token expires.
 - `POST /api/v1/ws/ticket` is an ordinary authenticated API call: the browser calls it through the web app's
   proxy (CSRF-checked like every mutating request, D-025), which forwards the user's access token. The API
   returns `{ "ticket": "<43 chars>", "expires_at": "…" }`.
-- The ticket is 256 random bits (`secrets.token_urlsafe(32)`). Redis instance A (never evicts, D-053) stores
-  `ws:ticket:<sha256(ticket)> → {user_id, token_expires_at, issued_at}` with a 60 s TTL; the ticket itself is never
-  stored. `token_expires_at` is the `exp` of the access token that minted it.
+- The ticket is 256 random bits (`secrets.token_urlsafe(32)`). Only its hash is stored, and only in **Redis
+  instance A** (`noeviction`, D-053), never in the cache instance B, so a full cache can neither evict a valid
+  ticket nor be used to replay one: `ws:ticket:<sha256(ticket)> → {user_id, token_expires_at, issued_at}` with a
+  60 s TTL. `token_expires_at` is the `exp` of the access token that minted it.
 - Issuing is rate-limited per user (30 per minute, on instance B) so a broken client cannot fill Redis.
 
 ### Connecting

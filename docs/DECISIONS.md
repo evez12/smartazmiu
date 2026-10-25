@@ -786,3 +786,52 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Test:** 1,200 recipients with two workers in parallel and an extra retried run: 500 per window, 1,200 e-mails
   in total, 1,200 distinct addresses, nothing left pending.
 - **Consequences:** 200 per minute delivers 12,000 e-mails an hour; raise the setting with the relay's limits.
+
+## D-056 · 2026-10-26 · Chat ADRs accepted (product owner approval)
+
+- **Context:** ADRs 0002 (messages partitioning and snowflake ids), 0003 (WebSocket tickets) and 0004 (chat
+  authorisation) were proposed before any chat code was written.
+- **Decision:** all three are accepted with these changes:
+  - 0002: the worker-id lease TTL is 60 s and it is renewed every 20 s, so a short Redis A outage (two missed
+    renewals) does not stop id generation; an unconfirmed lease after 50 s, or a lease found lost or taken, still
+    stops generation with a typed error (`chat.unavailable`).
+  - 0003: the ticket hash is stored only in Redis instance A (`noeviction`), never in the cache instance B. The
+    new `POST /api/v1/ws/ticket` endpoint is approved; sign-in, sessions and token handling are unchanged.
+  - 0004: exam windows come through an injected provider interface (D-059).
+- **Consequences:** Sprint 5 is built against the accepted ADRs; any later change to them needs a new decision.
+
+## D-057 · 2026-10-26 · Exam mode blocks everyone (product owner decision)
+
+- **Context:** ADR 0004 asked whether the offering's teachers keep posting in the course channel during their own
+  exam window.
+- **Decision:** no. Exam mode refuses writes (send, react, edit, attachments) from every member, teachers
+  included. Teachers reach the class through announcements during an exam. Reading stays allowed.
+- **Consequences:** the authorisation table test covers a teacher in exam mode; no exemption exists in code.
+
+## D-058 · 2026-10-26 · Moderator mute and duplicate-send protection (product owner decisions)
+
+- **Context:** §5.7 defines `channel_members.muted_until` as the member's own notification snooze, but §5.5 also
+  needs a moderator mute; and §5.7's `UNIQUE (channel_id, client_msg_id)` cannot exist on the partitioned
+  `messages` table (ADR 0002).
+- **Decision:**
+  - `channel_members.posting_muted_until` holds the moderator mute (§5.5, 1 h / 24 h / 7 d), separate from
+    `muted_until`. Only moderation actions set it (console in Sprint 10); the authorisation function reads it
+    (`chat.muted`).
+  - Duplicate sends are prevented by the unpartitioned lookup table `message_client_ids` (`channel_id`,
+    `client_msg_id`) → `message_id`, `UNIQUE` through its primary key, inserted in the same transaction as the
+    message with `INSERT … ON CONFLICT`. Rows are kept seven days and purged by an idempotent daily ARQ job. The
+    reconnect backfill window is three days, below the retention, so a client never retries a send the table has
+    forgotten.
+  - A test sends the same `client_msg_id` twice concurrently and expects exactly one message and the same ack.
+- **Consequences:** a send that is retried more than seven days later would create a second message; the client
+  never does this (the offline queue asks before resending anything that old).
+
+## D-059 · 2026-10-26 · Exam windows through a provider, enforcement in Sprint 10 (product owner decision)
+
+- **Context:** exam slots (§5.2) arrive in Sprint 10, but the chat authorisation function needs the exam-mode
+  reason from Sprint 5 (ADR 0004, §13.4).
+- **Decision:** the chat module depends on an `ExamWindowProvider` interface (`windows(channel_ids, at)`). Sprint 5
+  ships the interface and a stub that returns no windows, plus the `chat.exam_mode` reason code, its precedence
+  and tests with a fake provider. Sprint 10 plugs in an implementation backed by `exam_slots`. Exam mode is always
+  computed at read time from persisted data, never only from scheduled jobs.
+- **Consequences:** until Sprint 10 no channel is ever in exam mode in a running system; this is intended.
