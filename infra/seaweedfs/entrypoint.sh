@@ -12,4 +12,6 @@ cat > /tmp/s3.json <<JSON
   ]
 }
 JSON
-exec weed server -dir=/data -ip.bind=0.0.0.0 -master.volumeSizeLimitMB=256 -s3 -s3.config=/tmp/s3.json
+# Each bucket is a collection that grows several volumes at once; the default of 8 volume slots is used up by
+# the second bucket. 0 sizes the slot count from the free disk space.
+exec weed server -dir=/data -ip.bind=0.0.0.0 -master.volumeSizeLimitMB=256 -volume.max=0 -s3 -s3.config=/tmp/s3.json
