@@ -285,7 +285,7 @@ student_id,subject_code,year,term,offering_code,status,passed,grade
 25765118,XDL-2103,2026,Payız,,active,,
 25765118,HFT-2101,2026,Payız,,active,,
 25765118,SOS-2103,2026,Payız,,active,,
-25765201,SOS-1101,2025,Payız,,completed,true,
+25765201,SOS-1101,2025,Payız,,completed,true,87
 25765201,XDL-1101,2025,Payız,,completed,true,
 25765201,RIY-1101,2025,Payız,,completed,true,
 25765201,IKT-1101,2025,Payız,,completed,true,
