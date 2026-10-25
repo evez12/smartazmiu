@@ -261,6 +261,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   token when it has under 60 s left and passes the new cookie both to the page render and the browser. Concurrent
   refreshes of the same refresh token share one grant inside the process, so parallel requests do not trip reuse
   detection. Sign-out ends the Keycloak session through the back-channel logout endpoint (no confirmation page).
+- **Superseded in part by D-037:** tokens now live in a server-side session; `sa_access` no longer exists.
 - **Consequences:** with several web replicas a rare parallel refresh across replicas can sign a user out; sticky
   sessions or a shared refresh lock is revisited before multi-replica deployment (Phase 4).
 
@@ -422,3 +423,44 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     not block using the platform. Bumping the version asks everyone again.
   - The notice text is a draft for the university's legal office (§12.8) and says so on the page.
 - **Consequences:** account deletion (the remaining §5.4 right) is not part of Sprint 2.
+
+## D-037 · 2026-10-25 · Server-side web sessions and slim access tokens (fix for the sign-in 502)
+
+- **Context:** sign-in through nginx failed with `502` at `/auth/callback` for a user with
+  `default-roles-smartazmiu` plus extra roles. Measured on the callback response (bypassing nginx): `sa_access`
+  (sealed access token) 2201 B, `sa_session` (sealed refresh token, subject, CSRF) 1442 B, `sa_oidc` deletion 55 B,
+  i.e. 3698 B of Set-Cookie plus ~620 B of other headers, above nginx's default 4 KB `proxy_buffer_size`. The access
+  token was 1438 B because `fullScopeAllowed` copied every realm role (`offline_access`, `uma_authorization`,
+  `default-roles-smartazmiu`) and the `account` client roles into it; a plain student had ~150 B of headroom.
+  Options: raise proxy buffers only; split cookies into chunks; keep tokens server-side.
+- **Decision:**
+  - Tokens leave the browser. `sa_session` carries a random 256-bit id (43 characters); the session (tokens, access
+    expiry, subject, CSRF token) is stored in Redis database 1 under `web:session:<sha256(id)>`, with a TTL equal to
+    the Keycloak session lifetime. `sa_access` is removed; `sa_oidc` (PKCE state, ~0.5 KB) stays sealed. The callback
+    answers `302`. Refresh rewrites the stored session under the same id; sign-out deletes it. Pages without a
+    session cookie never connect to Redis. If Redis is unreachable, pages show their "unavailable" state and the
+    proxy route answers `503`; users are not signed out.
+  - All Set-Cookie headers of a response must stay within `SET_COOKIE_BUDGET_BYTES = 1024` (unit test on the real
+    callback handler with an oversized token set; E2E through nginx). A sign-in now sends ~0.3 KB of cookies.
+  - `smartazmiu-web` has `fullScopeAllowed: false` and a realm scope mapping for `student`, `teacher`, `staff`,
+    `moderator`, `admin` only, so Keycloak's default and helper roles and the `account` client roles are not put
+    into access tokens. The API already maps only catalogue roles; its test now covers `uma_authorization`,
+    `mfa_required`, `offline_access` and `default-roles-smartazmiu`.
+  - Safety net in nginx: `proxy_buffer_size 16k`, `proxy_buffers 8 16k`, `proxy_busy_buffers_size 32k`,
+    `large_client_header_buffers 4 16k`.
+  - Regression user `kanan.babayev` (default roles + student + moderator) is seeded in the realm.
+  - Dependency: `redis` 6.3.0 (node client) in the web app.
+- **Consequences:** amends D-005 and D-026. Sessions survive web restarts but not a Redis flush of database 1; the
+  API cache uses database 0. An existing local realm gets the scope mapping and the new user through the admin API
+  (or `make reset`); a fresh `make up` imports them.
+
+## D-038 · 2026-10-25 · Cleared import files, seed grade and audit entries of deleted accounts
+
+- **Context:** the Sprint 2 verification found import rows whose cleared file contents were stored as JSON `null`
+  while the purge query looked for SQL `NULL`; check 4c (own grade in the export) had no seeded grade; four kept
+  `audit_logs` entries came from a throwaway administrator that was deleted afterwards.
+- **Decision:** `academic_imports.payload` uses `JSONB(none_as_null=True)`, so clearing stores SQL `NULL`;
+  migration 0005 converts existing JSON `null` values (its downgrade does nothing, both meant "removed"). Aysel
+  Məmmədova's completed `SOS-1101` (2025, Payız) enrollment is seeded with grade 87. The four audit entries are kept
+  unchanged; their actor shows as "system" because the actor account no longer exists (`actor_id` is `NULL`).
+- **Consequences:** none for users; the export of the seed student now includes a grade.

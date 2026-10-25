@@ -27,7 +27,7 @@ make dev-web                   # http://localhost:3000 (second terminal)
 
 ### Test users
 
-Keycloak seeds six made-up users that share the password in `.env` (`KEYCLOAK_TEST_USER_PASSWORD`):
+Keycloak seeds seven made-up users that share the password in `.env` (`KEYCLOAK_TEST_USER_PASSWORD`):
 
 | Username | Role |
 |---|---|
@@ -36,6 +36,7 @@ Keycloak seeds six made-up users that share the password in `.env` (`KEYCLOAK_TE
 | `leyla.hasanova` | teacher |
 | `elvin.quliyev` | staff (asks for an authenticator app on first sign-in) |
 | `tural.babayev` | admin (asks for an authenticator app on first sign-in) |
+| `kanan.babayev` | student + moderator, plus Keycloak's default roles (sign-in regression test) |
 
 Aysel, Ramin (765a2), Nigar (765a1) and Leyla (teacher) are also part of the sample roster in
 `infra/seed/academics/`; after `make seed`, or after importing those files, their dashboards show their group and
@@ -46,7 +47,8 @@ subjects.
 Administrators manage users at **İstifadəçilər** (`/admin/users`): role changes go to Keycloak through the
 `smartazmiu-api-admin` service account and are written to the **Audit jurnalı** (`/admin/audit`). If your local
 Keycloak was created before this client existed, run `make reset` (or import the client), because Keycloak only
-imports the realm file into an empty database.
+imports the realm file into an empty database. The same applies to the `smartazmiu-web` role scope and the
+`kanan.babayev` user (D-037).
 
 ### Academic data import
 

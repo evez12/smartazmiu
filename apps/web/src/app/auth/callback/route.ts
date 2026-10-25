@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { completeSignIn } from "@/lib/auth/oidc";
-import { cookieOptions, OIDC_COOKIE, readOidcFlow, sessionCookies } from "@/lib/auth/session";
+import { cookieOptions, createSession, OIDC_COOKIE, readOidcFlow } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +22,9 @@ export async function GET(request: NextRequest) {
   const currentUrl = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, env.appUrl);
   try {
     const tokens = await completeSignIn(currentUrl, flow);
-    const response = NextResponse.redirect(new URL(flow.returnTo, env.appUrl));
-    for (const cookie of await sessionCookies(tokens)) {
-      response.cookies.set(cookie.name, cookie.value, cookieOptions(cookie.maxAge));
-    }
+    const cookie = await createSession(tokens);
+    const response = NextResponse.redirect(new URL(flow.returnTo, env.appUrl), 302);
+    response.cookies.set(cookie.name, cookie.value, cookieOptions(cookie.maxAge));
     response.cookies.delete(OIDC_COOKIE);
     return response;
   } catch (error) {

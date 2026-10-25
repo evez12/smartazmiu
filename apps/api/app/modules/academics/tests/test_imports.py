@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from httpx import AsyncClient
 from openpyxl import Workbook
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ratelimit import RateLimit
@@ -39,6 +39,12 @@ def issues(body: dict[str, object]) -> list[tuple[object, object, object]]:
     errors = body["errors"]
     assert isinstance(errors, list)
     return [(e["row"], e["column"], e["code"]) for e in errors]
+
+
+async def payload_is_sql_null(db: AsyncSession, import_id: uuid.UUID) -> bool:
+    """Raw SQL, because the ORM reads JSON null and SQL NULL both as None."""
+    query = text("SELECT payload IS NULL FROM academic_imports WHERE id = :id")
+    return bool(await db.scalar(query, {"id": import_id}))
 
 
 async def test_sample_data_imports_and_reimport_is_a_no_op(
@@ -135,6 +141,7 @@ async def test_apply_is_idempotent_and_audited_once(
     record = await db.get(AcademicImport, uuid.UUID(body["id"]))
     assert record is not None
     assert record.payload is None
+    assert await payload_is_sql_null(db, record.id)
 
 
 async def test_data_changed_since_the_preview_fails_the_apply(
@@ -181,6 +188,7 @@ async def test_previews_expire_and_their_cells_are_purged(
     record = await db.get(AcademicImport, import_id, populate_existing=True)
     assert record is not None
     assert record.payload is None
+    assert await payload_is_sql_null(db, record.id)
 
 
 async def test_unknown_import_is_not_found(

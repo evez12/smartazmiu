@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
-import { readAccess, readSession, type SessionData } from "@/lib/auth/session";
+import { readSession, type SessionData } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { PATHNAME_HEADER } from "@/lib/request-headers";
 
@@ -42,13 +42,17 @@ async function signInUrl(): Promise<string> {
  * session; "unavailable" means the API could not answer and the shell shows an error state with retry.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUserResult> => {
-  const jar = await cookies();
-  const [session, access] = await Promise.all([readSession(jar), readAccess(jar)]);
-  if (!session || !access) return { status: "signed_out" };
+  let session: SessionData | null;
+  try {
+    session = await readSession(await cookies());
+  } catch {
+    return { status: "unavailable" };
+  }
+  if (!session) return { status: "signed_out" };
 
   const requestId = (await headers()).get("x-request-id") ?? undefined;
   try {
-    const { data, error, response } = await apiClient(access.accessToken, requestId).GET(
+    const { data, error, response } = await apiClient(session.accessToken, requestId).GET(
       "/api/v1/me",
       { signal: AbortSignal.timeout(5000) },
     );
@@ -79,9 +83,9 @@ export async function hasPermission(code: string): Promise<boolean> {
  * layout's sign-in redirect having happened first.
  */
 export const serverApi = cache(async () => {
-  const access = await readAccess(await cookies());
-  if (!access) redirect(await signInUrl());
-  return apiClient(access.accessToken, (await headers()).get("x-request-id") ?? undefined);
+  const session = await readSession(await cookies());
+  if (!session) redirect(await signInUrl());
+  return apiClient(session.accessToken, (await headers()).get("x-request-id") ?? undefined);
 });
 
 export type Loaded<T> = { status: "ok"; data: T } | { status: "forbidden" };

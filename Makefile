@@ -19,6 +19,8 @@ DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0
 TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/smartazmiu_test
 REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
 TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
+# Web sessions (D-037) use their own database so API cache flushes never sign anyone out.
+SESSION_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/1
 S3_ENDPOINT_URL ?= http://127.0.0.1:$(S3_PORT)
 KEYCLOAK_URL ?= http://127.0.0.1:$(KEYCLOAK_PORT)
 OIDC_ISSUER ?= $(OIDC_PUBLIC_URL)/realms/$(KEYCLOAK_REALM)

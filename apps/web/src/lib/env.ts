@@ -34,6 +34,10 @@ export const env = {
     if (secret.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
     return secret;
   },
+  /** Server-side sessions (D-037); only read once a session cookie is present. */
+  get sessionRedisUrl() {
+    return required("SESSION_REDIS_URL");
+  },
   /** Optional on purpose: the proxy asks on every request, including where auth is not configured. */
   get isHttps() {
     return (process.env.APP_URL ?? "").startsWith("https://");
