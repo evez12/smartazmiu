@@ -45,6 +45,11 @@ export type CookieJar = {
 export const OIDC_FLOW_MAX_AGE = 10 * 60;
 const DEFAULT_ACCESS_LIFETIME = 15 * 60;
 const DEFAULT_SESSION_LIFETIME = 8 * 60 * 60;
+/**
+ * Absolute session lifetime, equal to the realm's SSO session maximum. Refreshes slide the idle expiry but never
+ * past this point, even if the identity provider were configured more generously.
+ */
+export const SESSION_MAX_LIFETIME = 12 * 60 * 60;
 const SESSION_ID = /^[A-Za-z0-9_-]{43}$/;
 
 export function cookieOptions(maxAge: number) {
@@ -64,21 +69,32 @@ async function storeKey(id: string): Promise<string> {
   return Buffer.from(digest).toString("base64url");
 }
 
+function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
 function stored(tokens: TokenSet, previous?: StoredSession | null) {
   const refreshToken = tokens.refresh_token ?? previous?.refreshToken;
   if (!refreshToken) throw new Error("token response without refresh token");
-  const lifetime = tokens.refresh_expires_in || DEFAULT_SESSION_LIFETIME;
+  const now = nowSeconds();
+  const expiresAt = previous?.expiresAt ?? now + SESSION_MAX_LIFETIME;
+  const lifetime = Math.min(tokens.refresh_expires_in || DEFAULT_SESSION_LIFETIME, expiresAt - now);
+  if (lifetime <= 0) throw new Error("session reached its absolute lifetime");
   const session: StoredSession = {
     refreshToken,
     accessToken: tokens.access_token,
-    accessExpiresAt: Math.floor(Date.now() / 1000) + (tokens.expires_in ?? DEFAULT_ACCESS_LIFETIME),
+    accessExpiresAt: now + (tokens.expires_in ?? DEFAULT_ACCESS_LIFETIME),
     subject: previous?.subject ?? subjectOf(tokens.access_token),
     csrfToken: previous?.csrfToken ?? randomToken(),
+    expiresAt,
   };
   return { session, lifetime };
 }
 
-/** Stores a new session for a token endpoint response and returns the cookie that refers to it. */
+/**
+ * Stores a new session for a token endpoint response and returns the cookie that refers to it. Every sign-in gets
+ * a fresh id, so an id planted or seen before sign-in is worthless afterwards.
+ */
 export async function createSession(tokens: TokenSet): Promise<CookieWrite> {
   const id = randomToken();
   const { session, lifetime } = stored(tokens);
@@ -108,8 +124,15 @@ export async function destroySession(session: SessionData): Promise<void> {
 export async function readSession(jar: CookieJar): Promise<SessionData | null> {
   const id = jar.get(SESSION_COOKIE)?.value;
   if (!id || !SESSION_ID.test(id)) return null;
-  const session = await sessionStore().get(await storeKey(id));
-  return session ? { ...session, id } : null;
+  const key = await storeKey(id);
+  const session = await sessionStore().get(key);
+  if (!session) return null;
+  // Entries without an absolute expiry predate it; both kinds end here rather than live on through refreshes.
+  if (!(session.expiresAt > nowSeconds())) {
+    await sessionStore().delete(key);
+    return null;
+  }
+  return { ...session, id };
 }
 
 export async function readOidcFlow(jar: CookieJar): Promise<OidcFlowData | null> {

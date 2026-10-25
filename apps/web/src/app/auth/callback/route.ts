@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { completeSignIn } from "@/lib/auth/oidc";
-import { cookieOptions, createSession, OIDC_COOKIE, readOidcFlow } from "@/lib/auth/session";
+import {
+  cookieOptions,
+  createSession,
+  destroySession,
+  OIDC_COOKIE,
+  readOidcFlow,
+  readSession,
+} from "@/lib/auth/session";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +29,9 @@ export async function GET(request: NextRequest) {
   const currentUrl = new URL(`${request.nextUrl.pathname}${request.nextUrl.search}`, env.appUrl);
   try {
     const tokens = await completeSignIn(currentUrl, flow);
+    // Signing in again in the same browser must not leave the previous session usable under its old id.
+    const previous = await readSession(request.cookies).catch(() => null);
+    if (previous) await destroySession(previous).catch(() => undefined);
     const cookie = await createSession(tokens);
     const response = NextResponse.redirect(new URL(flow.returnTo, env.appUrl), 302);
     response.cookies.set(cookie.name, cookie.value, cookieOptions(cookie.maxAge));

@@ -26,7 +26,11 @@ const store = new MemoryStore();
 vi.mock("./session-store", () => ({ sessionStore: () => store }));
 
 const completeSignIn = vi.fn();
-vi.mock("./oidc", () => ({ completeSignIn: (...args: unknown[]) => completeSignIn(...args) }));
+const endSession = vi.fn();
+vi.mock("./oidc", () => ({
+  completeSignIn: (...args: unknown[]) => completeSignIn(...args),
+  endSession: (...args: unknown[]) => endSession(...args),
+}));
 
 function jwt(claims: Record<string, unknown>) {
   const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -74,7 +78,27 @@ beforeEach(() => {
   store.calls = 0;
 });
 
-afterEach(() => completeSignIn.mockReset());
+afterEach(() => {
+  completeSignIn.mockReset();
+  endSession.mockReset();
+  vi.useRealTimers();
+});
+
+const HOUR = 60 * 60;
+
+async function callbackRequest(cookies: Record<string, string> = {}) {
+  const { oidcFlowCookie, OIDC_COOKIE } = await import("./session");
+  const flow = await oidcFlowCookie({ state: "s", nonce: "n", codeVerifier: "v", returnTo: "/" });
+  const cookie = Object.entries({ ...cookies, [OIDC_COOKIE]: flow.value })
+    .map(([name, value]) => `${name}=${value}`)
+    .join("; ");
+  return new NextRequest("http://localhost/auth/callback?code=c&state=s", { headers: { cookie } });
+}
+
+function sessionIdFrom(response: Response): string | undefined {
+  const header = response.headers.getSetCookie().find((item) => item.startsWith("sa_session="));
+  return header?.slice("sa_session=".length).split(";")[0];
+}
 
 describe("server-side sessions", () => {
   it("keeps tokens out of the cookie and keys the store by a hash of the id", async () => {
@@ -121,6 +145,49 @@ describe("server-side sessions", () => {
     expect(await readSession(jar({ [SESSION_COOKIE]: cookie.value }))).toBeNull();
   });
 
+  it("caps the session at its absolute lifetime however often it is refreshed", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-01T06:00:00Z"));
+    const { createSession, readSession, updateSession, SESSION_COOKIE, SESSION_MAX_LIFETIME } =
+      await import("./session");
+    const cookie = await createSession(bulkyTokens);
+    const start = Math.floor(Date.now() / 1000);
+    const read = () => readSession(jar({ [SESSION_COOKIE]: cookie.value }));
+    expect((await read())!.expiresAt).toBe(start + SESSION_MAX_LIFETIME);
+
+    // A refresh every 14 minutes keeps Keycloak's 8-hour idle window open; the absolute end does not move.
+    let ttl = 0;
+    let refreshedAt = start;
+    for (let elapsed = 14 * 60; elapsed < SESSION_MAX_LIFETIME - HOUR; elapsed += 14 * 60) {
+      refreshedAt = start + elapsed;
+      vi.setSystemTime(refreshedAt * 1000);
+      ttl = (await updateSession((await read())!, bulkyTokens)).maxAge;
+    }
+    expect((await read())!.expiresAt).toBe(start + SESSION_MAX_LIFETIME);
+    // Near the end the cookie and store entry live only until the absolute expiry, not 8 more hours.
+    expect(ttl).toBe(start + SESSION_MAX_LIFETIME - refreshedAt);
+    expect(ttl).toBeLessThan(2 * HOUR);
+    expect([...store.entries.values()][0]!.ttl).toBe(ttl);
+
+    const last = (await read())!;
+    vi.setSystemTime((start + SESSION_MAX_LIFETIME) * 1000);
+    await expect(updateSession(last, bulkyTokens)).rejects.toThrow("absolute lifetime");
+    expect(await read()).toBeNull();
+    expect(store.entries.size).toBe(0);
+  });
+
+  it("refuses stored sessions without an absolute expiry", async () => {
+    const { createSession, readSession, SESSION_COOKIE } = await import("./session");
+    const cookie = await createSession(bulkyTokens);
+    const [key, entry] = [...store.entries][0]!;
+    const legacy: Partial<StoredSession> = { ...entry.session };
+    delete legacy.expiresAt;
+    store.entries.set(key, { session: legacy as StoredSession, ttl: entry.ttl });
+
+    expect(await readSession(jar({ [SESSION_COOKIE]: cookie.value }))).toBeNull();
+    expect(store.entries.has(key)).toBe(false);
+  });
+
   it("never contacts the store, secret or Redis without a well-formed cookie", async () => {
     const { readSession, SESSION_COOKIE } = await import("./session");
     const secret = process.env.SESSION_SECRET;
@@ -158,6 +225,29 @@ describe("/auth/callback", () => {
     expect(setCookies.join("")).not.toContain("rt-rrrr");
   });
 
+  it("issues a new session id on every sign-in and ends the previous session", async () => {
+    const { createSession, readSession, SESSION_COOKIE } = await import("./session");
+    const { GET } = await import("@/app/auth/callback/route");
+    completeSignIn.mockResolvedValue(bulkyTokens);
+    const earlier = await createSession(bulkyTokens);
+    const planted = "p".repeat(43);
+
+    const response = await GET(
+      await callbackRequest({ [SESSION_COOKIE]: earlier.value, unrelated: planted }),
+    );
+
+    const id = sessionIdFrom(response);
+    expect(id).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(id).not.toBe(earlier.value);
+    expect(await readSession(jar({ [SESSION_COOKIE]: earlier.value }))).toBeNull();
+    expect(await readSession(jar({ [SESSION_COOKIE]: id! }))).not.toBeNull();
+    expect(store.entries.size).toBe(1);
+
+    // A fixated id the server never issued is ignored, never adopted.
+    const fixated = await GET(await callbackRequest({ [SESSION_COOKIE]: planted }));
+    expect(sessionIdFrom(fixated)).not.toBe(planted);
+  });
+
   it("sends the user back to sign in when the session cannot be stored", async () => {
     const { oidcFlowCookie, OIDC_COOKIE } = await import("./session");
     const { GET } = await import("@/app/auth/callback/route");
@@ -171,5 +261,58 @@ describe("/auth/callback", () => {
     );
     expect(response.headers.get("location")).toBe("http://localhost/login?error=signin_failed");
     failing.mockRestore();
+  });
+});
+
+describe("/auth/signout", () => {
+  async function signOut(cookie: string, csrf: string) {
+    const { POST } = await import("@/app/auth/signout/route");
+    return POST(
+      new NextRequest("http://localhost/auth/signout", {
+        method: "POST",
+        headers: {
+          cookie: `sa_session=${cookie}`,
+          origin: "http://localhost",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ csrf }).toString(),
+      }),
+    );
+  }
+
+  it("deletes the stored session and clears the cookie", async () => {
+    const { createSession, readSession, SESSION_COOKIE } = await import("./session");
+    const cookie = await createSession(bulkyTokens);
+    const session = (await readSession(jar({ [SESSION_COOKIE]: cookie.value })))!;
+
+    const response = await signOut(cookie.value, session.csrfToken);
+
+    expect(response.status).toBe(303);
+    expect(endSession).toHaveBeenCalledWith(bulkyTokens.refresh_token);
+    expect(store.entries.size).toBe(0);
+    expect(response.headers.getSetCookie().join("")).toMatch(
+      /sa_session=;.*Expires=Thu, 01 Jan 1970/,
+    );
+  });
+
+  it("deletes the stored session even when Keycloak cannot be reached", async () => {
+    const { createSession, readSession, SESSION_COOKIE } = await import("./session");
+    endSession.mockRejectedValue(new Error("keycloak down"));
+    const cookie = await createSession(bulkyTokens);
+    const session = (await readSession(jar({ [SESSION_COOKIE]: cookie.value })))!;
+
+    await signOut(cookie.value, session.csrfToken);
+
+    expect(store.entries.size).toBe(0);
+  });
+
+  it("keeps the session when the CSRF token is wrong", async () => {
+    const { createSession } = await import("./session");
+    const cookie = await createSession(bulkyTokens);
+
+    const response = await signOut(cookie.value, "forged");
+
+    expect(response.status).toBe(403);
+    expect(store.entries.size).toBe(1);
   });
 });

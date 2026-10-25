@@ -13,7 +13,8 @@ const SET_COOKIE_BUDGET_BYTES = 1024;
 
 test("a user with default and extra roles signs in and keeps a working session", async ({
   page,
-}) => {
+  browser,
+}, testInfo) => {
   const callback = page.waitForResponse((response) =>
     new URL(response.url()).pathname.startsWith("/auth/callback"),
   );
@@ -23,6 +24,10 @@ test("a user with default and extra roles signs in and keeps a working session",
   expect(response.status()).toBe(302);
   const setCookies = await response.headerValues("set-cookie");
   const total = setCookies.reduce((sum, header) => sum + Buffer.byteLength(header), 0);
+  // The measured size goes into the report, so a growing cookie is visible long before it hits the budget.
+  const measured = `${total} B in ${setCookies.length} headers (budget ${SET_COOKIE_BUDGET_BYTES} B)`;
+  testInfo.annotations.push({ type: "Set-Cookie size at /auth/callback", description: measured });
+  console.log(`Set-Cookie size at /auth/callback: ${measured}`);
   expect(total).toBeLessThanOrEqual(SET_COOKIE_BUDGET_BYTES);
 
   await expect(page.getByRole("heading", { level: 1, name: "Ana səhifə" })).toBeVisible();
@@ -44,4 +49,13 @@ test("a user with default and extra roles signs in and keeps a working session",
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Ana səhifə" })).toBeVisible();
+
+  // Signing out deletes the server-side session: a copy of the old cookie no longer opens anything.
+  await page.getByRole("button", { name: /Profil menyusu/ }).click();
+  await page.getByRole("menuitem", { name: "Çıxış edin" }).click();
+  await expect(page).toHaveURL(/\/login\?status=signed_out/);
+  const replay = await browser.newContext();
+  await replay.addCookies([{ ...session!, sameSite: "Lax" }]);
+  expect((await replay.request.get("/api/v1/me")).status()).toBe(401);
+  await replay.close();
 });

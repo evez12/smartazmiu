@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 
-import { password, signIn } from "./support/auth";
+import { password, signIn, test } from "./support/auth";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 
@@ -11,10 +11,11 @@ const PIXEL = Buffer.from(
   "base64",
 );
 
-test("student sets a photo, bio and privacy settings", async ({ page }) => {
-  await signIn(page, "ramin.aliyev", "/profile");
+const STUDENT_NAME = { givenName: "Ramin", familyName: "Əliyev" };
+
+test("student sets a photo, bio and privacy settings", async ({ page, accounts }) => {
+  await signIn(page, await accounts.create("student", STUDENT_NAME), "/profile");
   await expect(page.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
-  // Whether the group is shown depends on the sample import (staff.spec.ts), which may not have run yet.
   await expect(page.getByRole("heading", { name: "Qrup və ixtisas" })).toBeVisible();
 
   const picker = page.getByRole("main").locator("input[type=file]");
@@ -38,15 +39,10 @@ test("student sets a photo, bio and privacy settings", async ({ page }) => {
   await expect(page.getByRole("radio", { name: "Bütün istifadəçilər" })).toBeChecked();
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
-
-  // Back to the most private settings, so reruns start from the defaults.
-  await page.getByRole("radio", { name: "Heç kim" }).last().check();
-  await page.getByRole("button", { name: "Yadda saxlayın" }).click();
-  await expect(page.getByText("Profil yadda saxlanıldı").first()).toBeVisible();
 });
 
-test("the photo controls work from the keyboard", async ({ page }) => {
-  await signIn(page, "ramin.aliyev", "/profile");
+test("the photo controls work from the keyboard", async ({ page, accounts }) => {
+  await signIn(page, await accounts.create("student", STUDENT_NAME), "/profile");
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
   const picker = main.locator("input[type=file]");
