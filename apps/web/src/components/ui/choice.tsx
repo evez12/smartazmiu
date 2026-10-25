@@ -19,6 +19,11 @@ const boxClasses = [
   "after:absolute after:-inset-3.5 after:content-[''] pointer-fine:after:-inset-1",
 ].join(" ");
 
+/** Descriptions are linked to their control, so screen readers announce them with the label. */
+function descriptionId(controlId: string): string {
+  return `${controlId}-description`;
+}
+
 type ChoiceLabelProps = {
   label: ReactNode;
   description?: ReactNode;
@@ -35,7 +40,11 @@ function ChoiceRow({ label, description, htmlFor, disabled, children }: ChoiceLa
         <label htmlFor={htmlFor} className={cn("text-text", disabled && "text-muted")}>
           {label}
         </label>
-        {description ? <span className="text-sm text-muted">{description}</span> : null}
+        {description ? (
+          <span id={descriptionId(htmlFor)} className="text-sm text-muted">
+            {description}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -54,6 +63,7 @@ export function Checkbox({ label, description, id, className, disabled, ...rest 
       <CheckboxPrimitive.Root
         id={controlId}
         disabled={disabled}
+        aria-describedby={description ? descriptionId(controlId) : undefined}
         className={cn(
           boxClasses,
           "rounded-control data-[state=checked]:border-primary data-[state=checked]:bg-primary",
@@ -97,6 +107,7 @@ export function RadioGroup({ legend, options, className, ...rest }: RadioGroupPr
                 id={optionId}
                 value={option.value}
                 disabled={option.disabled}
+                aria-describedby={option.description ? descriptionId(optionId) : undefined}
                 className={cn(boxClasses, "rounded-full data-[state=checked]:border-primary")}
               >
                 <RadioPrimitive.Indicator className="size-2 rounded-full bg-primary" />
@@ -123,6 +134,7 @@ export function Switch({ label, description, id, className, disabled, ...rest }:
       <SwitchPrimitive.Root
         id={controlId}
         disabled={disabled}
+        aria-describedby={description ? descriptionId(controlId) : undefined}
         className={cn(
           "relative inline-flex h-5 w-9 shrink-0 items-center rounded-control border border-border-control bg-bg-subtle p-0.5",
           "transition-colors disabled:cursor-not-allowed disabled:opacity-60",

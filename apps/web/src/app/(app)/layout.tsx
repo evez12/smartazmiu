@@ -52,7 +52,12 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   return (
     <ApiProvider csrfToken={session.csrfToken}>
       <AppShell
-        user={{ displayName: user.display_name, roles: user.roles, permissions: user.permissions }}
+        user={{
+          displayName: user.display_name,
+          roles: user.roles,
+          permissions: user.permissions,
+          photoUrl: user.photo_url,
+        }}
         csrfToken={session.csrfToken}
         initiallyCollapsed={collapsed}
       >
