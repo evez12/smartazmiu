@@ -165,6 +165,8 @@ async def apply_import(
     if record.status is ImportStatus.APPLIED and record.kind in AUDIENCE_KINDS:
         # Registry changes can move people into an audience; they receive its active announcements (§6.1).
         await jobs.sync_audiences()
+    if record.status is ImportStatus.APPLIED and record.kind is ImportKind.SCHEDULE_CHANGES:
+        await jobs.dispatch_notifications()
     return await _detail(session, record)
 
 

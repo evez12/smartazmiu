@@ -5,11 +5,20 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import time as clock
 from app.modules.academics.models import ImportKind
 from app.modules.academics.tests.conftest import SEED_DIR, Upload
-from app.modules.schedule import imports, router
+from app.modules.notifications.models import (
+    DeliveryChannel,
+    Notification,
+    NotificationDelivery,
+    NotificationKind,
+)
+from app.modules.schedule import imports, notifications, router
+from app.modules.users.models import User
 from tests.support import TokenFactory
 
 Seed = Callable[..., Awaitable[None]]
@@ -26,6 +35,7 @@ def autumn_2026(monkeypatch: pytest.MonkeyPatch) -> Callable[[date], None]:
     def set_today(day: date) -> None:
         monkeypatch.setattr(imports, "baku_today", lambda: day)
         monkeypatch.setattr(router, "baku_today", lambda: day)
+        monkeypatch.setattr(notifications, "baku_today", lambda: day)
 
     set_today(TODAY)
     return set_today
@@ -527,3 +537,89 @@ async def test_week_parity_import(upload: Upload, seed: Seed) -> None:
         (5, "parity", "invalid_choice"),
         (6, "year", "unknown_reference"),
     ]
+
+
+async def notified(db: AsyncSession, email: str) -> list[str]:
+    rows = await db.scalars(
+        select(Notification.title)
+        .join(User, User.id == Notification.user_id)
+        .where(User.email == email, Notification.kind == NotificationKind.SCHEDULE_CHANGED)
+        .order_by(Notification.title)
+    )
+    return list(rows)
+
+
+async def test_changes_notify_the_people_who_have_the_class_once(
+    db: AsyncSession, seed: Seed, upload: Upload, autumn_2026: Callable[[date], None]
+) -> None:
+    # On 1 November the late-October changes are history; only the 9 November holiday is announced (§13.4).
+    autumn_2026(date(2026, 11, 1))
+    await seed(ImportKind.SCHEDULE_CHANGES)
+    assert await notified(db, "aysel.mammadova@smartazmiu.test") == [
+        "Mikroiqtisadiyyat, 9 Noyabr",
+        "Statistika, 9 Noyabr",
+        "Xarici dildə işgüzar və akademik kommunikasiya-3, 9 Noyabr",
+    ]
+    assert await notified(db, "nigar.ismayilova@smartazmiu.test") == [
+        "Mikroiqtisadiyyat, 9 Noyabr",
+        "Statistika, 9 Noyabr",
+    ]
+    # Teachers of the class are told too; the group curator only as a teacher of her own subjects.
+    assert "Statistika, 9 Noyabr" in await notified(db, "leyla.hasanova@smartazmiu.test")
+    notification = await db.scalar(
+        select(Notification).where(Notification.title == "Mikroiqtisadiyyat, 9 Noyabr").limit(1)
+    )
+    assert notification is not None
+    assert notification.link == "/schedule?view=day&date=2026-11-09"
+    channels = set(
+        await db.scalars(
+            select(NotificationDelivery.channel)
+            .join(Notification, Notification.id == NotificationDelivery.notification_id)
+            .where(Notification.kind == NotificationKind.SCHEDULE_CHANGED)
+        )
+    )
+    assert channels == {DeliveryChannel.PUSH}
+
+    # Re-importing the same file notifies nobody again; an edited change does.
+    count = await db.scalar(select(func.count()).select_from(Notification))
+    await upload(
+        ImportKind.SCHEDULE_CHANGES, (SEED_DIR / "schedule_changes.csv").read_bytes(), apply=True
+    )
+    assert await db.scalar(select(func.count()).select_from(Notification)) == count
+    header = (SEED_DIR / "schedule_changes.csv").read_text(encoding="utf-8").splitlines()[0]
+    edited = (
+        "IQT-2101,2026,Payız,765a2,,2026-11-09,08:30,ləğv,,,,,,Dövlət Bayrağı Günü (köçürülmüş)"
+    )
+    await upload(ImportKind.SCHEDULE_CHANGES, f"{header}\n{edited}\n", apply=True)
+    assert (await notified(db, "aysel.mammadova@smartazmiu.test")).count(
+        "Mikroiqtisadiyyat, 9 Noyabr"
+    ) == 2
+    assert (await notified(db, "nigar.ismayilova@smartazmiu.test")).count(
+        "Mikroiqtisadiyyat, 9 Noyabr"
+    ) == 1
+
+
+async def test_changed_classes_are_checked_again_when_sending(
+    db: AsyncSession, seed: Seed, autumn_2026: Callable[[date], None]
+) -> None:
+    await seed(ImportKind.SCHEDULE_CHANGES)
+    notification = await db.scalar(
+        select(Notification)
+        .join(User, User.id == Notification.user_id)
+        .where(
+            User.email == "aysel.mammadova@smartazmiu.test", Notification.title.like("Statistika%")
+        )
+        .limit(1)
+    )
+    assert notification is not None
+    aysel, nigar = (
+        notification.user_id,
+        await db.scalar(select(User.id).where(User.email == "nigar.ismayilova@smartazmiu.test")),
+    )
+    assert nigar is not None
+    assert await notifications.still_affected(db, notification.subject_id, aysel)
+    # Someone outside the class, or a day already past by the time the worker sends: not delivered.
+    assert not await notifications.still_affected(db, notification.subject_id, nigar)
+    autumn_2026(date(2026, 12, 1))
+    assert not await notifications.still_affected(db, notification.subject_id, aysel)
+    assert not await notifications.still_affected(db, uuid.uuid4(), aysel)

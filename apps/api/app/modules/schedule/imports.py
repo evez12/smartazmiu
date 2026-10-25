@@ -37,6 +37,7 @@ from app.modules.schedule.models import (
     WeekParity,
     WeekParityOverride,
 )
+from app.modules.schedule.notifications import notify_changes
 from app.modules.schedule.parity import parity_on, takes_place
 from app.modules.users.models import PersonType, User
 
@@ -570,16 +571,27 @@ class ScheduleChangesImport(ImportSpec):
                 )
             }
         seen: set[tuple[uuid.UUID, date]] = set()
+        touched: list[tuple[ScheduleChange, ScheduleEntry]] = []
         for row, entry, fields in matched:
             key = (entry.id, row.values["date"])
             if key in seen:
                 run.error(row, "duplicate_in_file", "date")
                 continue
             seen.add(key)
-            run.upsert(
-                existing.get(key),
+            previous = existing.get(key)
+            differs = previous is None or any(
+                getattr(previous, name) != value for name, value in fields.items()
+            )
+            change = run.upsert(
+                previous,
                 ScheduleChange,
                 fields,
                 schedule_entry_id=entry.id,
                 occurs_on=row.values["date"],
             )
+            if differs:
+                touched.append((change, entry))
+        if run.write and touched and not run.issues:
+            # In the import's transaction: a failed apply rolls the notifications back with the data.
+            await run.session.flush()
+            await notify_changes(run.session, touched)

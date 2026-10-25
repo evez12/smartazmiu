@@ -16,11 +16,13 @@ from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
+from app.modules.schedule import notifications as schedule_changes
 
 # Per subject type: whether a recipient should still hear about it when the worker sends (§5.6).
 RELEVANCE: dict[str, RelevanceCheck] = {
     announcements.SUBJECT_TYPE: announcements.still_addressed,
     events.SUBJECT_TYPE: events.still_relevant,
+    schedule_changes.SUBJECT_TYPE: schedule_changes.still_affected,
 }
 
 

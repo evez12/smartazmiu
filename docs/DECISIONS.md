@@ -719,3 +719,17 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   - Permissions `events.manage` and `events.check_in` for `staff` and `admin`; publishing, edits, cancellation
     and manual check-ins are audited.
 - **Consequences:** no waiting list; a full event refuses further RSVPs until someone withdraws.
+
+## D-052 · 2026-10-26 · Notifications for timetable changes
+
+- **Context:** D-041 deferred change notifications to Sprint 4; §13.4 requires that a change on a day already
+  past is stored but not notified. §8 lists no separate task for it, so it is part of the notification service.
+- **Decision:** applying a `schedule_changes` import notifies (category `schedule`, push on by default) every
+  active account that attends or teaches the class (the timetable view's rule, plus a substitute teacher) about
+  each created or edited change whose original or new date is today or later in Baku time. The de-duplication
+  key includes a fingerprint of the change, so re-importing the same file notifies nobody and an edited change
+  notifies again. The title is "<subject>, <day month>", linking to that day in the timetable. At delivery time
+  the worker checks that the change still exists, is not past, and the person still has the class. The
+  notifications are written in the import's transaction, so a failed apply notifies nobody.
+- **Consequences:** a timetable import that removes or edits base entries (not changes) does not notify; the
+  spec only asks for changes to be marked.
