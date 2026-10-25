@@ -1,14 +1,20 @@
+import { Download } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Icon } from "@/components/ui/icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 import { GroupFacts } from "@/features/academics/my-academics";
+import { ConsentHistory } from "@/features/privacy/privacy-parts";
 import { PhotoControls } from "@/features/profile/photo-controls";
 import { ProfileForm } from "@/features/profile/profile-form";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
+import { formatDate } from "@/lib/format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("profile");
@@ -18,9 +24,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ProfilePage() {
   const t = await getTranslations("profile");
   const api = await serverApi();
-  const [profile, academics] = await Promise.all([
+  const [profile, academics, consents] = await Promise.all([
     api.GET("/api/v1/me/profile").then(loaded),
     api.GET("/api/v1/me/academics").then(loaded),
+    api.GET("/api/v1/me/consents").then(loaded),
   ]);
   const header = (
     <PageHeader
@@ -29,7 +36,7 @@ export default async function ProfilePage() {
       breadcrumb={[{ label: t("title") }]}
     />
   );
-  if (profile.status !== "ok" || academics.status !== "ok") {
+  if (profile.status !== "ok" || academics.status !== "ok" || consents.status !== "ok") {
     return (
       <>
         {header}
@@ -80,6 +87,36 @@ export default async function ProfilePage() {
           <PanelBody className="p-6">
             {/* Keyed by version so a refresh after saving resets the form to the stored values. */}
             <ProfileForm key={me.version} profile={me} />
+          </PanelBody>
+        </Panel>
+
+        <Panel>
+          <PanelHeader title={t("data.title")} description={t("data.description")} />
+          <PanelBody className="flex flex-col gap-6">
+            <div className="flex flex-col items-start gap-2">
+              {/* A plain download: the proxy adds the token, the API sets the file name. */}
+              <a href="/api/v1/me/export" download className={buttonVariants()}>
+                <Icon icon={Download} />
+                {t("data.export")}
+              </a>
+              <p className="max-w-[75ch] text-sm text-muted">{t("data.exportHelper")}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className="font-medium text-text">{t("data.notice")}</h3>
+              <p className="text-muted">
+                {consents.data.notice_acknowledged_at
+                  ? t("data.noticeAcknowledged", {
+                      version: consents.data.notice_version,
+                      date: formatDate(consents.data.notice_acknowledged_at),
+                    })
+                  : t("data.noticePending", { version: consents.data.notice_version })}{" "}
+                <TextLink href="/privacy">{t("data.noticeLink")}</TextLink>
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <h3 className="font-medium text-text">{t("data.historyTitle")}</h3>
+              <ConsentHistory consents={consents.data} />
+            </div>
           </PanelBody>
         </Panel>
       </div>

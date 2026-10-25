@@ -404,3 +404,21 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     actions and details as Azerbaijani text.
 - **Consequences:** an existing local Keycloak needs the new client (`make reset`, or a partial import); a fresh
   `make up` imports it from the realm file.
+
+## D-036 · 2026-10-25 · Data export and privacy notice (export contents: product owner decision)
+
+- **Context:** §5.4 asks for consent records and `GET /me/export` (Law "On Personal Data"); whether the export
+  includes the user's own grades touches grade exposure, so the product owner was asked and chose to include them.
+- **Decision:**
+  - `GET /me/export` returns a JSON file (`smartazmiu-melumatlarim-<date>.json`) with the requester's account and
+    registry record, roles, profile including the photo (base64), privacy settings, group, all enrollments with
+    status, result and **their own grade**, teaching assignments, consent history, and audit entries about or by
+    them (other actors are not named, only whether it was the user). Every query is filtered by the requester's id;
+    classmates and teachers never appear. The export is audited (`user.data_exported`), not cached, and limited to
+    5 per hour.
+  - A versioned privacy notice (`PRIVACY_NOTICE_VERSION`, currently `2026-10`) is shown at `/privacy`. Acknowledging
+    it records a `privacy_notice` consent for that version (idempotent; an outdated version gets
+    `409 privacy.notice_outdated`). Until the current version is acknowledged, the dashboard shows a prompt; it does
+    not block using the platform. Bumping the version asks everyone again.
+  - The notice text is a draft for the university's legal office (§12.8) and says so on the page.
+- **Consequences:** account deletion (the remaining §5.4 right) is not part of Sprint 2.

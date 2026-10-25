@@ -523,7 +523,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Admin import wizard (CSV/XLSX): preview, validation errors per row, idempotent upsert (rules in §6.1).
 - [x] Profile page: photo upload, bio, group, specialty, privacy settings (`dm_policy`, contact visibility).
 - [x] Admin v1: user list, role assignment, audit log viewer.
-- [ ] Consent records + `/me/export`.
+- [x] Consent records + `/me/export`.
 **Acceptance:** import a real (anonymized) group 765a2 roster with its subjects; student sees own group and subjects.
 
 #### Sprint 3 (12-28 → 2027-01-08) — Homepage, Schedule, Map
