@@ -22,6 +22,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -199,6 +200,7 @@ class Message(Base):
         PrimaryKeyConstraint("id", "created_at", name="pk_messages"),
         Index("ix_messages_channel_id_id", "channel_id", text("id DESC")),
         Index("ix_messages_parent_id", "parent_id"),
+        Index("ix_messages_body_tsv", "body_tsv", postgresql_using="gin"),
         CheckConstraint("char_length(body) <= 4000", name="body_length"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
@@ -213,6 +215,8 @@ class Message(Base):
     author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     parent_id: Mapped[int | None] = mapped_column(BigInteger)
     body: Mapped[str] = mapped_column(Text)
+    # Both normalize_az forms of the body (§5.7.1), written with the message; searched from Sprint 10.
+    body_tsv: Mapped[str | None] = mapped_column(TSVECTOR)
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_verified_answer: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     verified_by: Mapped[uuid.UUID | None] = mapped_column(
