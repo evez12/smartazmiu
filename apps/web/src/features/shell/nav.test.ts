@@ -12,6 +12,19 @@ describe("visibleNavigation", () => {
     expect(sections.map((section) => section.labelKey)).toEqual(["main", "admin"]);
     expect(sections[1]?.items.map((item) => item.href)).toEqual(["/admin/imports"]);
   });
+
+  it("lists every admin entry for administrators", () => {
+    const sections = visibleNavigation([
+      "academics.import",
+      "admin.users.read",
+      "admin.audit.read",
+    ]);
+    expect(sections[1]?.items.map((item) => item.href)).toEqual([
+      "/admin/users",
+      "/admin/imports",
+      "/admin/audit",
+    ]);
+  });
 });
 
 describe("isActive", () => {

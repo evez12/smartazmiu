@@ -41,6 +41,13 @@ Aysel, Ramin (765a2), Nigar (765a1) and Leyla (teacher) are also part of the sam
 `infra/seed/academics/`; after `make seed`, or after importing those files, their dashboards show their group and
 subjects.
 
+### Administration
+
+Administrators manage users at **İstifadəçilər** (`/admin/users`): role changes go to Keycloak through the
+`smartazmiu-api-admin` service account and are written to the **Audit jurnalı** (`/admin/audit`). If your local
+Keycloak was created before this client existed, run `make reset` (or import the client), because Keycloak only
+imports the realm file into an empty database.
+
 ### Academic data import
 
 Staff and administrators import academic data at **Məlumat idxalı** (`/admin/imports`): one CSV or XLSX file per

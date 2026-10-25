@@ -92,6 +92,9 @@ class User(Base):
         default=ContactVisibility.HIDDEN,
         server_default=ContactVisibility.HIDDEN.value,
     )
+    # Last change of role membership. Access tokens issued before it carry outdated roles and are not
+    # mirrored, so an administrator's change is not undone by a token that is still valid (D-035).
+    roles_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Optimistic concurrency for profile edits (§4.2); photo changes do not bump it.
     profile_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

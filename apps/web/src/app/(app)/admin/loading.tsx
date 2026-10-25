@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton, SkeletonTable } from "@/components/ui/skeleton";
 
-/** Page header, then a panel with a table: the shape of the import list and detail pages. */
+/** Page header, then a panel with a table: the shape of every admin page. */
 export default async function Loading() {
   const t = await getTranslations("status");
   return (

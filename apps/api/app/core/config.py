@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = "http://localhost:8080/realms/smartazmiu/protocol/openid-connect/certs"
     oidc_audience: str = "smartazmiu-api"
 
+    # Keycloak admin API, used through a service account to assign realm roles (D-016, D-035).
+    keycloak_url: str = "http://127.0.0.1:8080"
+    keycloak_realm: str = "smartazmiu"
+    keycloak_admin_client_id: str = "smartazmiu-api-admin"
+    keycloak_admin_client_secret: str = ""
+
     # S3-compatible object storage (profile photos; attachments and materials later).
     s3_endpoint_url: str = "http://127.0.0.1:8333"
     s3_access_key: str = "smartazmiu"

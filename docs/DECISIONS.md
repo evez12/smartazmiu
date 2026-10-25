@@ -380,3 +380,27 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `contact_sharing` grant, hiding it a withdrawal. Profile edits use optimistic concurrency (`version`; stale writes
   get `409 profile.version_conflict`); photo changes do not bump the version.
 - **Consequences:** the privacy-notice acknowledgement and the data export build on the same table.
+
+## D-035 · 2026-10-25 · Role assignment and the admin screens
+
+- **Context:** D-016 makes Keycloak authoritative for global roles, so the admin "role assignment" screen must write
+  through the Keycloak admin API; D-028 requires every role change in `audit_logs`. The API mirrors roles from each
+  access token, and a token stays valid for up to 15 minutes after a change.
+- **Decision:**
+  - A confidential client `smartazmiu-api-admin` with a service account holding only `manage-users`,
+    `view-users` and `view-realm` (realm-management) lets the API read and change realm role mappings. Its
+    secret comes from `KEYCLOAK_ADMIN_CLIENT_SECRET`.
+  - Assigning roles: read the user's current Keycloak roles, apply the difference there, then mirror the result in
+    `user_roles`, set `users.roles_synced_at` and write `user.roles_changed` with the administrator as actor. If
+    Keycloak cannot be reached nothing changes (`503 identity.unavailable`). Only `student`, `teacher`, `staff`,
+    `moderator` and `admin` are assignable; administrators cannot remove their own `admin` role (no lock-out);
+    people who never signed in cannot receive roles because they have no Keycloak account yet.
+  - Tokens issued before `roles_synced_at` are no longer mirrored, so a change or revocation takes effect at the
+    next request instead of after the old token expires. Mirroring from a token stores that token's issue time,
+    so another token from the same second is not treated as older.
+  - `admin.users.read`, `admin.roles.assign` and `admin.audit.read` are granted to `admin` only. The user list uses
+    offset pagination (admin table, §4.2) and diacritic-insensitive search over `normalize_az`-folded names,
+    e-mails and university IDs. The audit viewer filters by action, actor, target and Baku calendar days and shows
+    actions and details as Azerbaijani text.
+- **Consequences:** an existing local Keycloak needs the new client (`make reset`, or a partial import); a fresh
+  `make up` imports it from the realm file.

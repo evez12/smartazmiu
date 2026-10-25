@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 from app.core.config import Settings, get_settings
 from app.core.db import Database
 from app.core.errors import register_error_handlers
+from app.core.identity_admin import KeycloakAdmin
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.observability import init_sentry
@@ -15,6 +16,7 @@ from app.core.security import JWKSKeySource, TokenVerifier
 from app.core.storage import S3Storage
 from app.modules.academics.router import imports as imports_router
 from app.modules.academics.router import router as academics_router
+from app.modules.admin.router import router as admin_router
 from app.modules.health.router import router as health_router
 from app.modules.users.router import router as users_router
 
@@ -31,6 +33,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.database = Database(str(settings.database_url))
         app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
+        app.state.identity_admin = KeycloakAdmin(
+            app.state.http,
+            base_url=settings.keycloak_url,
+            realm=settings.keycloak_realm,
+            client_id=settings.keycloak_admin_client_id,
+            client_secret=settings.keycloak_admin_client_secret,
+        )
         app.state.storage = S3Storage(
             endpoint_url=settings.s3_endpoint_url,
             access_key=settings.s3_access_key,
@@ -66,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(users_router, prefix=API_PREFIX)
     app.include_router(academics_router, prefix=API_PREFIX)
     app.include_router(imports_router, prefix=API_PREFIX)
+    app.include_router(admin_router, prefix=API_PREFIX)
     return app
 
 

@@ -72,10 +72,12 @@ test("staff imports the 765a2 roster and the student sees group and subjects", a
   const context = await browser.newContext();
   const student = await context.newPage();
   await signIn(student, "aysel.mammadova");
-  await expect(student.getByRole("heading", { name: "Qrupunuz" })).toBeVisible();
-  await expect(student.getByText("765a2", { exact: true }).first()).toBeVisible();
-  await expect(student.getByText("İqtisadiyyat · 6004004")).toBeVisible();
-  const subjects = student.getByRole("table", { name: "Fənləriniz" });
+  // Scoped to the main landmark: while a streamed segment is being swapped in, a hidden copy exists.
+  const main = student.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Qrupunuz" })).toBeVisible();
+  await expect(main.getByText("765a2", { exact: true }).first()).toBeVisible();
+  await expect(main.getByText("İqtisadiyyat · 6004004")).toBeVisible();
+  const subjects = main.getByRole("table", { name: "Fənləriniz" });
   await expect(subjects.getByRole("row")).toHaveCount(6);
   await expect(subjects).toContainText("Mikroiqtisadiyyat");
   await expect(subjects).toContainText("Şəhla Ağayeva");
@@ -111,4 +113,57 @@ test("an invalid file is explained row by row and cannot be applied", async ({ p
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Xəta hesabatını yükləyin" }).click();
   expect((await download).suggestedFilename()).toBe("telebeler-xetalar.csv");
+});
+
+test("admin gives a student the moderator role and the change is audited", async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  await signInWithSecondFactor(page, "tural.babayev", "/admin/users");
+  await expect(page.getByRole("heading", { level: 1, name: "İstifadəçilər" })).toBeVisible();
+
+  // Searching without Azerbaijani letters still finds "Əliyev".
+  await page.getByRole("searchbox", { name: "Axtarış" }).fill("ramin eliyev");
+  await page.getByRole("button", { name: "Axtarın" }).click();
+  await page.getByRole("link", { name: "Ramin Əliyev" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Ramin Əliyev" })).toBeVisible();
+
+  const moderator = page.getByRole("checkbox", { name: "Moderator" });
+  await moderator.check();
+  await page.getByRole("button", { name: "Rolları yadda saxlayın" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Rollar dəyişdirilsin?" });
+  await expect(dialog).toContainText("Əlavə ediləcək: Moderator.");
+  await dialog.getByRole("button", { name: "Rolları yadda saxlayın" }).click();
+  await expect(page.getByText("Rollar yadda saxlanıldı").first()).toBeVisible();
+  const activity = page.getByRole("table", { name: "Son fəaliyyət" });
+  await expect(activity.getByRole("row").nth(1)).toContainText("Rollar dəyişdirildi");
+  await expect(activity.getByRole("row").nth(1)).toContainText("Əlavə: Moderator");
+
+  const context = await browser.newContext();
+  const student = await context.newPage();
+  await signIn(student, "ramin.aliyev");
+  await expect(student.getByRole("button", { name: /Profil menyusu/ })).toContainText(
+    "Tələbə · Moderator",
+  );
+  await context.close();
+
+  // Restore the seeded roles, so reruns and other tests start from the realm file's state.
+  await page.getByRole("checkbox", { name: "Moderator" }).uncheck();
+  await page.getByRole("button", { name: "Rolları yadda saxlayın" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Rolları yadda saxlayın" })
+    .click();
+  await expect(page.getByRole("checkbox", { name: "Moderator" })).not.toBeChecked();
+
+  await page.getByRole("link", { name: "Audit jurnalı" }).first().click();
+  await page
+    .getByRole("combobox", { name: "Hərəkət" })
+    .selectOption({ label: "Rollar dəyişdirildi" });
+  await page.getByRole("button", { name: "Göstərin" }).click();
+  const log = page.getByRole("table", { name: "Audit qeydləri" });
+  await expect(log.getByRole("row").nth(1)).toContainText("Silinən: Moderator");
+  await expect(log.getByRole("row").nth(1)).toContainText("Tural Babayev");
+  await expectNoSeriousViolations(page);
 });

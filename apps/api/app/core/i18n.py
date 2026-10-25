@@ -79,6 +79,18 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Fayl xidməti müvəqqəti əlçatan deyil. Bir az sonra yenidən cəhd edin.",
         "en": "File storage is temporarily unavailable. Please try again shortly.",
     },
+    "admin.user_not_linked": {
+        "az": "Bu şəxs hələ sistemə daxil olmayıb. Rolları ilk girişdən sonra təyin etmək olar.",
+        "en": "This person has not signed in yet. Roles can be assigned after the first sign-in.",
+    },
+    "admin.own_admin_role": {
+        "az": "Öz administrator rolunuzu silə bilməzsiniz. Bunu başqa administrator etməlidir.",
+        "en": "You cannot remove your own administrator role. Another administrator must do it.",
+    },
+    "identity.unavailable": {
+        "az": "Giriş xidməti müvəqqəti əlçatan deyil, rollar dəyişdirilmədi. Bir az sonra yenidən cəhd edin.",
+        "en": "The sign-in service is temporarily unavailable; roles were not changed. Try again shortly.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",
