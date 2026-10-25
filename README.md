@@ -18,7 +18,7 @@ For day-to-day work run the infrastructure in Docker and the apps natively:
 
 ```bash
 make infra     # postgres, redis, s3, keycloak, mailpit
-make migrate && make seed      # schema and the sample groups 764a1, 765a1, 765a2
+make migrate && make seed      # schema, sample groups 764a1/765a1/765a2, campus and timetable
 make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
 ```
@@ -40,7 +40,8 @@ Keycloak seeds seven made-up users that share the password in `.env` (`KEYCLOAK_
 
 Aysel, Ramin (765a2), Nigar (765a1) and Leyla (teacher) are also part of the sample roster in
 `infra/seed/academics/`; after `make seed`, or after importing those files, their dashboards show their group and
-subjects.
+subjects, **Cədvəl** (`/schedule`) their 2026 Payız timetable (try the week of 26 October 2026 for changes and
+9 November for holiday cancellations) and **Kampus xəritəsi** (`/map`) the rooms.
 
 ### Administration
 
@@ -53,9 +54,11 @@ imports the realm file into an empty database. The same applies to the `smartazm
 ### Academic data import
 
 Staff and administrators import academic data at **Məlumat idxalı** (`/admin/imports`): one CSV or XLSX file per
-kind, in the order faculties, specialties, subjects, semesters, teachers, groups, students, offerings, enrollments.
-Each kind has a downloadable template; a file is validated first and applied only after confirmation. The sample
-files in `infra/seed/academics/` show the expected format. Rules: [docs/DECISIONS.md](docs/DECISIONS.md) D-029–D-031.
+kind, in the order faculties, specialties, subjects, semesters, teachers, groups, students, offerings, enrollments,
+then buildings, floors, rooms, week parity, schedule and schedule changes. Each kind has a downloadable template; a
+file is validated first and applied only after confirmation. The sample files in `infra/seed/academics/` show the
+expected format. Rules: [docs/DECISIONS.md](docs/DECISIONS.md) D-029–D-031 (registry), D-041 (timetable: a schedule
+file replaces the timetable of the offerings it lists, from the day it is applied) and D-042 (campus).
 
 ## Architecture
 

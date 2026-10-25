@@ -551,3 +551,14 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   each at the university's public address.
 - **Consequences:** plans are schematic (rectangles, no walls or doors); real plans can replace the seed data
   through the same import.
+
+## D-043 · 2026-10-25 · Homepage widgets before announcements and chat exist
+
+- **Context:** Sprint 3 asks for homepage widgets for today's classes, announcements and (placeholder) unread chat.
+  Announcements are built in Sprint 4 and chat in Sprint 5.
+- **Options:** pull a minimal announcements model forward; show both widgets as explained empty states.
+- **Decision:** today's classes are live (`GET /me/schedule` for today's Baku date, rooms link to the map). The
+  announcements and unread-chat widgets are in place with an empty state that says what will appear there; they
+  read real data from the sprints that create it. No announcements model is built early (§0.3: no scope pulled
+  forward). The dashboard keeps the group and subjects below the widgets.
+- **Consequences:** Sprint 4 replaces the announcements empty state with the user's announcements.
