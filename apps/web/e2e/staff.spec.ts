@@ -72,10 +72,12 @@ test("staff imports the 765a2 roster and the student sees group and subjects", a
   const context = await browser.newContext();
   const student = await context.newPage();
   await signIn(student, "aysel.mammadova");
-  await expect(student.getByRole("heading", { name: "Qrupunuz" })).toBeVisible();
-  await expect(student.getByText("765a2", { exact: true }).first()).toBeVisible();
-  await expect(student.getByText("İqtisadiyyat · 6004004")).toBeVisible();
-  const subjects = student.getByRole("table", { name: "Fənləriniz" });
+  // Scoped to the main landmark: while a streamed segment is being swapped in, a hidden copy exists.
+  const main = student.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Qrupunuz" })).toBeVisible();
+  await expect(main.getByText("765a2", { exact: true }).first()).toBeVisible();
+  await expect(main.getByText("İqtisadiyyat · 6004004")).toBeVisible();
+  const subjects = main.getByRole("table", { name: "Fənləriniz" });
   await expect(subjects.getByRole("row")).toHaveCount(6);
   await expect(subjects).toContainText("Mikroiqtisadiyyat");
   await expect(subjects).toContainText("Şəhla Ağayeva");

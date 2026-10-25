@@ -14,9 +14,10 @@ const PIXEL = Buffer.from(
 test("student sets a photo, bio and privacy settings", async ({ page }) => {
   await signIn(page, "ramin.aliyev", "/profile");
   await expect(page.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
-  await expect(page.getByText("765a2", { exact: true })).toBeVisible();
+  // Whether the group is shown depends on the sample import (staff.spec.ts), which may not have run yet.
+  await expect(page.getByRole("heading", { name: "Qrup və ixtisas" })).toBeVisible();
 
-  const picker = page.locator("input[type=file]");
+  const picker = page.getByRole("main").locator("input[type=file]");
   await picker.setInputFiles({ name: "ramin.png", mimeType: "image/png", buffer: PIXEL });
   await expect(page.getByText("Şəkil yeniləndi").first()).toBeVisible();
   await expect(page.getByLabel("Şəkli dəyişin")).toBeAttached();
@@ -46,7 +47,9 @@ test("student sets a photo, bio and privacy settings", async ({ page }) => {
 
 test("the photo controls work from the keyboard", async ({ page }) => {
   await signIn(page, "ramin.aliyev", "/profile");
-  const picker = page.locator("input[type=file]");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1, name: "Profil" })).toBeVisible();
+  const picker = main.locator("input[type=file]");
   await picker.focus();
   await expect(picker).toBeFocused();
   // The visually hidden input draws its focus ring on the visible button.
