@@ -141,6 +141,93 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/announcements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Active announcements addressed to me, newest first */
+    get: operations["listMyAnnouncements"];
+    put?: never;
+    /** Publish an announcement to an audience and notify it */
+    post: operations["publishAnnouncement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/announcements/managed": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every announcement with its reach (staff) */
+    get: operations["listManagedAnnouncements"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/announcements/{announcement_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** One announcement addressed to me (staff who publish: any) */
+    get: operations["readAnnouncement"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Correct the text or end time (the audience cannot change; nobody is notified again) */
+    patch: operations["updateAnnouncement"];
+    trace?: never;
+  };
+  "/api/v1/announcements/{announcement_id}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Take an announcement down (idempotent) */
+    post: operations["archiveAnnouncement"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/audiences/options": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Faculties, specialties, groups or course offerings to address (staff) */
+    get: operations["listAudienceOptions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/campus/buildings": {
     parameters: {
       query?: never;
@@ -549,12 +636,103 @@ export interface components {
       /** Total */
       total: number;
     };
+    /** AnnouncementIn */
+    AnnouncementIn: {
+      audience: components["schemas"]["AudienceIn"];
+      /** Body */
+      body: string;
+      /** Expires At */
+      expires_at?: string | null;
+      /** Title */
+      title: string;
+    };
+    /** AnnouncementOut */
+    AnnouncementOut: {
+      audience: components["schemas"]["AudienceOut"];
+      /** Body */
+      body: string;
+      /** Expires At */
+      expires_at: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Published At
+       * Format: date-time
+       */
+      published_at: string;
+      status: components["schemas"]["AnnouncementStatus"];
+      /** Title */
+      title: string;
+      /** Version */
+      version: number;
+    };
+    /** AnnouncementPageOut */
+    AnnouncementPageOut: {
+      /** Items */
+      items: components["schemas"]["AnnouncementOut"][];
+      /** Next Before */
+      next_before: string | null;
+    };
+    /**
+     * AnnouncementStatus
+     * @enum {string}
+     */
+    AnnouncementStatus: "published" | "archived";
+    /** AnnouncementUpdateIn */
+    AnnouncementUpdateIn: {
+      /** Body */
+      body: string;
+      /** Expires At */
+      expires_at?: string | null;
+      /** Title */
+      title: string;
+      /** Version */
+      version: number;
+    };
     /**
      * AssignableRole
      * @description Global roles an administrator may grant; `guest` is never assigned (§2).
      * @enum {string}
      */
     AssignableRole: "student" | "teacher" | "staff" | "moderator" | "admin";
+    /** AudienceIn */
+    AudienceIn: {
+      /** Target Id */
+      target_id?: string | null;
+      type: components["schemas"]["AudienceType"];
+    };
+    /** AudienceOptionOut */
+    AudienceOptionOut: {
+      /** Detail */
+      detail: string;
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+    };
+    /** AudienceOptionsOut */
+    AudienceOptionsOut: {
+      /**
+       * Items
+       * @description At most 50, by name
+       */
+      items: components["schemas"]["AudienceOptionOut"][];
+    };
+    /** AudienceOut */
+    AudienceOut: {
+      /** Detail */
+      detail: string | null;
+      /** Label */
+      label: string | null;
+      /** Target Id */
+      target_id: string | null;
+      type: components["schemas"]["AudienceType"];
+    };
+    /**
+     * AudienceType
+     * @enum {string}
+     */
+    AudienceType: "university" | "faculty" | "specialty" | "group" | "course_offering";
     /**
      * AuditAction
      * @description Privileged actions that must leave a trace (§14). Codes are stable; the UI localizes them.
@@ -565,7 +743,10 @@ export interface components {
       | "user.roles_changed"
       | "user.account_linked"
       | "import.applied"
-      | "user.data_exported";
+      | "user.data_exported"
+      | "announcement.published"
+      | "announcement.edited"
+      | "announcement.archived";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -905,6 +1086,39 @@ export interface components {
      * @enum {string}
      */
     InstructionLanguage: "az" | "en" | "ru";
+    /** ManagedAnnouncementOut */
+    ManagedAnnouncementOut: {
+      audience: components["schemas"]["AudienceOut"];
+      /** Body */
+      body: string;
+      /** Expires At */
+      expires_at: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Published At
+       * Format: date-time
+       */
+      published_at: string;
+      /** Recipients */
+      recipients: number;
+      status: components["schemas"]["AnnouncementStatus"];
+      /** Title */
+      title: string;
+      /** Version */
+      version: number;
+    };
+    /** ManagedAnnouncementPageOut */
+    ManagedAnnouncementPageOut: {
+      /** Items */
+      items: components["schemas"]["ManagedAnnouncementOut"][];
+      /** Page */
+      page: number;
+      /** Page Size */
+      page_size: number;
+      /** Total */
+      total: number;
+    };
     /**
      * MeResponse
      * @description The signed-in user's own account. Contact details are omitted until a screen needs them.
@@ -1895,6 +2109,487 @@ export interface operations {
       };
       /** @description Identity provider unavailable */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMyAnnouncements: {
+    parameters: {
+      query?: {
+        /** @description Cursor from `next_before` */
+        before?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  publishAnnouncement: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Repeating it returns the first result */
+        "Idempotency-Key"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listManagedAnnouncements: {
+    parameters: {
+      query?: {
+        page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ManagedAnnouncementPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readAnnouncement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  updateAnnouncement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnnouncementUpdateIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  archiveAnnouncement: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        announcement_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AnnouncementOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listAudienceOptions: {
+    parameters: {
+      query: {
+        type: components["schemas"]["AudienceType"];
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AudienceOptionsOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
         headers: {
           [name: string]: unknown;
         };

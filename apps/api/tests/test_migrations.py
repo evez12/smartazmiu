@@ -30,6 +30,8 @@ APP_TABLES = {
     "push_subscriptions",
     "notification_preferences",
     "notification_quiet_hours",
+    "announcements",
+    "announcement_recipients",
 }
 APP_ENUMS = (
     "user_status",
@@ -46,6 +48,8 @@ APP_ENUMS = (
     "notification_kind",
     "delivery_channel",
     "delivery_status",
+    "audience_type",
+    "announcement_status",
 )
 
 
@@ -71,14 +75,16 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
     async with engine.connect() as connection:
         roles = await connection.scalars(text("SELECT code FROM roles ORDER BY code"))
         assert list(roles) == ["admin", "guest", "moderator", "staff", "student", "teacher"]
-        importers = await connection.scalars(
-            text(
-                "SELECT r.code FROM roles r JOIN role_permissions rp ON rp.role_id = r.id"
-                " JOIN permissions p ON p.id = rp.permission_id"
-                " WHERE p.code = 'academics.import' ORDER BY r.code"
+        for permission in ("academics.import", "announcements.publish"):
+            holders = await connection.scalars(
+                text(
+                    "SELECT r.code FROM roles r JOIN role_permissions rp ON rp.role_id = r.id"
+                    " JOIN permissions p ON p.id = rp.permission_id"
+                    " WHERE p.code = :code ORDER BY r.code"
+                ),
+                {"code": permission},
             )
-        )
-        assert list(importers) == ["admin", "staff"]
+            assert list(holders) == ["admin", "staff"], permission
         # The SQL UUIDv7 generator: version 7, RFC variant, time-ordered.
         first, second = (
             await connection.scalar(text("SELECT uuid7()")),

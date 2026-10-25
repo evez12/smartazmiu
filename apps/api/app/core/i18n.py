@@ -43,6 +43,22 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Tarix aralığı düzgün deyil. Son tarix başlanğıcdan sonra və ən çox 42 gün sonra olmalıdır.",
         "en": "The date range is invalid. The end must follow the start by at most 42 days.",
     },
+    "audience.invalid": {
+        "az": "Seçilmiş auditoriya tapılmadı. Auditoriyanı yenidən seçin.",
+        "en": "The selected audience was not found. Choose the audience again.",
+    },
+    "announcements.expiry_in_past": {
+        "az": "Elanın bitmə vaxtı keçmişdədir. Gələcək bir tarix seçin.",
+        "en": "The announcement's end time is in the past. Choose a future date.",
+    },
+    "announcements.archived": {
+        "az": "Bu elan arxivə köçürülüb və dəyişdirilə bilməz.",
+        "en": "This announcement has been archived and cannot be changed.",
+    },
+    "announcements.version_conflict": {
+        "az": "Elan bu arada başqa biri tərəfindən dəyişdirilib. Səhifəni yeniləyib yenidən cəhd edin.",
+        "en": "Someone else changed the announcement in the meantime. Reload the page and try again.",
+    },
     "notifications.quiet_hours_empty": {
         "az": "Sakit saatların başlanğıcı və sonu eyni ola bilməz. Fərqli vaxt seçin.",
         "en": "Quiet hours cannot start and end at the same time. Choose different times.",

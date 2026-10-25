@@ -68,11 +68,11 @@ class Notifier:
                     source.c[0],
                     literal(spec.category, columns.category.type),
                     literal(spec.kind, columns.kind.type),
-                    literal(spec.dedupe_key),
-                    literal(spec.subject_type),
-                    literal(spec.subject_id),
-                    literal(spec.title[:300]),
-                    literal(spec.link),
+                    literal(spec.dedupe_key, columns.dedupe_key.type),
+                    literal(spec.subject_type, columns.subject_type.type),
+                    literal(spec.subject_id, columns.subject_id.type),
+                    literal(spec.title[:300], columns.title.type),
+                    literal(spec.link, columns.link.type),
                 ).distinct(),
             )
             .on_conflict_do_nothing(index_elements=["user_id", "dedupe_key"])

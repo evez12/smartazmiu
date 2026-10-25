@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy import select
 
-from app.core.deps import RedisDep, SessionDep
+from app.core.deps import JobsDep, RedisDep, SessionDep
 from app.core.errors import COMMON_ERROR_RESPONSES, AppError
 from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep, require_permission
 from app.modules.academics.files import MAX_FILE_BYTES, FileEncoding, UnreadableFileError
 from app.modules.academics.import_service import ImportService, expires_at
-from app.modules.academics.models import AcademicImport, ImportKind
+from app.modules.academics.models import AcademicImport, ImportKind, ImportStatus
 from app.modules.academics.registry import SPECS
 from app.modules.academics.schemas import (
     CourseOut,
@@ -34,6 +34,9 @@ from app.modules.users.service import CurrentUser
 
 IMPORT_PERMISSION = "academics.import"
 IMPORT_UPLOADS = RateLimit("import_upload", limit=60, window_seconds=3600)
+AUDIENCE_KINDS = frozenset(
+    {ImportKind.GROUPS, ImportKind.STUDENTS, ImportKind.OFFERINGS, ImportKind.ENROLLMENTS}
+)
 
 router = APIRouter(responses=COMMON_ERROR_RESPONSES)
 Importer = Annotated[CurrentUser, Depends(require_permission(IMPORT_PERMISSION))]
@@ -155,8 +158,14 @@ async def read_import(_: Importer, session: SessionDep, import_id: uuid.UUID) ->
     operation_id="applyImport",
     summary="Apply a validated import in one transaction",
 )
-async def apply_import(user: Importer, session: SessionDep, import_id: uuid.UUID) -> ImportDetail:
-    return await _detail(session, await ImportService(session).apply(import_id, user.id))
+async def apply_import(
+    user: Importer, session: SessionDep, jobs: JobsDep, import_id: uuid.UUID
+) -> ImportDetail:
+    record = await ImportService(session).apply(import_id, user.id)
+    if record.status is ImportStatus.APPLIED and record.kind in AUDIENCE_KINDS:
+        # Registry changes can move people into an audience; they receive its active announcements (§6.1).
+        await jobs.sync_audiences()
+    return await _detail(session, record)
 
 
 async def _detail(session: SessionDep, record: AcademicImport) -> ImportDetail:

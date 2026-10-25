@@ -19,6 +19,9 @@ class AuditAction(StrEnum):
     ACCOUNT_LINKED = "user.account_linked"
     IMPORT_APPLIED = "import.applied"
     DATA_EXPORTED = "user.data_exported"
+    ANNOUNCEMENT_PUBLISHED = "announcement.published"
+    ANNOUNCEMENT_EDITED = "announcement.edited"
+    ANNOUNCEMENT_ARCHIVED = "announcement.archived"
 
 
 class AuditLog(Base):

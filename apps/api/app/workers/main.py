@@ -8,15 +8,18 @@ from arq.connections import RedisSettings
 
 from app.core.config import get_settings
 from app.core.db import Database
-from app.core.jobs import DISPATCH_NOTIFICATIONS
+from app.core.jobs import DISPATCH_NOTIFICATIONS, SYNC_AUDIENCES
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
+from app.modules.announcements import service as announcements
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
 
 # Per subject type: whether a recipient should still hear about it when the worker sends (§5.6).
-RELEVANCE: dict[str, RelevanceCheck] = {}
+RELEVANCE: dict[str, RelevanceCheck] = {
+    announcements.SUBJECT_TYPE: announcements.still_addressed,
+}
 
 
 async def startup(ctx: dict[str, Any]) -> None:
@@ -55,10 +58,24 @@ async def dispatch_notifications(ctx: dict[str, Any]) -> int:
     return await dispatcher.run()
 
 
+async def sync_audiences(ctx: dict[str, Any]) -> int:
+    """Adds people who joined an audience to its active announcements, then sends what that queued."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        added = await announcements.AnnouncementService(session).sync_recipients()
+    if added:
+        await dispatch_notifications(ctx)
+    return added
+
+
 class WorkerSettings:
-    functions: ClassVar = [dispatch_notifications]
+    functions: ClassVar = [dispatch_notifications, sync_audiences]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
-    cron_jobs: ClassVar = [cron(dispatch_notifications, name=f"{DISPATCH_NOTIFICATIONS}_cron")]
+    cron_jobs: ClassVar = [
+        cron(dispatch_notifications, name=f"{DISPATCH_NOTIFICATIONS}_cron"),
+        # Imports wake the sync directly; this catches people added any other way.
+        cron(sync_audiences, name=f"{SYNC_AUDIENCES}_cron", minute=set(range(0, 60, 5))),
+    ]
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(str(get_settings().redis_url))

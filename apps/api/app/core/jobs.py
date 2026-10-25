@@ -10,10 +10,13 @@ from redis.exceptions import RedisError
 logger = structlog.get_logger(__name__)
 
 DISPATCH_NOTIFICATIONS = "dispatch_notifications"
+SYNC_AUDIENCES = "sync_audiences"
 
 
 class JobQueue(Protocol):
     async def dispatch_notifications(self) -> None: ...
+
+    async def sync_audiences(self) -> None: ...
 
 
 class ArqQueue:
@@ -29,6 +32,9 @@ class ArqQueue:
 
     async def dispatch_notifications(self) -> None:
         await self._enqueue(DISPATCH_NOTIFICATIONS)
+
+    async def sync_audiences(self) -> None:
+        await self._enqueue(SYNC_AUDIENCES)
 
     async def close(self) -> None:
         await self.redis.aclose()

@@ -18,6 +18,7 @@ from app.core.storage import S3Storage
 from app.modules.academics.router import imports as imports_router
 from app.modules.academics.router import router as academics_router
 from app.modules.admin.router import router as admin_router
+from app.modules.announcements.router import router as announcements_router
 from app.modules.campus.router import router as campus_router
 from app.modules.health.router import router as health_router
 from app.modules.notifications.router import router as notifications_router
@@ -88,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(schedule_router, prefix=API_PREFIX)
     app.include_router(campus_router, prefix=API_PREFIX)
     app.include_router(notifications_router, prefix=API_PREFIX)
+    app.include_router(announcements_router, prefix=API_PREFIX)
     return app
 
 

@@ -664,3 +664,31 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     carry the same text the bell shows (no more on a lock screen than in the app).
 - **Consequences:** a worker crash between sending and committing can send one message twice (ARQ is
   at-least-once). Real-time bell updates wait for the WebSocket gateway (Sprint 5); until then the bell polls.
+
+## D-050 · 2026-10-26 · Announcements and their audiences
+
+- **Context:** Sprint 4: announcements for the university, a faculty, a specialty, a group or a course offering;
+  §6.1: the audience is resolved at publication and re-evaluated for people who join it while the
+  announcement is still active. The spec does not say who is "in" a faculty, whether announcements can be
+  edited, or when one stops being active.
+- **Decision:**
+  - One audience per announcement, stored as a type plus one typed foreign key (a CHECK keeps exactly the
+    right one set). Members, resolved in SQL: university = every active account; faculty, specialty, group =
+    the registry students of its groups and those groups' curators; course offering = its students (not
+    dropped) and its teachers. Events use the same audiences.
+  - Publishing is immediate (scheduled announcements are Sprint 20) and accepts `Idempotency-Key`; a repeated
+    key returns the first announcement. Recipients are materialised in `announcement_recipients` at
+    publication; everyone added is notified (category `announcements`).
+  - Re-evaluation: after an import that can move people (groups, students, offerings, enrollments) the API
+    wakes `sync_audiences`, and the worker also runs it every 5 minutes. It adds audience members who are not
+    recipients yet to every **active** announcement (published, not past its optional `expires_at`) and
+    notifies exactly them; notification de-duplication makes reruns harmless.
+  - People who leave an audience keep the announcements they already received (like a letter already
+    delivered), but pending push and e-mail for them are suppressed because the worker re-checks membership.
+  - Staff may correct title, text and end time (optimistic `version`, nobody is notified again) and archive an
+    announcement, which hides it from recipients. The audience never changes; a wrong audience means archiving
+    and publishing again. Publishing, edits and archiving are audited.
+  - Permission `announcements.publish` for `staff` and `admin`; the audience picker searches names and codes
+    without Azerbaijani letters and offers only offerings of running or coming semesters.
+  - Text is plain (line breaks kept); Markdown arrives with chat in Sprint 6.
+- **Consequences:** a university-wide announcement writes one recipient row per active account.
