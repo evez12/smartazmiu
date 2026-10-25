@@ -635,6 +635,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     and have no fixed ids, so a wake-up is never refused because an earlier one is still recorded.
   - Dev dependency `http-ece` 1.2.1 (reference implementation of RFC 8188, used only by tests).
 - **Consequences:** revisit when ARQ supports redis-py 6+.
+- **Addendum 2026-10-26 (product owner request):** both stay pinned exactly (`arq==0.28.0`,
+  `redis[hiredis]==5.3.1`, `hiredis` 3.5.0 in the lock file). `pip-audit` 2.10.1 and `pnpm audit` report no known
+  vulnerabilities. The ARQ/redis-py pairing must be revisited before Phase 4 (launch readiness): either a newer
+  ARQ that supports redis-py 6+, or a decision to keep 5.x with its security support confirmed.
 
 ## D-049 · 2026-10-25 · Notification service
 
@@ -709,8 +713,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   - Place: a campus room code (links to the map) or free text for places outside the room registry; one of
     them is required. Capacity is optional; registrations lock the event row, so simultaneous RSVPs cannot
     overbook it. RSVP opens at publication and closes when the event starts; it can be withdrawn until then.
-  - Ticket = the registration. Its QR code is `SA1.<registration id>.<HMAC-SHA256 under TICKET_SECRET,
-    16 bytes>`: unguessable, verifiable without a lookup, and nothing secret is stored per ticket. Production
+  - Ticket = the registration. Its QR code is `SA1.<registration id>.<HMAC-SHA256 under TICKET_SECRET of the
+    event id and the registration id, 16 bytes>`: unguessable, bound to one registration of one event, and
+    nothing secret is stored per ticket. (Amended 2026-10-26: the signature first covered the registration id
+    only and the event binding came from the database row.) Production
     refuses to start without `TICKET_SECRET`. A withdrawn RSVP or a cancelled event voids the ticket.
   - Check-in (`events.check_in`, staff and admin) by scanning or typing the code, or manually from the
     attendee list (audited). It opens 2 hours before the start and closes at the end; a second scan is refused
@@ -735,3 +741,48 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   notifications are written in the import's transaction, so a failed apply notifies nobody.
 - **Consequences:** a timetable import that removes or edits base entries (not changes) does not notify; the
   spec only asks for changes to be marked.
+
+## D-053 · 2026-10-26 · Two Redis instances (product owner request)
+
+- **Context:** one Redis instance held web sessions (database 1), the ARQ queue and API rate limits (database 0),
+  all under `noeviction` (D-039). Chat will add presence, typing and pub/sub traffic, which is disposable but
+  large; under memory pressure it must not be able to push sessions or queued jobs out, and the queue must not
+  stall because a cache is full.
+- **Decision:**
+  - Instance A, service `redis` (port 6379): web sessions (database 1) and the ARQ queue (database 0).
+    `noeviction`, AOF with `appendfsync everysec`, persistent volume. Settings: `SESSION_REDIS_URL` (web),
+    `QUEUE_REDIS_URL` (API and worker).
+  - Instance B, service `redis-cache` (port 6380): API rate limits now; presence, typing and chat pub/sub from
+    Sprint 5. `maxmemory 256mb` (`REDIS_CACHE_MAXMEMORY`), `allkeys-lru`, no RDB snapshots, no AOF, no volume.
+    Setting: `REDIS_URL`. Rate limits already degrade gracefully when Redis fails (they only guard).
+  - Both have health checks; the API waits for both, the worker for A. Tests use database 15 of B.
+  - Verified on 2026-10-26: with 47 web sessions in A, 2.5 million 256-byte writes to B filled it to 255 MB and
+    evicted 1,256,631 keys. A afterwards: the same 47 session keys, the same 17 queue keys, `evicted_keys:0`,
+    worker health check passing; with B still full, the event and announcement E2E flows (sign-in, publishing,
+    e-mail sent by the worker) passed 3/3.
+- **Consequences:** a lost cache costs at most rate-limit counters (and later presence), never a session or a
+  job. Production may give B more memory; A must be sized for sessions plus queue.
+
+## D-054 · 2026-10-26 · People who join an audience late (product owner request)
+
+- **Context:** after a group transfer or a late enrollment, the audience sync (D-050) notified the newcomer about
+  every active announcement and coming event on every channel: a burst of push and e-mail at once.
+- **Decision:** late joiners are notified in-app only (no push or e-mail deliveries are created), and at most five
+  per person per sync run across announcements and events (`LATE_JOIN_CAP`), newest announcements first, then
+  the soonest events. Everything they joined still appears in their lists; only the notification is capped.
+  Publication itself is unchanged: everyone in the audience then is notified on all their channels.
+- **Consequences:** the sync no longer wakes the dispatcher, since it queues nothing to send.
+
+## D-055 · 2026-10-26 · Throttled e-mail for mass announcements (product owner request)
+
+- **Context:** a university-wide announcement creates one e-mail per active account; sending them as fast as the
+  worker can would overload the SMTP relay and look like spam.
+- **Decision:** the dispatcher sends at most `MAIL_BATCH_SIZE` (200) e-mails per `MAIL_BATCH_INTERVAL_SECONDS`
+  (60) across all workers. Before each send it takes a transaction-level advisory lock and counts e-mails sent in
+  the window (partial index `ix_notification_deliveries_mail_sent`, migration 0010). When the budget is spent, the
+  run carries on with push only and the worker schedules one continuation job after the interval under a fixed
+  job id, so repeated runs never queue more than one. Each delivery is still claimed and sent in its own
+  transaction (`FOR UPDATE SKIP LOCKED`), so retried or parallel jobs never send one twice.
+- **Test:** 1,200 recipients with two workers in parallel and an extra retried run: 500 per window, 1,200 e-mails
+  in total, 1,200 distinct addresses, nothing left pending.
+- **Consequences:** 200 per minute delivers 12,000 e-mails an hour; raise the setting with the relay's limits.

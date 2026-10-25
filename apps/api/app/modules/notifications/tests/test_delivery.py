@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import UTC, datetime, time, timedelta
@@ -7,7 +8,8 @@ import httpx
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
-from sqlalchemy import delete, select
+from httpx import AsyncClient
+from sqlalchemy import delete, false, func, insert, literal, select, text, true, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
@@ -31,14 +33,17 @@ from app.modules.notifications.push import (
     b64url,
     b64url_decode,
 )
+from app.modules.notifications.service import Notifier
 from app.modules.notifications.tests.conftest import (
     FakePush,
     MakeUser,
     MemoryMailer,
+    headers_for,
     notify,
     spec,
 )
 from app.modules.users.models import User, UserStatus
+from tests.support import TokenFactory
 
 # 10:00 in Baku, outside the default quiet hours.
 MORNING = datetime(2026, 11, 2, 6, 0, tzinfo=UTC)
@@ -125,7 +130,7 @@ async def test_sends_push_and_email_with_links(
     announcement = spec()
     await notify(db, [aysel], announcement)
 
-    assert await dispatcher.run() == 2
+    assert (await dispatcher.run()).handled == 2
     assert await statuses(db) == {
         DeliveryChannel.PUSH: (DeliveryStatus.SENT, None),
         DeliveryChannel.EMAIL: (DeliveryStatus.SENT, None),
@@ -140,7 +145,7 @@ async def test_sends_push_and_email_with_links(
     assert "Hörmətli Aysel Məmmədova," in text
     assert "https://smartazmiu.test/notifications/settings" in text
     # Nothing is due any more: a second run (a retried job) sends nothing again.
-    assert await dispatcher.run() == 0
+    assert (await dispatcher.run()).handled == 0
     assert len(push.sent) == 1
 
 
@@ -256,7 +261,7 @@ async def test_failures_are_retried_with_backoff_then_given_up(
     assert (email.status, email.attempts) == (DeliveryStatus.PENDING, 1)
     assert email.not_before == MORNING + timedelta(minutes=2)
     # Not due yet: nothing happens until the backoff has passed.
-    assert await dispatcher.run() == 0
+    assert (await dispatcher.run()).handled == 0
 
     for _ in range(MAX_ATTEMPTS):
         clock.now += timedelta(hours=1)
@@ -371,3 +376,112 @@ async def test_push_service_answers(status: int, outcome: PushOutcome) -> None:
         assert await sender.send(PushTarget(FCM, "AAAA", "AAAA"), b"{}", 60) is PushOutcome.GONE
         evil = PushTarget("https://10.0.0.5/push", target.p256dh, target.auth)
         assert await sender.send(evil, b"{}", 60) is PushOutcome.GONE
+
+
+async def test_quiet_hours_drop_the_push_but_keep_the_in_app_notification(
+    client: AsyncClient,
+    db: AsyncSession,
+    make_user: MakeUser,
+    dispatcher: Dispatcher,
+    clock: Clock,
+    tokens: TokenFactory,
+) -> None:
+    aysel = await make_user("Aysel", "Məmmədova", "aysel.mammadova@smartazmiu.test")
+    await subscribe(db, aysel)
+    await notify(db, [aysel], spec(title="Gecə dərc olunan elan"))
+    clock.now = datetime(2026, 11, 2, 21, 0, tzinfo=UTC)  # 01:00 in Baku
+    await dispatcher.run()
+
+    assert (await statuses(db))[DeliveryChannel.PUSH] == (DeliveryStatus.SUPPRESSED, "quiet_hours")
+    headers = headers_for(tokens, aysel)
+    inbox = (await client.get("/api/v1/me/notifications", headers=headers)).json()["items"]
+    assert [(item["title"], item["read_at"]) for item in inbox] == [("Gecə dərc olunan elan", None)]
+    count = await client.get("/api/v1/me/notifications/unread-count", headers=headers)
+    assert count.json() == {"count": 1}
+
+
+MASS = 1200
+
+
+async def test_mass_e_mail_is_sent_in_throttled_batches_once_however_jobs_are_retried(
+    engine: AsyncEngine, db: AsyncSession, relevance: Relevance, clock: Clock
+) -> None:
+    """A university-wide announcement to 1200 people: 500 e-mails per window, never one twice (D-055)."""
+    await db.execute(
+        insert(User),
+        [
+            {
+                "given_name": "Tələbə",
+                "family_name": str(number),
+                "display_name": f"Tələbə {number}",
+                "email": f"mass-{number}@smartazmiu.test",
+                "idp_subject": f"mass-{number}",
+            }
+            for number in range(MASS)
+        ],
+    )
+    everyone = select(User.id).where(User.email.like("mass-%"))
+    await db.execute(
+        insert(NotificationPreference).from_select(
+            ["user_id", "category", "push", "email"],
+            select(
+                User.id,
+                literal(
+                    NotificationCategory.ANNOUNCEMENTS,
+                    NotificationPreference.__table__.c.category.type,
+                ),
+                false(),
+                true(),
+            ).where(User.email.like("mass-%")),
+        )
+    )
+    assert await Notifier(db).notify(everyone, spec()) == MASS
+    await db.commit()
+
+    mailer = MemoryMailer()
+
+    def worker() -> Dispatcher:
+        return Dispatcher(
+            async_sessionmaker(engine, expire_on_commit=False),
+            push=None,
+            mailer=mailer,
+            relevance={"announcement": relevance},
+            public_url="https://smartazmiu.test",
+            mail_batch=500,
+            mail_window=timedelta(minutes=1),
+            clock=clock,
+        )
+
+    async def window_passes() -> None:
+        await db.execute(
+            update(NotificationDelivery)
+            .where(NotificationDelivery.status == DeliveryStatus.SENT)
+            .values(updated_at=func.now() - text("interval '2 minutes'"))
+        )
+        await db.commit()
+
+    # Two workers at once (a retried job next to the original): one batch between them, nothing twice.
+    first = await asyncio.gather(worker().run(), worker().run())
+    assert len(mailer.sent) == 500
+    assert all(run.mail_waiting for run in first)
+    # Retried again within the window: the budget is spent, nothing more goes out.
+    again = await worker().run()
+    assert (again.handled, again.mail_waiting) == (0, True)
+    assert len(mailer.sent) == 500
+
+    await window_passes()
+    await asyncio.gather(worker().run(), worker().run())
+    assert len(mailer.sent) == 1000
+    await window_passes()
+    last = await worker().run()
+    assert (last.handled, last.mail_waiting) == (200, False)
+
+    addresses = [to for to, _, _ in mailer.sent]
+    assert len(addresses) == MASS
+    assert len(set(addresses)) == MASS
+    pending = await db.scalar(
+        select(func.count())
+        .select_from(NotificationDelivery)
+        .where(NotificationDelivery.status != DeliveryStatus.SENT)
+    )
+    assert pending == 0

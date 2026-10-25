@@ -96,6 +96,11 @@ class NotificationDelivery(Base):
             "not_before",
             postgresql_where=text("status = 'pending'"),
         ),
+        Index(
+            "ix_notification_deliveries_mail_sent",
+            "updated_at",
+            postgresql_where=text("channel = 'email' AND status = 'sent'"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=text("uuid7()"))

@@ -40,7 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.settings = settings
         app.state.database = Database(str(settings.database_url))
-        app.state.jobs = ArqQueue(str(settings.redis_url))
+        app.state.jobs = ArqQueue(str(settings.queue_redis_url))
         app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
         app.state.identity_admin = KeycloakAdmin(

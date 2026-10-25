@@ -21,7 +21,9 @@ from app.modules.academics.tests.conftest import SEED_DIR, Upload
 from app.modules.announcements.models import Announcement, AnnouncementRecipient
 from app.modules.announcements.service import AnnouncementService, still_addressed
 from app.modules.audit.models import AuditLog
+from app.modules.events.service import EventService
 from app.modules.notifications.models import Notification, NotificationDelivery
+from app.modules.notifications.service import LateJoinBudget
 from app.modules.users.models import User
 from tests.support import FakeJobs, TokenFactory
 
@@ -355,3 +357,70 @@ async def test_audience_options_for_the_picker(
     assert offerings
     assert {o["detail"] for o in offerings} <= {"2026 Payız", "2027 Yaz"}
     assert await options("group", "%") == []
+
+
+async def test_late_joiners_are_notified_in_app_only_and_within_a_cap(
+    client: AsyncClient,
+    db: AsyncSession,
+    seed: Seed,
+    upload: Upload,
+    staff_headers: Headers,
+    nigar: Headers,
+) -> None:
+    """A transfer must not cause a push or e-mail burst (D-054): in-app only, at most five, newest first."""
+    await seed(ImportKind.ROOMS)
+    target = await group_id(db, "765a2")
+    for number in range(1, 8):
+        await publish(
+            client, staff_headers, {"type": "group", "target_id": target}, title=f"Elan {number}"
+        )
+    event = await client.post(
+        "/api/v1/events",
+        json={
+            "title": "Qrup toplantısı",
+            "description": "Kuratorla görüş.",
+            "starts_at": (datetime.now(UTC) + timedelta(hours=2)).isoformat(),
+            "ends_at": (datetime.now(UTC) + timedelta(hours=3)).isoformat(),
+            "location": "1-305",
+            "audience": {"type": "group", "target_id": target},
+        },
+        headers=staff_headers,
+    )
+    assert event.status_code == 201, event.text
+
+    students = (SEED_DIR / "students.csv").read_text(encoding="utf-8")
+    header, *rows = students.splitlines()
+    row = next(row for row in rows if row.startswith("25765101,"))
+    await upload(
+        ImportKind.STUDENTS,
+        header + chr(10) + row.replace(",765a1,", ",765a2,") + chr(10),
+        apply=True,
+    )
+    late = LateJoinBudget()
+    assert await AnnouncementService(db).sync_recipients(late) == 7
+    assert await EventService(db).sync_recipients(late) == 1
+
+    nigar_id = await db.scalar(
+        select(User.id).where(User.email == "nigar.ismayilova@smartazmiu.test")
+    )
+    titles = list(
+        await db.scalars(
+            select(Notification.title)
+            .where(Notification.user_id == nigar_id)
+            .order_by(Notification.title)
+        )
+    )
+    # The five newest announcements; the older two and the event are visible but not notified.
+    assert titles == ["Elan 3", "Elan 4", "Elan 5", "Elan 6", "Elan 7"]
+    deliveries = await db.scalar(
+        select(func.count())
+        .select_from(NotificationDelivery)
+        .join(Notification, Notification.id == NotificationDelivery.notification_id)
+        .where(Notification.user_id == nigar_id)
+    )
+    assert deliveries == 0
+    listed = (await client.get("/api/v1/announcements", headers=nigar)).json()["items"]
+    assert len(listed) == 7
+    assert (await client.get("/api/v1/events", headers=nigar)).json()["items"][0][
+        "title"
+    ] == "Qrup toplantısı"

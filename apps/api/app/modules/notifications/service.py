@@ -25,6 +25,9 @@ DEFAULT_CHANNELS: dict[NotificationCategory, tuple[bool, bool]] = {
 }
 
 MAX_PAGE = 100
+# Someone who joins an audience late (a transfer, a late enrollment) is notified in-app about at most this many
+# of the items they missed per sync; the rest appear in their lists without a notification (D-054).
+LATE_JOIN_CAP = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,11 +46,14 @@ class Notifier:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def notify(self, recipients: Select[uuid.UUID], spec: NotificationSpec) -> int:
+    async def notify(
+        self, recipients: Select[uuid.UUID], spec: NotificationSpec, *, deliver: bool = True
+    ) -> int:
         """Notifies every user ``recipients`` selects, once per ``dedupe_key``; returns how many are new.
 
-        Push and e-mail deliveries are queued for the channels the user has on now; the worker checks the
-        preference, quiet hours and membership again when it sends (§5.6). Runs in the caller's transaction.
+        With ``deliver``, push and e-mail deliveries are queued for the channels the user has on now; the worker
+        checks the preference, quiet hours and membership again when it sends (§5.6). Without it the
+        notification is in-app only. Runs in the caller's transaction.
         """
         source = recipients.subquery()
         columns = Notification.__table__.c
@@ -79,7 +85,7 @@ class Notifier:
             .returning(Notification.id)
         )
         ids = list(created)
-        if ids:
+        if ids and deliver:
             push_default, email_default = DEFAULT_CHANNELS[spec.category]
             for channel, column, default in (
                 (DeliveryChannel.PUSH, NotificationPreference.push, push_default),
@@ -103,6 +109,20 @@ class Notifier:
                     )
                 )
         return len(ids)
+
+
+class LateJoinBudget:
+    """Counts backfilled in-app notifications per person across one audience sync (announcements and events)."""
+
+    def __init__(self, cap: int = LATE_JOIN_CAP) -> None:
+        self.cap = cap
+        self.used: dict[uuid.UUID, int] = {}
+
+    def take(self, user_ids: list[uuid.UUID]) -> list[uuid.UUID]:
+        allowed = [user_id for user_id in user_ids if self.used.get(user_id, 0) < self.cap]
+        for user_id in allowed:
+            self.used[user_id] = self.used.get(user_id, 0) + 1
+        return allowed
 
 
 @dataclass(frozen=True, slots=True)

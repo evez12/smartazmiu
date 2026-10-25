@@ -1,5 +1,6 @@
 """ARQ worker: ``arq app.workers.main.WorkerSettings`` (Docker service ``worker``, ``make dev-worker``)."""
 
+from datetime import timedelta
 from typing import Any, ClassVar
 
 import httpx
@@ -16,6 +17,7 @@ from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
+from app.modules.notifications.service import LateJoinBudget
 from app.modules.schedule import notifications as schedule_changes
 
 # Per subject type: whether a recipient should still hear about it when the worker sends (§5.6).
@@ -49,7 +51,10 @@ async def startup(ctx: dict[str, Any]) -> None:
         mailer=SmtpMailer(settings),
         relevance=RELEVANCE,
         public_url=settings.app_public_url,
+        mail_batch=settings.mail_batch_size,
+        mail_window=timedelta(seconds=settings.mail_batch_interval_seconds),
     )
+    ctx["mail_interval"] = settings.mail_batch_interval_seconds
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:
@@ -59,18 +64,25 @@ async def shutdown(ctx: dict[str, Any]) -> None:
 
 async def dispatch_notifications(ctx: dict[str, Any]) -> int:
     dispatcher: Dispatcher = ctx["dispatcher"]
-    return await dispatcher.run()
+    result = await dispatcher.run()
+    if result.mail_waiting:
+        # The next e-mail batch; a fixed id keeps one continuation queued however many runs ask for it.
+        await ctx["redis"].enqueue_job(
+            DISPATCH_NOTIFICATIONS,
+            _job_id=f"{DISPATCH_NOTIFICATIONS}:next_mail_batch",
+            _defer_by=ctx["mail_interval"],
+        )
+    return result.handled
 
 
 async def sync_audiences(ctx: dict[str, Any]) -> int:
-    """Adds people who joined an audience to its active announcements and coming events, then sends what
-    that queued."""
+    """Adds people who joined an audience to its active announcements and coming events. Their
+    notifications are in-app only, so nothing is queued for sending (D-054)."""
     database: Database = ctx["database"]
+    late = LateJoinBudget()
     async with database.sessionmaker() as session:
-        added = await announcements.AnnouncementService(session).sync_recipients()
-        added += await events.EventService(session).sync_recipients()
-    if added:
-        await dispatch_notifications(ctx)
+        added = await announcements.AnnouncementService(session).sync_recipients(late)
+        added += await events.EventService(session).sync_recipients(late)
     return added
 
 
@@ -84,6 +96,6 @@ class WorkerSettings:
     ]
     on_startup = startup
     on_shutdown = shutdown
-    redis_settings = RedisSettings.from_dsn(str(get_settings().redis_url))
+    redis_settings = RedisSettings.from_dsn(str(get_settings().queue_redis_url))
     keep_result = 0
     max_jobs = 4

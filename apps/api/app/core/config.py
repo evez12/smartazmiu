@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     database_url: PostgresDsn = Field(
         default=PostgresDsn("postgresql+asyncpg://smartazmiu:smartazmiu@127.0.0.1:5433/smartazmiu")
     )
-    redis_url: RedisDsn = Field(default=RedisDsn("redis://127.0.0.1:6379/0"))
+    # Instance B (evicts least recently used keys): rate limits, later presence, typing, chat pub/sub (D-053).
+    redis_url: RedisDsn = Field(default=RedisDsn("redis://127.0.0.1:6380/0"))
+    # Instance A (never evicts, AOF): the ARQ job queue; web sessions use database 1 of the same instance.
+    queue_redis_url: RedisDsn = Field(default=RedisDsn("redis://127.0.0.1:6379/0"))
 
     # The issuer is the browser-facing Keycloak URL; JWKS may be fetched over the internal network.
     oidc_issuer: str = "http://localhost:8080/realms/smartazmiu"
@@ -47,6 +50,9 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_starttls: bool = False
     mail_from: str = "bildiris@smartazmiu.test"
+    # Throttle for mass announcements: at most this many e-mails per interval, across all workers (D-055).
+    mail_batch_size: int = 200
+    mail_batch_interval_seconds: int = 60
 
     # Web Push: the VAPID key pair is derived from this secret (D-049).
     vapid_secret: str = ""

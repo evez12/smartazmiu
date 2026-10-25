@@ -17,7 +17,7 @@ make up        # builds and starts the full stack at http://localhost
 For day-to-day work run the infrastructure in Docker and the apps natively:
 
 ```bash
-make infra     # postgres, redis, s3, keycloak, mailpit
+make infra     # postgres, two redis instances, s3, keycloak, mailpit
 make migrate && make seed      # schema, sample groups 764a1/765a1/765a2, campus and timetable
 make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
@@ -88,7 +88,7 @@ A modular monolith: one FastAPI app and one Next.js app.
 | `docs/` | Spec, decision log, ADRs. |
 
 Local services: Keycloak `http://localhost:8080`, Mailpit `http://localhost:8025`, S3 API `http://localhost:8333`,
-Postgres `localhost:5433`.
+Postgres `localhost:5433`, Redis A (sessions, job queue) `localhost:6379`, Redis B (cache) `localhost:6380` (D-053).
 
 ## Testing
 
