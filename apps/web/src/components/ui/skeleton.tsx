@@ -22,3 +22,21 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
     </div>
   );
 }
+
+/** Placeholder for a data table: a header line and rows of the same height as real rows (40 px). */
+export function SkeletonTable({ rows = 5, className }: { rows?: number; className?: string }) {
+  return (
+    <div aria-hidden="true" className={cn("flex flex-col", className)}>
+      <div className="flex h-10 items-center border-b border-border-strong">
+        <Skeleton className="h-3.5 w-1/3" />
+      </div>
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="flex h-10 items-center gap-4 border-b border-border">
+          <Skeleton className="h-3.5 w-2/5" />
+          <Skeleton className="h-3.5 w-1/5" />
+          <Skeleton className="h-3.5 w-1/6" />
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -26,9 +26,16 @@ import {
 } from "@/components/ui/overlay";
 import { cn } from "@/lib/cn";
 
-import { isActive, NAV_COOKIE, NAVIGATION, ROLE_CODES, type NavItem } from "./nav";
+import {
+  isActive,
+  NAV_COOKIE,
+  ROLE_CODES,
+  visibleNavigation,
+  type NavItem,
+  type NavSection,
+} from "./nav";
 
-export type ShellUser = { displayName: string; roles: string[] };
+export type ShellUser = { displayName: string; roles: string[]; permissions: string[] };
 
 type AppShellProps = {
   user: ShellUser;
@@ -46,6 +53,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
   const [collapsed, setCollapsed] = useState(initiallyCollapsed);
   const [sheetOpen, setSheetOpen] = useState(false);
   const signOutForm = useRef<HTMLFormElement>(null);
+  const navigation = visibleNavigation(user.permissions);
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -103,7 +111,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
             collapsed ? "w-16" : "w-60",
           )}
         >
-          <NavList collapsed={collapsed} />
+          <NavList sections={navigation} collapsed={collapsed} />
         </nav>
 
         <main
@@ -117,21 +125,29 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={t("navigationTitle")}>
         <nav aria-label={t("mainNavigation")}>
-          <NavList collapsed={false} onNavigate={() => setSheetOpen(false)} />
+          <NavList sections={navigation} collapsed={false} onNavigate={() => setSheetOpen(false)} />
         </nav>
       </Sheet>
 
-      <BottomTabs />
+      <BottomTabs sections={navigation} />
     </div>
   );
 }
 
-function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
+function NavList({
+  sections,
+  collapsed,
+  onNavigate,
+}: {
+  sections: NavSection[];
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
   const t = useTranslations("shell");
   const pathname = usePathname();
   return (
     <div className="flex flex-col gap-4 p-2">
-      {NAVIGATION.map((section) => (
+      {sections.map((section) => (
         <div key={section.labelKey} className="flex flex-col gap-1">
           <p
             className={cn("px-3 pt-2 pb-1 text-xs font-medium text-muted", collapsed && "sr-only")}
@@ -192,10 +208,10 @@ function NavLink({
   return collapsed ? <Tooltip content={label}>{link}</Tooltip> : link;
 }
 
-function BottomTabs() {
+function BottomTabs({ sections }: { sections: NavSection[] }) {
   const t = useTranslations("shell");
   const pathname = usePathname();
-  const items = NAVIGATION.flatMap((section) => section.items).filter((item) => item.inTabBar);
+  const items = sections.flatMap((section) => section.items).filter((item) => item.inTabBar);
   return (
     <nav
       aria-label={t("mainNavigation")}

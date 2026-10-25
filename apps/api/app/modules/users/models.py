@@ -16,6 +16,13 @@ class UserStatus(StrEnum):
     INACTIVE = "inactive"
 
 
+class PersonType(StrEnum):
+    """Role in the university registry (academic imports), independent of RBAC roles."""
+
+    STUDENT = "student"
+    TEACHER = "teacher"
+
+
 class RoleCode(StrEnum):
     STUDENT = "student"
     TEACHER = "teacher"
@@ -29,12 +36,23 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    # Stable subject from the identity provider; e-mail and names may change.
-    idp_subject: Mapped[str] = mapped_column(String(255), unique=True)
+    # Stable subject from the identity provider; e-mail and names may change. NULL until an imported
+    # person signs in for the first time (DECISIONS D-029).
+    idp_subject: Mapped[str | None] = mapped_column(String(255), unique=True)
     email: Mapped[str | None] = mapped_column(String(320), unique=True)
+    # Student or employee number from the university registry: the stable key of academic imports.
+    university_id: Mapped[str | None] = mapped_column(String(32), unique=True)
+    person_type: Mapped[PersonType | None] = mapped_column(
+        Enum(PersonType, name="person_type", values_callable=lambda e: [m.value for m in e])
+    )
+    academic_group_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("academic_groups.id"), index=True
+    )
     given_name: Mapped[str] = mapped_column(String(100, collation=AZ_COLLATION), default="")
     family_name: Mapped[str] = mapped_column(String(100, collation=AZ_COLLATION), default="")
     display_name: Mapped[str] = mapped_column(String(200, collation=AZ_COLLATION))
+    # normalize_az-folded names and identifiers for diacritic-insensitive admin search (§13.1).
+    search_key: Mapped[str] = mapped_column(String(700), default="")
     status: Mapped[UserStatus] = mapped_column(
         Enum(UserStatus, name="user_status", values_callable=lambda e: [m.value for m in e]),
         default=UserStatus.ACTIVE,

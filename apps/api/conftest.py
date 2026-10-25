@@ -53,12 +53,26 @@ async def engine(settings: Settings, migrated: None) -> AsyncIterator[AsyncEngin
     await engine.dispose()
 
 
+@pytest_asyncio.fixture(scope="session")
+async def seeded_permissions(engine: AsyncEngine) -> frozenset[str]:
+    """Permission codes created by migrations; tests may add their own, which are removed afterwards."""
+    async with engine.connect() as connection:
+        return frozenset(await connection.scalars(text("SELECT code FROM permissions")))
+
+
 @pytest_asyncio.fixture
-async def db(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+async def db(
+    engine: AsyncEngine, seeded_permissions: frozenset[str]
+) -> AsyncIterator[AsyncSession]:
     async with async_sessionmaker(engine, expire_on_commit=False)() as session:
         yield session
     async with engine.begin() as connection:
-        await connection.execute(text("TRUNCATE users, permissions CASCADE"))
+        # CASCADE reaches every table that references these roots (academic data, imports, audit log).
+        await connection.execute(text("TRUNCATE users, faculties, semesters CASCADE"))
+        await connection.execute(
+            text("DELETE FROM permissions WHERE code <> ALL(:seeded)"),
+            {"seeded": list(seeded_permissions)},
+        )
 
 
 @pytest.fixture(scope="session")

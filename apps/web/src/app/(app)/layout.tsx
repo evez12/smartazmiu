@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/features/shell/app-shell";
+import { ApiProvider } from "@/lib/api/provider";
 import { NAV_COOKIE } from "@/features/shell/nav";
 import { StatusPage } from "@/features/shell/status-page";
 import { getCurrentUser } from "@/lib/api/server";
@@ -47,14 +48,17 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   }
 
   const collapsed = (await cookies()).get(NAV_COOKIE)?.value === "collapsed";
+  const { user, session } = result;
   return (
-    <AppShell
-      user={{ displayName: result.user.display_name, roles: result.user.roles }}
-      csrfToken={result.session.csrfToken}
-      initiallyCollapsed={collapsed}
-    >
-      {children}
-    </AppShell>
+    <ApiProvider csrfToken={session.csrfToken}>
+      <AppShell
+        user={{ displayName: user.display_name, roles: user.roles, permissions: user.permissions }}
+        csrfToken={session.csrfToken}
+        initiallyCollapsed={collapsed}
+      >
+        {children}
+      </AppShell>
+    </ApiProvider>
   );
 }
 

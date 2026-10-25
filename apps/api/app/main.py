@@ -12,6 +12,8 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.observability import init_sentry
 from app.core.security import JWKSKeySource, TokenVerifier
+from app.modules.academics.router import imports as imports_router
+from app.modules.academics.router import router as academics_router
 from app.modules.health.router import router as health_router
 from app.modules.users.router import router as users_router
 
@@ -54,6 +56,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(users_router, prefix=API_PREFIX)
+    app.include_router(academics_router, prefix=API_PREFIX)
+    app.include_router(imports_router, prefix=API_PREFIX)
     return app
 
 

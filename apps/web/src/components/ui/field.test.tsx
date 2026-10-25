@@ -1,9 +1,10 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { renderWithIntl } from "@/test/render";
 
-import { Field, Input, Select } from "./field";
+import { Field, FileInput, Input, Select } from "./field";
 
 describe("Field", () => {
   it("labels the control and links helper and error text", () => {
@@ -38,5 +39,32 @@ describe("Field", () => {
   it("works standalone with explicit props", () => {
     renderWithIntl(<Input aria-label="Axtarış" />);
     expect(screen.getByRole("textbox", { name: "Axtarış" })).not.toBeRequired();
+  });
+});
+
+describe("FileInput", () => {
+  it("shows Azerbaijani labels and the chosen file name", async () => {
+    const chosen: (File | null)[] = [];
+    const { rerender } = renderWithIntl(
+      <Field label="Fayl" helper="CSV və ya XLSX" required>
+        <FileInput file={null} onFileChange={(file) => chosen.push(file)} />
+      </Field>,
+    );
+    const input = screen.getByLabelText(/^Fayl/, { selector: "input" });
+    expect(input).toBeRequired();
+    expect(input).toHaveAccessibleDescription("CSV və ya XLSX");
+    expect(screen.getByText("Fayl seçin")).toBeInTheDocument();
+    expect(screen.getByText("Fayl seçilməyib")).toBeInTheDocument();
+
+    const file = new File(["code,name_az\n"], "fakültələr.csv", { type: "text/csv" });
+    await userEvent.upload(input, file);
+    expect(chosen).toEqual([file]);
+
+    rerender(
+      <Field label="Fayl">
+        <FileInput file={file} onFileChange={() => undefined} />
+      </Field>,
+    );
+    expect(screen.getByText("fakültələr.csv")).toBeInTheDocument();
   });
 });

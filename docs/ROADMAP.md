@@ -519,8 +519,8 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** fresh clone → `make up` → login with test student → see empty dashboard; `/design-system` passes the §12.9 visual checklist.
 
 #### Sprint 2 (12-14 → 12-25) — Academic data & Profile & Admin v1
-- [ ] Models: faculties, specialties, academic_groups, subjects, semesters, course_offerings, enrollments.
-- [ ] Admin import wizard (CSV/XLSX): preview, validation errors per row, idempotent upsert (rules in §6.1).
+- [x] Models: faculties, specialties, academic_groups, subjects, semesters, course_offerings, enrollments.
+- [x] Admin import wizard (CSV/XLSX): preview, validation errors per row, idempotent upsert (rules in §6.1).
 - [ ] Profile page: photo upload, bio, group, specialty, privacy settings (`dm_policy`, contact visibility).
 - [ ] Admin v1: user list, role assignment, audit log viewer.
 - [ ] Consent records + `/me/export`.

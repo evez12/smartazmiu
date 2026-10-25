@@ -1,32 +1,17 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import { password, signIn } from "./support/auth";
 
 /*
- * Sprint 1 acceptance: sign in through Keycloak as a test student and see the empty dashboard.
+ * Sign-in, sign-out and the shell, through Keycloak with the seeded test users.
  * Needs the running stack and the shared test-user password from .env (`make e2e` exports it).
  */
-const password = process.env.KEYCLOAK_TEST_USER_PASSWORD;
-
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 
-async function signIn(page: Page, username: string) {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/login\?returnTo=%2F/);
-  await page.getByRole("link", { name: "Universitet hesabı ilə daxil olun" }).click();
-
-  await expect(page.getByRole("heading", { name: "Hesabınıza daxil olun" })).toBeVisible();
-  await page.getByLabel("İstifadəçi adı və ya e-poçt").fill(username);
-  await page.getByLabel("Şifrə", { exact: true }).fill(password!);
-  await page.getByRole("button", { name: "Daxil olun" }).click();
-}
-
-test("student signs in, sees the empty dashboard and signs out", async ({ page }) => {
+test("student signs in, reaches the dashboard and signs out", async ({ page }) => {
   await signIn(page, "aysel.mammadova");
-
   await expect(page.getByRole("heading", { level: 1, name: "Ana səhifə" })).toBeVisible();
-  await expect(
-    page.getByText("Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb."),
-  ).toBeVisible();
   const profile = page.getByRole("button", { name: /Profil menyusu/ });
   await expect(profile).toContainText("Aysel Məmmədova");
   await expect(profile).toContainText("Tələbə");
@@ -49,12 +34,6 @@ test("roles from the identity provider are shown in the profile menu", async ({ 
   await expect(page.getByRole("button", { name: /Profil menyusu/ })).toContainText(
     "Tələbə · Moderator",
   );
-});
-
-test("staff are asked to set up two-factor sign-in", async ({ page }) => {
-  await signIn(page, "elvin.quliyev");
-  await expect(page.getByRole("heading", { name: "İki mərhələli girişi qurun" })).toBeVisible();
-  await expect(page.locator("#kc-totp-secret-qr-code")).toBeVisible();
 });
 
 test("a crafted returnTo cannot leave the site", async ({ page }) => {

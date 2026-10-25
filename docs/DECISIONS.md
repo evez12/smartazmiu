@@ -139,6 +139,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Web | next 16.4.3, react / react-dom 19.3.1, tailwindcss + @tailwindcss/postcss 4.3.3, radix-ui 1.8.1, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, lucide-react 1.61.0, next-intl 4.14.9, next-themes 0.4.6, @fontsource/ibm-plex-sans + ibm-plex-mono 5.3.0, openid-client 6.8.8, jose 6.2.13, openapi-fetch 0.17.0, server-only 0.0.1, @sentry/nextjs 11.9.0 |
   | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0, openapi-typescript 7.13.0 |
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
+  | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5; API dev: types-openpyxl 3.1.5.20261017; web: @tanstack/react-query 5.104.5 |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -277,3 +278,77 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** E2E and visual jobs run on every push and pull request rather than only for `apps/web`
   changes, because Sprint 1 auth spans the API, Keycloak and the web app; this can be narrowed with path filters
   once the suite grows.
+
+## D-028 · 2026-10-25 · Sprint 1 review outcome
+
+- **Context:** the product owner reviewed Sprint 1.
+- **Decision:** D-013, D-016, D-018, D-021, D-024 and D-025 are approved. D-016 is approved with an addition:
+  the `permissions` table stays in our database, and **every role change is written to `audit_logs`**, both
+  changes mirrored from the identity provider (`user.roles_synced`, actor = system) and changes made by an
+  administrator (`user.roles_changed`, Sprint 2 admin).
+- **Consequences:** a user's first sign-in writes one `user.roles_synced` entry (roles added from nothing).
+
+## D-029 · 2026-10-25 · Linking imported people to sign-in accounts (product owner decision)
+
+- **Context:** academic imports create students and teachers before they ever sign in; Keycloak only knows them
+  once they do. The spec does not say how the two records meet. Touches authentication, so the product owner
+  was asked.
+- **Options:** match by verified e-mail; match by a university-ID claim provided by the identity provider.
+- **Decision:** by **verified e-mail**. On a first sign-in whose token has `email_verified = true` and an
+  e-mail equal to an imported person without a subject, that record gets the token's subject
+  (`user.account_linked` in the audit log). Unverified e-mails and records already linked to another subject are
+  never claimed (`auth.identity_conflict`). The other direction works the same: an import row whose e-mail
+  belongs to someone who signed in before the import attaches the registry record to that account; an e-mail
+  owned by a person with a *different* university ID is rejected (§13.1). Field ownership: the registry
+  (import) owns names, university ID, group, person type and status; after linking, the identity provider owns
+  the e-mail.
+- **Consequences:** `users.idp_subject` is nullable. If the real AzMİU SSO cannot guarantee verified,
+  institution-managed e-mails, switch to a university-ID claim.
+
+## D-030 · 2026-10-25 · Academic data model details
+
+- **Context:** §5.7 lists `course_offerings(…, academic_group_id, teacher_id)`, but §13.1 requires one offering
+  for several groups (joint lectures, electives) and several or replaced teachers.
+- **Decision:** `course_offering_groups` and `course_offering_teachers` link tables replace the two columns. An
+  offering's natural key is `(subject, semester, code)`; the code defaults to the group code, or the sorted group
+  codes joined with `+` for joint offerings. Semesters store calendar dates (`starts_on`, `ends_on`) and `year`
+  is the calendar year the term starts in (2026 Payız, 2027 Yaz). Enrollments carry a result only when
+  completed (database check), so `passed`/`grade` cannot exist for active or dropped enrollments. Users gain
+  `university_id` (stable registry key), `person_type` (`student`/`teacher`, independent of RBAC roles),
+  `academic_group_id` and a `normalize_az`-folded `search_key`.
+- **Consequences:** the chat provisioning job (Sprint 5) computes channel membership as the union of an
+  offering's groups and teachers.
+
+## D-031 · 2026-10-25 · Academic import pipeline
+
+- **Context:** §6.1 requires a dry-run preview, per-row errors, a transactional idempotent apply keyed by natural
+  keys, encoding detection with override and downloadable error reports; §13.5 forbids silent guessing.
+- **Decision:**
+  - One CSV/XLSX template per entity kind with English `snake_case` headers, imported in a fixed order
+    (faculties → specialties → subjects → semesters → teachers → groups → students → offerings → enrollments).
+    Term values accept Azerbaijani and English, case- and diacritic-insensitively (`Payız`, `payiz`, `fall`).
+  - Upload validates without writing and stores the file's cells for at most 24 hours. Apply re-runs the same
+    code path with writes inside one transaction and a global advisory lock; any problem at apply time (data
+    changed since the preview) rolls everything back and marks the import `failed`. Files with any error cannot be
+    applied at all: imports are all-or-nothing per file. Applying twice returns the first result.
+  - Rows missing from a file are never deleted or changed; dropping an enrollment is an explicit
+    `status = dropped`. An offering row's group and teacher lists replace the stored ones.
+  - Errors are stored as `(row, column, code)` without cell values (no personal data in error records); the
+    first 1 000 are kept. The web app renders the codes in Azerbaijani and builds the CSV report in the browser.
+  - CSV encoding: UTF-8 (with or without BOM) is detected exactly; otherwise Windows-1251 vs Windows-1254 by
+    the share of high bytes. A non-UTF-8 result is shown as a warning and can be overridden. Because cp1254 has
+    no `ə`, a `?` inside a word is reported as `invalid_characters`. Excel serial dates and merged cells are row
+    errors. Files are limited to 5 MB and 20 000 rows and processed in the request; ARQ is introduced with the
+    first job that needs it.
+  - Sample data for groups 764a1, 765a1 and 765a2 (İqtisadiyyat, made-up people) lives in
+    `infra/seed/academics/` and loads through the same pipeline with `make seed`.
+- **Consequences:** real roster files will need column mapping or conversion to the templates (D-010).
+
+## D-032 · 2026-10-25 · Browser calls and client state
+
+- **Context:** D-025 scheduled the same-origin proxy for the first client-side mutation; §4 lists TanStack Query.
+- **Decision:** `app/api/v1/[...path]` forwards browser calls to the API with the access token from the
+  httpOnly cookie. Mutations need the session's CSRF token in `X-CSRF-Token` and, when present, a same-origin
+  `Origin`. Path segments are re-encoded and dot segments refused. Pages read data in server components;
+  TanStack Query handles client mutations (no automatic retries) followed by `router.refresh()`.
+- **Consequences:** page JavaScript never holds a token; client caching of reads is added when chat needs it.

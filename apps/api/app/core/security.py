@@ -21,10 +21,13 @@ class InvalidTokenError(Exception):
 class TokenClaims:
     subject: str
     email: str | None
+    email_verified: bool
     given_name: str
     family_name: str
     display_name: str
     roles: frozenset[str]
+    issued_at: int
+    """Unix seconds (``iat``)."""
 
 
 class SigningKeySource(Protocol):
@@ -117,8 +120,10 @@ def _claims_from_payload(payload: dict[str, Any]) -> TokenClaims:
     return TokenClaims(
         subject=str(payload["sub"]),
         email=email.lower() if isinstance(email, str) else None,
+        email_verified=payload.get("email_verified") is True,
         given_name=given_name,
         family_name=family_name,
         display_name=display_name or str(payload.get("preferred_username") or ""),
         roles=frozenset(role for role in raw_roles if isinstance(role, str)),
+        issued_at=int(payload["iat"]),
     )

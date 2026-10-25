@@ -1,0 +1,18 @@
+code,faculty_code,name_az,name_en,credits
+SOS-1101,INS,Azərbaycan tarixi,History of Azerbaijan,5
+XDL-1101,TIQ,Xarici dildə işgüzar və akademik kommunikasiya-1,Business and Academic Communication in a Foreign Language 1,4
+RIY-1101,SUT,Xətti cəbr və riyazi analiz,Linear Algebra and Calculus,8
+IKT-1101,MIT,İKT-baza kompyuter bilikləri,ICT Fundamentals,8
+KAR-1101,TIQ,Karyera planlaşması-1,Career Planning 1,5
+SOS-1202,INS,Azərbaycan dilində işgüzar və akademik kommunikasiya,Business and Academic Communication in Azerbaijani,4
+XDL-1202,TIQ,Xarici dildə işgüzar və akademik kommunikasiya-2,Business and Academic Communication in a Foreign Language 2,3
+IQT-1201,TIQ,İqtisadiyyata giriş,Introduction to Economics,6
+RIY-1202,SUT,Ehtimal nəzəriyyəsi və riyazi statistika,Probability Theory and Mathematical Statistics,8
+KAR-1202,TIQ,Karyera planlaşması-2,Career Planning 2,9
+XDL-2103,TIQ,Xarici dildə işgüzar və akademik kommunikasiya-3,Business and Academic Communication in a Foreign Language 3,4
+IQT-2101,TIQ,Mikroiqtisadiyyat,Microeconomics,10
+IQT-2102,TIQ,Statistika,Statistics,10
+HFT-2101,NEQ,Mülki müdafiə,Civil Defence,3
+SOS-2103,INS,Fəlsəfə,Philosophy,3
+SOS-2104,INS,Sosiologiya,Sociology,3
+IQT-2201,TIQ,Makroiqtisadiyyat,Macroeconomics,10

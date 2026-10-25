@@ -35,6 +35,34 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Sorğunu yerinə yetirmək mümkün olmadı. Yenidən cəhd edin.",
         "en": "The request could not be completed. Please try again.",
     },
+    "request.rate_limited": {
+        "az": "Çox sayda sorğu göndərdiniz. Bir az gözləyib yenidən cəhd edin.",
+        "en": "Too many requests. Wait a little and try again.",
+    },
+    "import.file_too_large": {
+        "az": "Fayl çox böyükdür. Ən çox 5 MB və 20 000 sətirlik fayl yükləyin.",
+        "en": "The file is too large. Upload at most 5 MB and 20,000 rows.",
+    },
+    "import.unsupported_format": {
+        "az": "Bu fayl növü dəstəklənmir. CSV və ya XLSX faylı yükləyin.",
+        "en": "This file type is not supported. Upload a CSV or XLSX file.",
+    },
+    "import.unreadable": {
+        "az": "Faylı oxumaq mümkün olmadı. Faylın zədələnmədiyini yoxlayıb yenidən yükləyin.",
+        "en": "The file could not be read. Check that it is not damaged and upload it again.",
+    },
+    "import.encoding_mismatch": {
+        "az": "Fayl seçilmiş kodlaşdırmada oxunmur. Başqa kodlaşdırma seçin və ya faylı UTF-8 kimi saxlayın.",
+        "en": "The file cannot be read with the selected encoding. Choose another one or save it as UTF-8.",
+    },
+    "import.not_applicable": {
+        "az": "Bu idxalda xətalar var və tətbiq edilə bilməz. Faylı düzəldib yenidən yükləyin.",
+        "en": "This import has errors and cannot be applied. Fix the file and upload it again.",
+    },
+    "import.expired": {
+        "az": "Yoxlamanın müddəti bitib. Faylı yenidən yükləyin.",
+        "en": "The preview has expired. Upload the file again.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",
