@@ -32,6 +32,9 @@ APP_TABLES = {
     "notification_quiet_hours",
     "announcements",
     "announcement_recipients",
+    "events",
+    "event_recipients",
+    "event_registrations",
 }
 APP_ENUMS = (
     "user_status",
@@ -50,6 +53,9 @@ APP_ENUMS = (
     "delivery_status",
     "audience_type",
     "announcement_status",
+    "event_status",
+    "registration_status",
+    "check_in_method",
 )
 
 
@@ -75,7 +81,12 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
     async with engine.connect() as connection:
         roles = await connection.scalars(text("SELECT code FROM roles ORDER BY code"))
         assert list(roles) == ["admin", "guest", "moderator", "staff", "student", "teacher"]
-        for permission in ("academics.import", "announcements.publish"):
+        for permission in (
+            "academics.import",
+            "announcements.publish",
+            "events.manage",
+            "events.check_in",
+        ):
             holders = await connection.scalars(
                 text(
                     "SELECT r.code FROM roles r JOIN role_permissions rp ON rp.role_id = r.id"

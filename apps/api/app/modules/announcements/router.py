@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, Query
 
 from app.core.deps import JobsDep, SessionDep
-from app.core.errors import COMMON_ERROR_RESPONSES, AppError
+from app.core.errors import COMMON_ERROR_RESPONSES
 from app.core.rbac import CurrentUserDep, require_permission
 from app.modules.announcements.models import Announcement
 from app.modules.announcements.schemas import (
@@ -12,15 +12,12 @@ from app.modules.announcements.schemas import (
     AnnouncementOut,
     AnnouncementPageOut,
     AnnouncementUpdateIn,
-    AudienceIn,
-    AudienceOptionOut,
-    AudienceOptionsOut,
-    AudienceOut,
     ManagedAnnouncementOut,
     ManagedAnnouncementPageOut,
 )
 from app.modules.announcements.service import MAX_PAGE, AnnouncementDraft, AnnouncementService
-from app.modules.audiences.service import Audience, AudienceOption, Audiences, AudienceType
+from app.modules.audiences.router import audience_out, parse_audience
+from app.modules.audiences.service import Audience, AudienceOption, Audiences
 from app.modules.users.service import CurrentUser
 
 PUBLISH_PERMISSION = "announcements.publish"
@@ -34,24 +31,6 @@ IdempotencyKey = Annotated[
         alias="Idempotency-Key", max_length=100, description="Repeating it returns the first result"
     ),
 ]
-
-
-def parse_audience(value: AudienceIn) -> Audience:
-    try:
-        target = uuid.UUID(value.target_id) if value.target_id is not None else None
-    except ValueError as exc:
-        raise AppError("audience.invalid", 422) from exc
-    return Audience(value.type, target)
-
-
-def audience_out(audience: Audience, labels: dict[Audience, AudienceOption]) -> AudienceOut:
-    option = labels.get(audience)
-    return AudienceOut(
-        type=audience.type,
-        target_id=str(audience.target_id) if audience.target_id else None,
-        label=option.label if option else None,
-        detail=option.detail if option else None,
-    )
 
 
 async def _out(session: SessionDep, items: list[Announcement]) -> list[AnnouncementOut]:
@@ -189,24 +168,3 @@ async def archive_announcement(
 ) -> AnnouncementOut:
     item = await AnnouncementService(session).archive(announcement_id, user.id)
     return (await _out(session, [item]))[0]
-
-
-@router.get(
-    "/audiences/options",
-    response_model=AudienceOptionsOut,
-    operation_id="listAudienceOptions",
-    summary="Faculties, specialties, groups or course offerings to address (staff)",
-)
-async def list_audience_options(
-    _: Publisher,
-    session: SessionDep,
-    type: Annotated[AudienceType, Query()],
-    q: Annotated[str, Query(max_length=100)] = "",
-) -> AudienceOptionsOut:
-    options = await Audiences(session).options(type, q)
-    return AudienceOptionsOut(
-        items=[
-            AudienceOptionOut(id=str(option.id), label=option.label, detail=option.detail)
-            for option in options
-        ]
-    )

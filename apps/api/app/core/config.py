@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -65,6 +65,13 @@ class Settings(BaseSettings):
 
     # Signs event tickets; a QR code carries the ticket id and this signature (D-051).
     ticket_secret: str = ""
+
+    @model_validator(mode="after")
+    def production_secrets(self) -> "Settings":
+        # An empty signing key would make ticket codes forgeable; development falls back to .env values.
+        if self.app_env == "production" and not self.ticket_secret:
+            raise ValueError("TICKET_SECRET must be set in production")
+        return self
 
     @property
     def is_production(self) -> bool:

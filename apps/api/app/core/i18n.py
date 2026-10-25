@@ -59,6 +59,66 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Elan bu arada başqa biri tərəfindən dəyişdirilib. Səhifəni yeniləyib yenidən cəhd edin.",
         "en": "Someone else changed the announcement in the meantime. Reload the page and try again.",
     },
+    "events.starts_in_past": {
+        "az": "Tədbirin başlama vaxtı keçmişdədir. Gələcək bir vaxt seçin.",
+        "en": "The event's start time is in the past. Choose a future time.",
+    },
+    "events.invalid_times": {
+        "az": "Bitmə vaxtı başlama vaxtından sonra olmalıdır.",
+        "en": "The end time must be after the start time.",
+    },
+    "events.location_required": {
+        "az": "Tədbirin keçiriləcəyi otağı və ya yeri göstərin.",
+        "en": "Give the room or the place of the event.",
+    },
+    "events.room_not_found": {
+        "az": "Bu kodla otaq tapılmadı. Kodu kampus xəritəsində yoxlayın.",
+        "en": "No room has this code. Check the code on the campus map.",
+    },
+    "events.capacity_below_registrations": {
+        "az": "Yer sayı artıq qeydiyyatdan keçənlərin sayından az ola bilməz.",
+        "en": "The capacity cannot be lower than the number of registrations.",
+    },
+    "events.version_conflict": {
+        "az": "Tədbir bu arada başqa biri tərəfindən dəyişdirilib. Səhifəni yeniləyib yenidən cəhd edin.",
+        "en": "Someone else changed the event in the meantime. Reload the page and try again.",
+    },
+    "events.cancelled": {
+        "az": "Bu tədbir ləğv edilib.",
+        "en": "This event has been cancelled.",
+    },
+    "events.full": {
+        "az": "Bu tədbirdə boş yer qalmayıb.",
+        "en": "There are no places left at this event.",
+    },
+    "events.registration_closed": {
+        "az": "Tədbir başlayıb; qeydiyyat artıq dəyişdirilə bilməz.",
+        "en": "The event has started; the registration can no longer change.",
+    },
+    "events.ticket_invalid": {
+        "az": "Bilet tanınmadı. Kodu yenidən oxudun və ya iştirakçını siyahıdan tapın.",
+        "en": "The ticket was not recognised. Scan it again or find the attendee in the list.",
+    },
+    "events.ticket_other_event": {
+        "az": "Bu bilet başqa tədbirə aiddir.",
+        "en": "This ticket is for another event.",
+    },
+    "events.ticket_cancelled": {
+        "az": "Bu biletin qeydiyyatı ləğv edilib.",
+        "en": "The registration for this ticket has been cancelled.",
+    },
+    "events.already_checked_in": {
+        "az": "Bu iştirakçı artıq qeydiyyatdan keçib.",
+        "en": "This attendee has already checked in.",
+    },
+    "events.check_in_closed": {
+        "az": "Giriş qeydiyyatı tədbirdən 2 saat əvvəl açılır və tədbir bitəndə bağlanır.",
+        "en": "Check-in opens 2 hours before the event and closes when it ends.",
+    },
+    "request.invalid_cursor": {
+        "az": "Siyahının növbəti hissəsini yükləmək mümkün olmadı. Səhifəni yeniləyin.",
+        "en": "The next part of the list could not be loaded. Reload the page.",
+    },
     "notifications.quiet_hours_empty": {
         "az": "Sakit saatların başlanğıcı və sonu eyni ola bilməz. Fərqli vaxt seçin.",
         "en": "Quiet hours cannot start and end at the same time. Choose different times.",

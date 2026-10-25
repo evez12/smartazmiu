@@ -22,6 +22,10 @@ class AuditAction(StrEnum):
     ANNOUNCEMENT_PUBLISHED = "announcement.published"
     ANNOUNCEMENT_EDITED = "announcement.edited"
     ANNOUNCEMENT_ARCHIVED = "announcement.archived"
+    EVENT_PUBLISHED = "event.published"
+    EVENT_EDITED = "event.edited"
+    EVENT_CANCELLED = "event.cancelled"
+    EVENT_MANUAL_CHECK_IN = "event.manual_check_in"
 
 
 class AuditLog(Base):

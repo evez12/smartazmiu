@@ -692,3 +692,30 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     without Azerbaijani letters and offers only offerings of running or coming semesters.
   - Text is plain (line breaks kept); Markdown arrives with chat in Sprint 6.
 - **Consequences:** a university-wide announcement writes one recipient row per active account.
+
+## D-051 · 2026-10-26 · Events, RSVP, tickets and check-in
+
+- **Context:** Sprint 4: events with list, filters, detail, RSVP, a QR ticket and a check-in screen for staff;
+  acceptance: an event for faculty X reaches the students of X by push and in-app, and RSVP produces a QR
+  ticket. The spec says nothing about capacity, cancellations, changes or who checks people in.
+- **Decision:**
+  - Events use the announcement audiences (D-050): materialised recipients, sync for people who join later
+    while the event has not ended, permission-filtered lists. People who registered keep seeing the event
+    after leaving the audience. Staff with `events.manage` see every event.
+  - Filters: coming (not ended, soonest first) or past (most recent first), and "only mine"; cursor paging
+    on `(starts_at, id)`. Event categories are not in the spec and are not added.
+  - Place: a campus room code (links to the map) or free text for places outside the room registry; one of
+    them is required. Capacity is optional; registrations lock the event row, so simultaneous RSVPs cannot
+    overbook it. RSVP opens at publication and closes when the event starts; it can be withdrawn until then.
+  - Ticket = the registration. Its QR code is `SA1.<registration id>.<HMAC-SHA256 under TICKET_SECRET,
+    16 bytes>`: unguessable, verifiable without a lookup, and nothing secret is stored per ticket. Production
+    refuses to start without `TICKET_SECRET`. A withdrawn RSVP or a cancelled event voids the ticket.
+  - Check-in (`events.check_in`, staff and admin) by scanning or typing the code, or manually from the
+    attendee list (audited). It opens 2 hours before the start and closes at the end; a second scan is refused
+    with the time and name of the first. A checked-in attendee cannot withdraw.
+  - Notifications (category `events`): publication to the audience; a change of time or place, and a
+    cancellation, to registered attendees only. Title-only corrections notify nobody. The delivery-time check
+    lets a cancellation through to registered people even though the event is no longer active.
+  - Permissions `events.manage` and `events.check_in` for `staff` and `admin`; publishing, edits, cancellation
+    and manual check-ins are audited.
+- **Consequences:** no waiting list; a full event refuses further RSVPs until someone withdraws.

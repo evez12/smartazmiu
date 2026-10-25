@@ -12,7 +12,10 @@ async def test_worker_starts_dispatches_and_stops(db: AsyncSession) -> None:
     try:
         assert isinstance(ctx["dispatcher"], Dispatcher)
         assert await main.dispatch_notifications(ctx) == 0
+        assert await main.sync_audiences(ctx) == 0
     finally:
         await main.shutdown(ctx)
     assert main.dispatch_notifications in main.WorkerSettings.functions
+    assert main.sync_audiences in main.WorkerSettings.functions
+    assert set(main.RELEVANCE) == {"announcement", "event"}
     assert main.WorkerSettings.keep_result == 0

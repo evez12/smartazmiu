@@ -28,6 +28,10 @@ export const AUDIT_ACTIONS = [
   "announcement.published",
   "announcement.edited",
   "announcement.archived",
+  "event.published",
+  "event.edited",
+  "event.cancelled",
+  "event.manual_check_in",
 ] as const satisfies readonly AuditAction[];
 
 /** Message key of an action code: next-intl reads dots as nesting. */

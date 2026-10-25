@@ -1,10 +1,10 @@
 import datetime as dt
 from typing import Annotated
 
-from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, StringConstraints
 
 from app.modules.announcements.models import AnnouncementStatus
-from app.modules.audiences.service import AudienceType
+from app.modules.audiences.schemas import AudienceIn, AudienceOut
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Body = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)]
@@ -19,26 +19,6 @@ Expiry = Annotated[AwareDatetime | None, AfterValidator(_utc)]
 
 class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True)
-
-
-class AudienceIn(_Frozen):
-    type: AudienceType
-    target_id: str | None = None
-    """Faculty, specialty, group or course offering id; omitted for the whole university."""
-
-
-class AudienceOut(_Frozen):
-    type: AudienceType
-    target_id: str | None
-    label: str | None
-    """Name of the target (null for the university)."""
-    detail: str | None
-
-
-class AudienceOptionOut(_Frozen):
-    id: str
-    label: str
-    detail: str
 
 
 class AnnouncementIn(_Frozen):
@@ -83,7 +63,3 @@ class ManagedAnnouncementPageOut(_Frozen):
     total: int
     page: int
     page_size: int
-
-
-class AudienceOptionsOut(_Frozen):
-    items: list[AudienceOptionOut] = Field(description="At most 50, by name")

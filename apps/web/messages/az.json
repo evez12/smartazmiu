@@ -631,7 +631,11 @@
         "user_data_exported": "Şəxsi məlumatlar yükləndi",
         "announcement_published": "Elan dərc olundu",
         "announcement_edited": "Elan redaktə olundu",
-        "announcement_archived": "Elan arxivə köçürüldü"
+        "announcement_archived": "Elan arxivə köçürüldü",
+        "event_published": "Tədbir dərc olundu",
+        "event_edited": "Tədbir dəyişdirildi",
+        "event_cancelled": "Tədbir ləğv edildi",
+        "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",

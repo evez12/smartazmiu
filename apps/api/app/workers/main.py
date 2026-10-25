@@ -12,6 +12,7 @@ from app.core.jobs import DISPATCH_NOTIFICATIONS, SYNC_AUDIENCES
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.modules.announcements import service as announcements
+from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
@@ -19,6 +20,7 @@ from app.modules.notifications.push import VapidKeys, WebPushSender
 # Per subject type: whether a recipient should still hear about it when the worker sends (§5.6).
 RELEVANCE: dict[str, RelevanceCheck] = {
     announcements.SUBJECT_TYPE: announcements.still_addressed,
+    events.SUBJECT_TYPE: events.still_relevant,
 }
 
 
@@ -59,10 +61,12 @@ async def dispatch_notifications(ctx: dict[str, Any]) -> int:
 
 
 async def sync_audiences(ctx: dict[str, Any]) -> int:
-    """Adds people who joined an audience to its active announcements, then sends what that queued."""
+    """Adds people who joined an audience to its active announcements and coming events, then sends what
+    that queued."""
     database: Database = ctx["database"]
     async with database.sessionmaker() as session:
         added = await announcements.AnnouncementService(session).sync_recipients()
+        added += await events.EventService(session).sync_recipients()
     if added:
         await dispatch_notifications(ctx)
     return added
