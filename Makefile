@@ -153,8 +153,9 @@ test-api: test-deps ## Run backend tests with coverage
 test-web: ## Run frontend unit tests
 	$(PNPM) test
 
+# The suite runs on the seeded sample data and checks that it leaves the seed tables as it found them.
 .PHONY: e2e
-e2e: ## Run Playwright functional and accessibility tests (starts the dev server if needed)
+e2e: seed ## Run Playwright functional and accessibility tests (starts the dev server if needed)
 	$(PNPM) exec playwright test --project=functional
 
 # Screenshot baselines exist only for the pinned Linux image (DECISIONS D-007). The container keeps its own

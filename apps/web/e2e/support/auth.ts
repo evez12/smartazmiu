@@ -2,6 +2,8 @@ import { createHmac, randomBytes } from "node:crypto";
 
 import { expect, test as base, type Page } from "@playwright/test";
 
+import { TestRecords } from "./database";
+
 /** Shared password of the seeded Keycloak test users (D-020); `make e2e` exports it from .env. */
 export const password = process.env.KEYCLOAK_TEST_USER_PASSWORD;
 
@@ -101,8 +103,25 @@ export class TestAccounts {
   }
 }
 
-/** Opens the app signed out and submits the Keycloak login form. */
-export async function signIn(page: Page, user: string | TestAccount, startAt = "/"): Promise<void> {
+const appOrigin = new URL(process.env.E2E_BASE_URL ?? "http://localhost:3000").origin;
+
+/**
+ * Waits until the current app page has hydrated (`src/lib/hydration-mark.tsx`). Server-rendered controls are
+ * visible earlier, but a file chosen or a button pressed before hydration is silently lost; on a cold browser
+ * cache right after sign-in this took longer than the test's next step.
+ */
+export async function hydrated(page: Page): Promise<void> {
+  await page.waitForURL((url) => url.origin === appOrigin && !url.pathname.startsWith("/auth/"));
+  await expect(page.locator("html[data-hydrated]")).toBeAttached({ timeout: 15_000 });
+}
+
+/** A full navigation followed by interaction with client-side controls. */
+export async function openPage(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await hydrated(page);
+}
+
+async function submitCredentials(page: Page, user: string | TestAccount, startAt: string) {
   const [username, secret] =
     typeof user === "string" ? [user, password!] : [user.username, user.password];
   await page.goto(startAt);
@@ -115,24 +134,42 @@ export async function signIn(page: Page, user: string | TestAccount, startAt = "
   await page.getByRole("button", { name: "Daxil olun" }).click();
 }
 
+/** Opens the app signed out, submits the Keycloak login form and waits for the hydrated landing page. */
+export async function signIn(page: Page, user: string | TestAccount, startAt = "/"): Promise<void> {
+  await submitCredentials(page, user, startAt);
+  await hydrated(page);
+}
+
 /** First sign-in of a new staff or admin account, which must enrol an authenticator (D-018). */
 export async function signInWithSecondFactor(page: Page, account: TestAccount, startAt = "/") {
-  await signIn(page, account, startAt);
+  await submitCredentials(page, account, startAt);
   await expect(page.getByRole("heading", { name: "İki mərhələli girişi qurun" })).toBeVisible();
   const secret = await page.locator("#totpSecret").inputValue();
   await page.locator("#totp").fill(totp(secret));
   await page.locator("#userLabel").fill("Playwright");
   await page.locator("#saveTOTPBtn").click();
+  await hydrated(page);
 }
 
-/** Playwright `test` with an `accounts` fixture whose accounts are deleted when the test ends. */
-export const test = base.extend<{ accounts: TestAccounts }>({
+/**
+ * Playwright `test` with fixtures that undo what a test set up: `accounts` deletes its Keycloak accounts and
+ * `records` removes the academic records it imported.
+ */
+export const test = base.extend<{ accounts: TestAccounts; records: TestRecords }>({
   accounts: async ({}, provide) => {
     const accounts = new TestAccounts();
     try {
       await provide(accounts);
     } finally {
       await accounts.deleteAll();
+    }
+  },
+  records: async ({}, provide) => {
+    const records = new TestRecords();
+    try {
+      await provide(records);
+    } finally {
+      await records.removeAll();
     }
   },
 });

@@ -49,6 +49,10 @@ describe("calendar helpers", () => {
     // 21:30 UTC on Sunday is already Monday in Baku.
     expect(bakuToday(new Date("2026-10-25T21:30:00Z"))).toBe("2026-10-26");
     expect(bakuToday(new Date("2026-10-25T19:59:00Z"))).toBe("2026-10-25");
+    expect(bakuToday(new Date("2026-10-25T19:59:59.999Z"))).toBe("2026-10-25");
+    expect(bakuToday(new Date("2026-10-25T20:00:00Z"))).toBe("2026-10-26");
+    expect(bakuToday(new Date("2026-10-25T23:59:59Z"))).toBe("2026-10-26");
+    expect(mondayOf(bakuToday(new Date("2026-10-25T20:00:00Z")))).toBe("2026-10-26");
   });
 
   it("finds Mondays and adds days across months and years", () => {

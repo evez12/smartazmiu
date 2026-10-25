@@ -562,3 +562,58 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   read real data from the sprints that create it. No announcements model is built early (§0.3: no scope pulled
   forward). The dashboard keeps the group and subjects below the widgets.
 - **Consequences:** Sprint 4 replaces the announcements empty state with the user's announcements.
+
+## D-044 · 2026-10-25 · Root cause of the first-sign-in E2E failures
+
+- **Context:** after Sprint 3, the profile and mobile-shell tests failed now and then on the first sign-ins of a
+  fresh stack, and one web unit-test run had failed during the pre-flight. Suspects named by the product owner:
+  TOTP window reuse, Keycloak cold start, shared session state.
+- **Findings:** reproduced on a fresh `make reset && make up`: the profile test waited for "Şəkil yeniləndi" and
+  the API log contained no `PUT /me/photo` at all. The file had been set on server-rendered markup before React
+  attached its `onChange`, so the upload was silently lost; the mobile-shell test clicks a React-only button the
+  same way. On the first sign-in the browser cache is cold, so hydration takes longest exactly there. Ruled out:
+  TOTP (every 2FA test enrols a new account with its own secret; the realm accepts one window of look-ahead),
+  Keycloak readiness (`make up --wait` waits for `/health/ready`; every sign-in page appeared in time), shared
+  sessions (sign-out ends only that browser's Keycloak session). The unit-test failure was not a flake: it was a
+  wrong expectation in the session-lifetime test while it was being written (the last refresh in the loop leaves
+  3720 s, the assertion said ≤ 3600), corrected minutes later in the same commit; 20 shuffled runs pass.
+- **Decision:** `PageHeader` renders a `HydrationMark` that sets `data-hydrated` on `<html>` once the page
+  segment has hydrated (pages stream inside Suspense boundaries that hydrate after the shell, so the root layout
+  is too early). `signIn`, `signInWithSecondFactor` and the import helper wait for it. No retries were added.
+- **Consequences:** tests that navigate with `page.goto` and then use client-side controls call `openPage`.
+
+## D-045 · 2026-10-25 · E2E data hygiene
+
+- **Context:** the timetable acceptance test left an `E2E-…` offering with an enrollment and a timetable entry in
+  group 765a2 on every run, and its throwaway student stayed in the registry and in the group; the profile test
+  left an uploaded photo in object storage.
+- **Options:** a separate database or tenant for E2E; tests that remove what they create.
+- **Decision:** tests clean up after themselves, and a check proves it.
+  - `make e2e` runs `make seed` first, so every run starts on the sample data (the Sprint 2 roster import then
+    applies as a no-op, which the test already accepts).
+  - A `records` fixture removes offerings coded `E2E-…` (with enrollments; groups, teachers and timetable cascade)
+    and takes `e2e-…` accounts out of the registry and their group, also when a test fails or times out. It
+    uses direct SQL from the test process because the product has no delete for imported records and the spec
+    does not ask for one. The profile test removes its photo through the UI and checks that it is gone.
+  - Playwright's global setup counts the rows of every seed table (registry people, structure, offerings,
+    enrollments, campus, timetable); its teardown fails the run if any count changed. Account rows of `e2e-`
+    users, import records, audit entries and consent records are not seed data and are not counted.
+  - Dependency: `pg` 8.23.1 and `@types/pg` 8.23.1 (dev only). The CI E2E job installs uv for the seed step.
+- **Consequences:** a separate E2E database would also isolate parallel developers; not needed for one dev box.
+
+## D-046 · 2026-10-25 · Leftover e2e- account rows (product owner decision)
+
+- **Context:** throwaway E2E accounts are deleted in Keycloak after each test, but their mirrored `users` rows stay
+  (D-040), because the product has no account deletion yet.
+- **Decision:** the leftover `e2e-…` rows are purged when account deletion (§5.4) is implemented, through that
+  feature's purge path, not by an ad-hoc script.
+- **Consequences:** until then the admin user list shows inactive `e2e-` accounts on development stacks.
+
+## D-047 · 2026-10-25 · Releases during exam sessions (product owner decision)
+
+- **Context:** §7 forbids planned maintenance during the January and June exam sessions; Sprints 4 and 14 fall in
+  them.
+- **Decision:** production releases are frozen during the January and June exam sessions; work continues and is
+  released to staging only. Hotfixes are the only exception, as the roadmap already states for June (§8).
+- **Consequences:** Sprint 4 (January) and the end of Sprint 14 (June) ship to staging; production receives them
+  after the session.
