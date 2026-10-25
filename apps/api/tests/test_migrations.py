@@ -141,3 +141,36 @@ async def test_downgrade_removes_people_who_never_signed_in(
         await asyncio.to_thread(command.upgrade, config, "head")
         async with engine.begin() as connection:
             await connection.execute(text("TRUNCATE users CASCADE"))
+
+
+async def test_messages_are_partitioned_by_month_in_both_directions(
+    settings: Settings, engine: AsyncEngine
+) -> None:
+    """ADR 0002: the chat migrations create the parent with this month and three more, and remove them all."""
+    config = alembic_config(settings)
+    partitions = text(
+        "SELECT count(*) FROM pg_inherits i JOIN pg_class p ON p.oid = i.inhparent"
+        " WHERE p.relname = 'messages'"
+    )
+    leftovers = text("SELECT count(*) FROM pg_class WHERE relname LIKE 'messages\\_y%'")
+    try:
+        await asyncio.to_thread(command.downgrade, config, "0011")
+        async with engine.connect() as connection:
+            columns = await connection.run_sync(
+                lambda sync: {column["name"] for column in inspect(sync).get_columns("messages")}
+            )
+            assert "body_tsv" not in columns
+            assert await connection.scalar(partitions) == 4
+        await asyncio.to_thread(command.downgrade, config, "0010")
+        async with engine.connect() as connection:
+            assert await connection.scalar(leftovers) == 0
+    finally:
+        await asyncio.to_thread(command.upgrade, config, "head")
+    async with engine.connect() as connection:
+        assert await connection.scalar(partitions) == 4
+        indexes = await connection.run_sync(
+            lambda sync: {index["name"] for index in inspect(sync).get_indexes("messages")}
+        )
+        assert {"ix_messages_channel_id_id", "ix_messages_parent_id", "ix_messages_body_tsv"} <= (
+            indexes
+        )

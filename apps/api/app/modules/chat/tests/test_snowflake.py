@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from app.core.config import Settings
@@ -171,3 +172,12 @@ async def test_stopping_releases_the_worker_id(lease_redis: Redis) -> None:
 
 def test_the_epoch_is_the_start_of_2026() -> None:
     assert datetime.fromtimestamp(EPOCH_MS / 1000, tz=UTC) == datetime(2026, 1, 1, tzinfo=UTC)
+
+
+async def test_the_api_leases_a_worker_id_at_start_up(app: FastAPI) -> None:
+    generator: Snowflake = app.state.snowflake
+    for _ in range(100):
+        if generator.lease.valid:
+            break
+        await asyncio.sleep(0.01)
+    assert await generator.next_id() > 0

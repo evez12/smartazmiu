@@ -61,6 +61,19 @@ async def ensure_partitions(session: AsyncSession, today: date | None = None) ->
     return created
 
 
+async def warn_if_running_out(session: AsyncSession, today: date | None = None) -> None:
+    """Logs a warning when fewer than two future months exist, i.e. the daily job has been failing."""
+    today = today or datetime.now(UTC).date()
+    existing = await existing_partitions(session)
+    ahead = [
+        offset
+        for offset in range(1, FUTURE_MONTHS + 1)
+        if partition_name(_month(today.year, today.month + offset)) in existing
+    ]
+    if len(ahead) < 2:
+        logger.warning("message_partitions_running_out", future_months=len(ahead))
+
+
 async def current_partition_exists(session: AsyncSession, today: date | None = None) -> bool:
     today = today or datetime.now(UTC).date()
     return partition_name(_month(today.year, today.month)) in await existing_partitions(session)

@@ -835,3 +835,25 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   and tests with a fake provider. Sprint 10 plugs in an implementation backed by `exam_slots`. Exam mode is always
   computed at read time from persisted data, never only from scheduled jobs.
 - **Consequences:** until Sprint 10 no channel is ever in exam mode in a running system; this is intended.
+
+## D-060 · 2026-10-26 · Chat schema details for Sprint 5
+
+- **Context:** the Sprint 5 brief asks for `body_tsv` and its GIN index now (ADR 0002 had placed them in Sprint 10),
+  default topics "per channel", and either the §5.7 consistency job or a date for it. Migration 0011 (chat core)
+  was already merged.
+- **Options:** rewrite migration 0011; add a follow-up migration. Topics on every channel type; topics only where
+  §5.1 lists them. Ship the consistency job empty; ship it with the first writer.
+- **Decision:**
+  - Migration 0012 adds `messages.body_tsv` (`tsvector`) with a GIN index on the partitioned parent. The message
+    service writes `to_tsvector('simple', <exact form> <ASCII-folded form>)` from `normalize_az` with every insert,
+    so a query typed with or without Azerbaijani letters matches (§5.7.1). Search endpoints stay in Sprint 10.
+  - Default topics (`umumi/ümumi`, `suallar`, `materiallar`, `imtahan-hazirligi/imtahan-hazırlığı`) exist only in
+    course and community channels; communities also get `meslehet/məsləhət` (§5.1). Group, faculty and DM channels
+    have no topics, and their messages have `topic_id` NULL.
+  - Reactions, mentions and attachments are schema only in Sprint 5, so nothing can be orphaned yet. The weekly
+    consistency job (§5.7) ships in Sprint 6 with the first code that writes those rows.
+  - Only processes that issue message ids hold a snowflake lease: every API process. The ARQ worker writes no
+    messages in Sprint 5 and leases nothing.
+  - Partition upkeep (`ensure_message_partitions`) and the client-id purge (`purge_message_client_ids`) are daily
+    ARQ cron jobs at 02:10 and 02:20 Baku time; the worker also creates missing partitions when it starts.
+- **Consequences:** ADR 0002 is amended in place (the index list, the consistency job and the lease holders).

@@ -21,9 +21,9 @@ does not allow foreign keys that reference a partitioned table by `id` alone.
   sequence (4,096 ids per millisecond per worker).
 - Serialised as strings in JSON (§4.2). Clients order by id, never by arrival (§5.9).
 - **Worker ids are leased** (D-006) from Redis instance A, which never evicts (D-053): `SET snowflake:worker:<n>
-  <process uuid> NX EX 60`, starting at a random `n` and probing upward. Every API process and every ARQ worker
-  leases its own id at start-up and renews it every 20 s with a compare-and-set script (renew only if the value is
-  still ours).
+  <process uuid> NX EX 60`, starting at a random `n` and probing upward. Every process that issues message ids
+  (each API process; an ARQ worker only once it writes messages, D-060) leases its own id at start-up and
+  renews it every 20 s with a compare-and-set script (renew only if the value is still ours).
 - **The TTL (60 s) is three renewal intervals (20 s)**, so a Redis A outage of up to about 40 s (two missed
   renewals) does not stop id generation: the lease is still ours when Redis returns and the next renewal succeeds.
 - **A lease that cannot be confirmed stops the generator**: each id checks that the last successful renewal is
@@ -52,12 +52,14 @@ does not allow foreign keys that reference a partitioned table by `id` alone.
   logs a warning when fewer than two future months exist, and `/readyz` reports degraded when the current month is
   missing.
 - Indexes are declared on the parent (one per partition): `(channel_id, id DESC)` for history, `(parent_id)` for
-  threads. The full-text column `body_tsv` and its GIN index arrive with search (Sprint 10).
+  threads, and GIN on `body_tsv`. *(Amended 2026-10-26, D-060: `body_tsv` and its index exist from Sprint 5 and
+  are written with every message from both `normalize_az` forms; only the search endpoints wait for Sprint 10.)*
 - Outgoing foreign keys (`channel_id → channels`, `author_id → users`) stay; partitioned tables support them.
   Tables that refer to messages (`message_attachments`, `message_reactions`, `message_mentions`,
   `pinned_messages`, `saved_messages`) store `message_id` (plus `message_created_at` where they need to reach the
   row) without a foreign key; the service layer checks existence, and a weekly ARQ consistency job deletes orphans
-  and reports their count.
+  and reports their count. *(D-060: the job ships in Sprint 6 together with the first code that writes such
+  rows; in Sprint 5 these tables are schema only and nothing can be orphaned.)*
 
 ### Idempotent sends
 
