@@ -18,7 +18,7 @@ export function EventFacts({ event }: { event: EventItem }) {
         <dt className="text-sm text-muted">{t("when")}</dt>
         <dd className="tabular">
           {formatDateTimeRange(event.starts_at, event.ends_at)}{" "}
-          <span className="text-sm text-muted">({t("bakuTime")})</span>
+          <span className="text-sm whitespace-nowrap text-muted">({t("bakuTime")})</span>
         </dd>
       </div>
       <div className="flex flex-col">

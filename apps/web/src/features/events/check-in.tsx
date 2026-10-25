@@ -106,21 +106,28 @@ export function CheckInDesk({ eventId }: { eventId: string }) {
     <div className="flex flex-col gap-6">
       <Panel>
         <PanelBody className="flex flex-col gap-4">
-          <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
-            <Field label={t("code")} helper={t("codeHelp")} className="min-w-0 flex-1">
-              <Input
-                ref={input}
-                value={code}
-                autoFocus
-                autoComplete="off"
-                spellCheck={false}
-                className="font-mono"
-                onChange={(event) => setCode(event.target.value)}
-              />
-            </Field>
-            <Button type="submit" variant="primary" loading={admit.isPending}>
-              {t("submit")}
-            </Button>
+          <form onSubmit={submit} className="flex flex-col gap-1">
+            {/* The helper sits under the whole row, so the button lines up with the field. */}
+            <div className="flex flex-wrap items-end gap-3">
+              <Field label={t("code")} className="min-w-0 flex-1">
+                <Input
+                  ref={input}
+                  value={code}
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-describedby="check-in-code-help"
+                  className="font-mono"
+                  onChange={(event) => setCode(event.target.value)}
+                />
+              </Field>
+              <Button type="submit" variant="primary" loading={admit.isPending}>
+                {t("submit")}
+              </Button>
+            </div>
+            <p id="check-in-code-help" className="text-sm text-muted">
+              {t("codeHelp")}
+            </p>
           </form>
           <CameraScanner onCode={(scanned) => admit.mutate({ code: scanned })} />
           <div aria-live="assertive">

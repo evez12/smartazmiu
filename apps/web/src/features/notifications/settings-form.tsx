@@ -103,7 +103,7 @@ export function NotificationSettingsForm({ settings }: { settings: NotificationS
             <Input
               type="time"
               step={60}
-              className="w-32 tabular"
+              className="w-40 tabular"
               value={quiet.starts_at}
               disabled={!quiet.enabled}
               onChange={(event) =>
@@ -115,7 +115,7 @@ export function NotificationSettingsForm({ settings }: { settings: NotificationS
             <Input
               type="time"
               step={60}
-              className="w-32 tabular"
+              className="w-40 tabular"
               value={quiet.ends_at}
               disabled={!quiet.enabled}
               onChange={(event) =>
