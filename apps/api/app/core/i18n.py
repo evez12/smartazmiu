@@ -39,6 +39,10 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Çox sayda sorğu göndərdiniz. Bir az gözləyib yenidən cəhd edin.",
         "en": "Too many requests. Wait a little and try again.",
     },
+    "schedule.invalid_range": {
+        "az": "Tarix aralığı düzgün deyil. Son tarix başlanğıcdan sonra və ən çox 42 gün sonra olmalıdır.",
+        "en": "The date range is invalid. The end must follow the start by at most 42 days.",
+    },
     "import.file_too_large": {
         "az": "Fayl çox böyükdür. Ən çox 5 MB və 20 000 sətirlik fayl yükləyin.",
         "en": "The file is too large. Upload at most 5 MB and 20,000 rows.",

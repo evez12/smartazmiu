@@ -1,0 +1,21 @@
+subject_code,year,term,offering_code,group_codes,weekday,starts_at,ends_at,week_parity,class_type,room_code,teacher_id
+IQT-2101,2026,Payız,765a2,,Bazar ertəsi,08:30,09:50,hər həftə,mühazirə,1-301,T-10412
+IQT-2102,2026,Payız,765a2,,Bazar ertəsi,10:05,11:25,hər həftə,seminar,2-204,
+XDL-2103,2026,Payız,765a2,,Bazar ertəsi,11:40,13:00,üst,seminar,1-206,
+IQT-2101,2026,Payız,765a2,,Çərşənbə,10:05,11:25,hər həftə,seminar,1-305,T-10519
+IQT-2102,2026,Payız,765a2,,Çərşənbə,11:40,13:00,üst,mühazirə,1-101,
+IQT-2102,2026,Payız,765a2,,Çərşənbə,11:40,13:00,alt,laboratoriya,2-310,
+XDL-2103,2026,Payız,765a2,,Cümə axşamı,08:30,09:50,hər həftə,seminar,1-206,
+IQT-2101,2026,Payız,765a1,,Bazar ertəsi,08:30,09:50,hər həftə,mühazirə,1-301,
+IQT-2102,2026,Payız,765a1,,Bazar ertəsi,11:40,13:00,hər həftə,seminar,2-203,
+XDL-2103,2026,Payız,765a1,,Bazar ertəsi,10:05,11:25,alt,seminar,1-207,
+IQT-2101,2026,Payız,765a1,,Çərşənbə,08:30,09:50,hər həftə,seminar,1-304,
+IQT-2102,2026,Payız,765a1,,Çərşənbə,11:40,13:00,üst,mühazirə,1-101,
+XDL-2103,2026,Payız,765a1,,Cümə axşamı,10:05,11:25,hər həftə,seminar,1-207,
+HFT-2101,2026,Payız,765a1+765a2,,Çərşənbə axşamı,08:30,09:50,hər həftə,mühazirə,2-101,
+HFT-2101,2026,Payız,765a1+765a2,765a2,Cümə,11:40,13:00,üst,seminar,2-105,
+HFT-2101,2026,Payız,765a1+765a2,765a1,Cümə,11:40,13:00,alt,seminar,2-105,
+SOS-2103,2026,Payız,765a1+765a2,,Çərşənbə axşamı,10:05,11:25,hər həftə,mühazirə,1-101,
+SOS-2103,2026,Payız,765a1+765a2,,Cümə axşamı,11:40,13:00,alt,seminar,2-211,
+SOS-2104,2026,Payız,765a1+765a2,,Çərşənbə axşamı,10:05,11:25,hər həftə,mühazirə,2-201,
+SOS-2104,2026,Payız,765a1+765a2,,Cümə axşamı,11:40,13:00,alt,seminar,2-212,

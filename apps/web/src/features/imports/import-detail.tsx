@@ -87,6 +87,9 @@ export function ImportSummary({ record }: { record: ImportDetail }) {
     { label: t("detail.created"), value: formatNumber(record.summary.created) },
     { label: t("detail.updated"), value: formatNumber(record.summary.updated) },
     { label: t("detail.unchanged"), value: formatNumber(record.summary.unchanged) },
+    ...(record.kind === "schedule"
+      ? [{ label: t("detail.removed"), value: formatNumber(record.summary.removed) }]
+      : []),
     {
       label: t("detail.encoding"),
       value: record.encoding ? t(`new.encodings.${record.encoding}`) : "XLSX",

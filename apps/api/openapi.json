@@ -382,6 +382,169 @@
         "title": "Body_uploadMyPhoto",
         "type": "object"
       },
+      "BuildingOut": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "floors": {
+            "items": {
+              "$ref": "#/components/schemas/FloorRef"
+            },
+            "title": "Floors",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "address",
+          "floors"
+        ],
+        "title": "BuildingOut",
+        "type": "object"
+      },
+      "BuildingRef": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "BuildingRef",
+        "type": "object"
+      },
+      "ClassOut": {
+        "properties": {
+          "class_type": {
+            "$ref": "#/components/schemas/ClassType"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "ends_at": {
+            "title": "Ends At",
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "moved_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MovedToOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "original_date": {
+            "format": "date",
+            "title": "Original Date",
+            "type": "string"
+          },
+          "original_starts_at": {
+            "title": "Original Starts At",
+            "type": "string"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScheduleRoomOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "room_changed": {
+            "title": "Room Changed",
+            "type": "boolean"
+          },
+          "starts_at": {
+            "title": "Starts At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OccurrenceStatus"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/ScheduleSubjectOut"
+          },
+          "teacher_changed": {
+            "title": "Teacher Changed",
+            "type": "boolean"
+          },
+          "teachers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Teachers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "starts_at",
+          "ends_at",
+          "subject",
+          "class_type",
+          "room",
+          "teachers",
+          "groups",
+          "status",
+          "original_date",
+          "original_starts_at",
+          "moved_to",
+          "room_changed",
+          "teacher_changed",
+          "note"
+        ],
+        "title": "ClassOut",
+        "type": "object"
+      },
+      "ClassType": {
+        "enum": [
+          "lecture",
+          "seminar",
+          "laboratory"
+        ],
+        "title": "ClassType",
+        "type": "string"
+      },
       "ConsentPurpose": {
         "description": "Processing the user agreed to or declined (Law \"On Personal Data\", §5.4).",
         "enum": [
@@ -548,6 +711,65 @@
         "title": "FileEncoding",
         "type": "string"
       },
+      "FloorPlanOut": {
+        "description": "One storey drawn in a ``width × height`` frame (decimetres); rooms are rectangles inside it.",
+        "properties": {
+          "building": {
+            "$ref": "#/components/schemas/BuildingRef"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rooms": {
+            "items": {
+              "$ref": "#/components/schemas/RoomShape"
+            },
+            "title": "Rooms",
+            "type": "array"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "building",
+          "level",
+          "name",
+          "width",
+          "height",
+          "rooms"
+        ],
+        "title": "FloorPlanOut",
+        "type": "object"
+      },
+      "FloorRef": {
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "level",
+          "name"
+        ],
+        "title": "FloorRef",
+        "type": "object"
+      },
       "GroupPlacementOut": {
         "properties": {
           "admission_year": {
@@ -583,6 +805,11 @@
           "created": {
             "default": 0,
             "title": "Created",
+            "type": "integer"
+          },
+          "removed": {
+            "default": 0,
+            "title": "Removed",
             "type": "integer"
           },
           "unchanged": {
@@ -773,7 +1000,13 @@
           "groups",
           "students",
           "offerings",
-          "enrollments"
+          "enrollments",
+          "buildings",
+          "floors",
+          "rooms",
+          "week_parity",
+          "schedule",
+          "schedule_changes"
         ],
         "title": "ImportKind",
         "type": "string"
@@ -984,6 +1217,30 @@
         "title": "MeResponse",
         "type": "object"
       },
+      "MovedToOut": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "ends_at": {
+            "title": "Ends At",
+            "type": "string"
+          },
+          "starts_at": {
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "MovedToOut",
+        "type": "object"
+      },
       "MyAcademicsResponse": {
         "description": "The signed-in user's group and current subjects. Grades are never part of this payload (§5.4).",
         "properties": {
@@ -1086,6 +1343,17 @@
         ],
         "title": "NoticeAcknowledgement",
         "type": "object"
+      },
+      "OccurrenceStatus": {
+        "enum": [
+          "scheduled",
+          "cancelled",
+          "changed",
+          "moved_away",
+          "moved_here"
+        ],
+        "title": "OccurrenceStatus",
+        "type": "string"
       },
       "PersonRef": {
         "properties": {
@@ -1271,6 +1539,234 @@
           "roles"
         ],
         "title": "RoleAssignment",
+        "type": "object"
+      },
+      "RoomOut": {
+        "properties": {
+          "building": {
+            "$ref": "#/components/schemas/BuildingRef"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "floor": {
+            "$ref": "#/components/schemas/FloorRef"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RoomType"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "type",
+          "capacity",
+          "building",
+          "floor"
+        ],
+        "title": "RoomOut",
+        "type": "object"
+      },
+      "RoomShape": {
+        "properties": {
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RoomType"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          },
+          "x": {
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "type",
+          "capacity",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "RoomShape",
+        "type": "object"
+      },
+      "RoomType": {
+        "enum": [
+          "lecture_hall",
+          "classroom",
+          "laboratory",
+          "computer_lab",
+          "studio",
+          "library",
+          "office",
+          "service"
+        ],
+        "title": "RoomType",
+        "type": "string"
+      },
+      "ScheduleDayOut": {
+        "properties": {
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/ClassOut"
+            },
+            "title": "Classes",
+            "type": "array"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "parity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "upper",
+                  "lower"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parity"
+          }
+        },
+        "required": [
+          "date",
+          "parity",
+          "classes"
+        ],
+        "title": "ScheduleDayOut",
+        "type": "object"
+      },
+      "ScheduleOut": {
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDayOut"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "today",
+          "days"
+        ],
+        "title": "ScheduleOut",
+        "type": "object"
+      },
+      "ScheduleRoomOut": {
+        "properties": {
+          "building": {
+            "title": "Building",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "floor": {
+            "title": "Floor",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "building",
+          "floor"
+        ],
+        "title": "ScheduleRoomOut",
+        "type": "object"
+      },
+      "ScheduleSubjectOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "ScheduleSubjectOut",
         "type": "object"
       },
       "SemesterRef": {
@@ -2394,6 +2890,362 @@
         ]
       }
     },
+    "/api/v1/campus/buildings": {
+      "get": {
+        "operationId": "listBuildings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BuildingOut"
+                  },
+                  "title": "Response Listbuildings",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Buildings with their floors",
+        "tags": [
+          "campus"
+        ]
+      }
+    },
+    "/api/v1/campus/buildings/{building_code}/floors/{level}": {
+      "get": {
+        "operationId": "readFloorPlan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "building_code",
+            "required": true,
+            "schema": {
+              "title": "Building Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "level",
+            "required": true,
+            "schema": {
+              "title": "Level",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FloorPlanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Floor plan: the floor's frame and its rooms",
+        "tags": [
+          "campus"
+        ]
+      }
+    },
+    "/api/v1/campus/rooms": {
+      "get": {
+        "operationId": "searchRooms",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoomOut"
+                  },
+                  "title": "Response Searchrooms",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Find rooms by code or name (at most 20)",
+        "tags": [
+          "campus"
+        ]
+      }
+    },
+    "/api/v1/campus/rooms/{code}": {
+      "get": {
+        "operationId": "readRoom",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Room",
+        "tags": [
+          "campus"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "readMe",
@@ -3117,6 +3969,194 @@
         "summary": "Update bio and privacy settings",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/api/v1/me/schedule": {
+      "get": {
+        "operationId": "readMySchedule",
+        "parameters": [
+          {
+            "description": "First day; default Monday of this week",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "First day; default Monday of this week",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Last day (inclusive); default start + 6",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Last day (inclusive); default start + 6",
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My classes per day (default: the current week)",
+        "tags": [
+          "schedule"
+        ]
+      }
+    },
+    "/api/v1/me/schedule.ics": {
+      "get": {
+        "operationId": "downloadMySchedule",
+        "responses": {
+          "200": {
+            "content": {
+              "text/calendar": {}
+            },
+            "description": "iCalendar file"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My classes of the current semester as an iCalendar file",
+        "tags": [
+          "schedule"
         ]
       }
     },

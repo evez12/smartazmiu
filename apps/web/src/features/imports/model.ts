@@ -17,6 +17,12 @@ export const IMPORT_KINDS = [
   "students",
   "offerings",
   "enrollments",
+  "buildings",
+  "floors",
+  "rooms",
+  "week_parity",
+  "schedule",
+  "schedule_changes",
 ] as const satisfies readonly ImportKind[];
 
 export const FILE_ENCODINGS = [

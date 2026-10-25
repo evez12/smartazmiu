@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 import { password, signIn, signInWithSecondFactor, test } from "./support/auth";
+import { importFile, SEED_DIR } from "./support/imports";
 
 /*
  * Staff and admin flows. Each test signs in with throwaway staff/admin accounts that it creates and deletes, so the
@@ -13,7 +14,6 @@ test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 
 const STAFF_NAME = { givenName: "Günel", familyName: "Səfərova" };
 
-const SEED_DIR = path.resolve(__dirname, "../../../infra/seed/academics");
 const KINDS = [
   ["faculties", "1. Fakültələr"],
   ["specialties", "2. İxtisaslar"],
@@ -60,23 +60,7 @@ test.describe.serial("765a2 roster", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Məlumat idxalı" })).toBeVisible();
 
     for (const [kind, label] of KINDS) {
-      await page.goto("/admin/imports/new");
-      await page.getByRole("combobox", { name: /Məlumat növü/ }).selectOption({ label });
-      await page
-        .getByLabel(/^Fayl/, { exact: false })
-        .and(page.locator("input[type=file]"))
-        .setInputFiles(path.join(SEED_DIR, `${kind}.csv`));
-      await page.getByRole("button", { name: "Faylı yoxlayın" }).click();
-
-      await expect(page.getByRole("heading", { level: 1, name: `${kind}.csv` })).toBeVisible();
-      await expect(
-        page
-          .getByText("Fayl yoxlanıldı, xəta tapılmadı")
-          .or(page.getByText("Bu fayl artıq tətbiq olunub")),
-      ).toBeVisible();
-      await page.getByRole("button", { name: "Tətbiq edin" }).click();
-      await page.getByRole("alertdialog").getByRole("button", { name: "Tətbiq edin" }).click();
-      await expect(page.getByText("İdxal tətbiq olunub")).toBeVisible();
+      await importFile(page, { label }, path.join(SEED_DIR, `${kind}.csv`));
     }
     await expectNoSeriousViolations(page);
 

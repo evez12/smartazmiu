@@ -9,7 +9,7 @@ const record: ImportOut = {
   file_name: "telebeler.csv",
   encoding: "utf-8",
   row_count: 22,
-  summary: { created: 22, updated: 0, unchanged: 0 },
+  summary: { created: 22, updated: 0, unchanged: 0, removed: 0 },
   error_count: 0,
   created_at: "2026-10-24T10:00:00Z",
   created_by: null,
@@ -38,6 +38,12 @@ describe("IMPORT_KINDS", () => {
       students: true,
       offerings: true,
       enrollments: true,
+      buildings: true,
+      floors: true,
+      rooms: true,
+      week_parity: true,
+      schedule: true,
+      schedule_changes: true,
     };
     expect([...IMPORT_KINDS].sort()).toEqual(Object.keys(complete).sort());
   });

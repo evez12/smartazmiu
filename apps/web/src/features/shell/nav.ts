@@ -1,4 +1,13 @@
-import { FileUp, House, ScrollText, UserRound, Users, type LucideIcon } from "lucide-react";
+import {
+  CalendarDays,
+  FileUp,
+  House,
+  Map as MapIcon,
+  ScrollText,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 /** Remembers the collapsed desktop navigation so the server renders the same width (no layout jump). */
 export const NAV_COOKIE = "sa_nav";
@@ -9,7 +18,7 @@ export const ROLE_CODES = ["student", "teacher", "staff", "moderator", "admin", 
 export type NavItem = {
   href: string;
   /** Key under `shell.nav` in messages. */
-  labelKey: "home" | "profile" | "imports" | "users" | "audit";
+  labelKey: "home" | "schedule" | "map" | "profile" | "imports" | "users" | "audit";
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (§12.6: Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). */
   inTabBar: boolean;
@@ -28,6 +37,8 @@ export const NAVIGATION: NavSection[] = [
     labelKey: "main",
     items: [
       { href: "/", labelKey: "home", icon: House, inTabBar: true },
+      { href: "/schedule", labelKey: "schedule", icon: CalendarDays, inTabBar: true },
+      { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/profile", labelKey: "profile", icon: UserRound, inTabBar: true },
     ],
   },

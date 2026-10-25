@@ -527,10 +527,10 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** import a real (anonymized) group 765a2 roster with its subjects; student sees own group and subjects.
 
 #### Sprint 3 (12-28 → 2027-01-08) — Homepage, Schedule, Map
-- [ ] Schedule model with upper/lower week parity, changes; import from source format.
-- [ ] Week/day views, today widget, `.ics` export.
-- [ ] Campus map: buildings/floors/rooms, SVG floor plans, room search, link from schedule entry.
-- [ ] Homepage widgets: today's classes, announcements, (placeholder) unread chat.
+- [x] Schedule model with upper/lower week parity, changes; import from source format.
+- [x] Week/day views, today widget, `.ics` export.
+- [x] Campus map: buildings/floors/rooms, SVG floor plans, room search, link from schedule entry.
+- [x] Homepage widgets: today's classes, announcements, (placeholder) unread chat.
 **Acceptance:** student opens homepage → sees today's classes → taps room → map highlights room.
 
 #### Sprint 4 (01-11 → 01-22) — Events, Announcements, Notifications

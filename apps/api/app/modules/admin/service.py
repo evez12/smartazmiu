@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.identity_admin import IdentityAdmin, IdentityAdminUnavailableError
-from app.core.text import normalize_az
+from app.core.text import like_pattern, normalize_az
 from app.core.time import utc_now
 from app.modules.academics.models import AcademicGroup
 from app.modules.audit.models import AuditAction
@@ -45,11 +45,6 @@ class UserPage:
     total: int
 
 
-def _like_pattern(text: str) -> str:
-    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    return f"%{escaped}%"
-
-
 class UserAdminService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -68,7 +63,7 @@ class UserAdminService:
         )
         if query and (needle := normalize_az(query).folded):
             # Diacritic-insensitive: "memmedova" finds "Məmmədova" (§13.1).
-            statement = statement.where(User.search_key.like(_like_pattern(needle), escape="\\"))
+            statement = statement.where(User.search_key.like(like_pattern(needle), escape="\\"))
         if role is not None:
             statement = statement.where(
                 exists()

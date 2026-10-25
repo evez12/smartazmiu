@@ -1,0 +1,9 @@
+subject_code,year,term,offering_code,group_codes,date,starts_at,action,new_date,new_starts_at,new_ends_at,room_code,teacher_id,note
+IQT-2101,2026,Payız,765a2,,2026-11-09,08:30,ləğv,,,,,,Dövlət Bayrağı Günü
+IQT-2101,2026,Payız,765a1,,2026-11-09,08:30,ləğv,,,,,,Dövlət Bayrağı Günü
+IQT-2102,2026,Payız,765a2,,2026-11-09,10:05,ləğv,,,,,,Dövlət Bayrağı Günü
+IQT-2102,2026,Payız,765a1,,2026-11-09,11:40,ləğv,,,,,,Dövlət Bayrağı Günü
+XDL-2103,2026,Payız,765a2,,2026-11-09,11:40,ləğv,,,,,,Dövlət Bayrağı Günü
+IQT-2102,2026,Payız,765a2,,2026-10-28,11:40,dəyişiklik,,,,2-101,,1-101 konfrans üçün ayrılıb
+IQT-2101,2026,Payız,765a2,,2026-10-28,10:05,dəyişiklik,2026-10-30,10:05,11:25,,,Müəllim konfransdadır
+XDL-2103,2026,Payız,765a2,,2026-10-29,08:30,dəyişiklik,,,,,T-10519,

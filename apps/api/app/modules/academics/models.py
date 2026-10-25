@@ -185,6 +185,12 @@ class ImportKind(StrEnum):
     STUDENTS = "students"
     OFFERINGS = "offerings"
     ENROLLMENTS = "enrollments"
+    BUILDINGS = "buildings"
+    FLOORS = "floors"
+    ROOMS = "rooms"
+    WEEK_PARITY = "week_parity"
+    SCHEDULE = "schedule"
+    SCHEDULE_CHANGES = "schedule_changes"
 
 
 class ImportStatus(StrEnum):
