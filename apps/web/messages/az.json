@@ -485,7 +485,31 @@
     "save": "Yadda saxlayın",
     "saved": "Profil yadda saxlanıldı",
     "saveFailedTitle": "Profil yadda saxlanılmadı",
-    "reload": "Səhifəni yeniləyin"
+    "reload": "Səhifəni yeniləyin",
+    "data": {
+      "title": "Məlumatlarınız və razılıqlar",
+      "description": "Sizin haqqınızda saxlanılan bütün məlumatları yükləyə və verdiyiniz razılıqları görə bilərsiniz.",
+      "export": "Məlumatlarımı yükləyin",
+      "exportHelper": "JSON faylı: hesab, profil, akademik məlumatlar və öz nəticələriniz, razılıqlar və sizinlə bağlı audit qeydləri. Yükləmə audit jurnalına yazılır.",
+      "notice": "Məxfilik bildirişi",
+      "noticeAcknowledged": "Versiya {version}, {date} tarixində tanış olmusunuz.",
+      "noticePending": "Versiya {version} ilə hələ tanış olmamısınız.",
+      "noticeLink": "Bildirişi oxuyun",
+      "historyTitle": "Razılıqların tarixçəsi",
+      "historyEmpty": "Hələ heç bir razılıq qeydə alınmayıb.",
+      "columns": {
+        "time": "Vaxt",
+        "purpose": "Məqsəd",
+        "decision": "Qərar"
+      },
+      "purposes": {
+        "privacy_notice": "Məxfilik bildirişi ilə tanışlıq",
+        "contact_sharing": "E-poçtun digər istifadəçilərə göstərilməsi",
+        "profile_photo": "Profil şəklinin göstərilməsi"
+      },
+      "granted": "Razılıq verilib",
+      "withdrawn": "Geri alınıb"
+    }
   },
   "admin": {
     "users": {
@@ -582,5 +606,44 @@
       "rolesRemoved": "Silinən: {roles}",
       "importResult": "{kind}: {created} yeni, {updated} yenilənən, {unchanged} dəyişməyən"
     }
+  },
+  "privacy": {
+    "title": "Məxfilik bildirişi",
+    "description": "SmartAzMİU-nun şəxsi məlumatlarınızı necə emal etdiyi barədə.",
+    "versionLabel": "Versiya {version}",
+    "draftNote": "Bu mətn layihədir və universitetin hüquq xidməti tərəfindən təsdiqlənəcək.",
+    "sections": {
+      "data": {
+        "title": "Hansı məlumatları emal edirik",
+        "body": "Universitet qeydlərindən adınız, soyadınız, universitet nömrəniz, e-poçtunuz, qrupunuz, ixtisasınız, fənləriniz və fənlər üzrə nəticələriniz. Profilinizə özünüz əlavə etdiyiniz şəkil və məlumat. Hesabınızın təhlükəsizliyi üçün giriş və idarəetmə qeydləri."
+      },
+      "purpose": {
+        "title": "Nə üçün emal edirik",
+        "body": "Fənlərinizi, qrupunuzu, cədvəlinizi və kanallarınızı avtomatik göstərmək, universitet əməkdaşlarının tədris prosesini idarə etməsi və hesabınızı qorumaq üçün. Məlumatlarınız reklam məqsədilə istifadə olunmur və üçüncü tərəflərə satılmır."
+      },
+      "visibility": {
+        "title": "Kimlər nəyi görür",
+        "body": "Qiymətləriniz digər istifadəçilərə göstərilmir. E-poçtunuz yalnız siz icazə verdikdə görünür. Şəkliniz və “Haqqınızda” mətni platformanın bütün istifadəçilərinə görünür. Dekanlıq və sistem administratorları işləri üçün lazım olan məlumatları görür; onların əməliyyatları audit jurnalına yazılır."
+      },
+      "rights": {
+        "title": "Hüquqlarınız",
+        "body": "Azərbaycan Respublikasının “Fərdi məlumatlar haqqında” Qanununa uyğun olaraq məlumatlarınızı yükləyə (Profil → Məlumatlarımı yükləyin), verdiyiniz razılığı istənilən vaxt geri ala və səhv məlumatın düzəldilməsini tələb edə bilərsiniz. Universitet qeydlərindəki səhvlər üçün dekanlığa müraciət edin."
+      },
+      "retention": {
+        "title": "Nə qədər saxlayırıq",
+        "body": "Məlumatlar təhsiliniz və ya işiniz davam etdiyi müddətdə saxlanılır. Profil şəklini silən kimi o, saxlanma yerindən də silinir. İdxal üçün yüklənmiş fayllar ən çox 24 saat saxlanılır."
+      },
+      "contact": {
+        "title": "Əlaqə",
+        "body": "Şəxsi məlumatlarla bağlı suallar üçün universitetin İT xidmətinə və ya dekanlığa müraciət edin."
+      }
+    },
+    "acknowledge": "Tanış oldum",
+    "acknowledgedAt": "Siz bu bildirişlə {date} tarixində tanış olmusunuz.",
+    "acknowledged": "Bildirişlə tanış olduğunuz qeyd edildi",
+    "failedTitle": "Qeyd edilmədi",
+    "promptTitle": "Məxfilik bildirişi ilə tanış olun",
+    "promptBody": "Məlumatlarınızın necə emal edildiyini və hüquqlarınızı oxuyun.",
+    "promptLink": "Bildirişi oxuyun"
   }
 }

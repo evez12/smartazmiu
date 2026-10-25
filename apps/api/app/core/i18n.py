@@ -91,6 +91,10 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Giriş xidməti müvəqqəti əlçatan deyil, rollar dəyişdirilmədi. Bir az sonra yenidən cəhd edin.",
         "en": "The sign-in service is temporarily unavailable; roles were not changed. Try again shortly.",
     },
+    "privacy.notice_outdated": {
+        "az": "Məxfilik bildirişi yenilənib. Səhifəni yeniləyib yeni mətnlə tanış olun.",
+        "en": "The privacy notice has been updated. Reload the page and read the new version.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",
