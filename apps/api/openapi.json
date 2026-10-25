@@ -1668,12 +1668,17 @@
           "parity": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/WeekParity"
+                "enum": [
+                  "upper",
+                  "lower"
+                ],
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Parity"
           }
         },
         "required": [
@@ -1866,16 +1871,6 @@
           "inactive"
         ],
         "title": "UserStatus",
-        "type": "string"
-      },
-      "WeekParity": {
-        "description": "``upper`` (üst) and ``lower`` (alt) weeks alternate; ``every`` entries take place in both.",
-        "enum": [
-          "every",
-          "upper",
-          "lower"
-        ],
-        "title": "WeekParity",
         "type": "string"
       }
     },

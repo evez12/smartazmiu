@@ -244,7 +244,9 @@
       "imports": "Məlumat idxalı",
       "profile": "Profil",
       "users": "İstifadəçilər",
-      "audit": "Audit jurnalı"
+      "audit": "Audit jurnalı",
+      "schedule": "Cədvəl",
+      "map": "Kampus xəritəsi"
     }
   },
   "roles": {
@@ -258,10 +260,14 @@
   },
   "dashboard": {
     "title": "Ana səhifə",
-    "description": "Bugünkü dərslər, yaxın imtahanlar, elanlar və oxunmamış mesajlar bu səhifədə toplanacaq.",
+    "description": "Bugünkü dərsləriniz, elanlar və qrupunuzla bağlı məlumatlar.",
     "academicDataTitle": "Akademik məlumatlar",
     "noAcademicData": "Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb.",
-    "noAcademicDataHint": "Məlumatlar dekanlıq tərəfindən əlavə olunduqdan sonra burada avtomatik görünəcək. Sualınız varsa, dekanlığa müraciət edin."
+    "noAcademicDataHint": "Məlumatlar dekanlıq tərəfindən əlavə olunduqdan sonra burada avtomatik görünəcək. Sualınız varsa, dekanlığa müraciət edin.",
+    "announcementsTitle": "Elanlar",
+    "announcementsEmpty": "Hazırda sizə aid elan yoxdur. Dekanlığın və universitetin elanları burada görünəcək.",
+    "chatTitle": "Oxunmamış mesajlar",
+    "chatPlaceholder": "Çat bölməsi hələ istifadəyə verilməyib. Fənn və qrup kanallarınız açıldıqdan sonra oxunmamış mesajların sayı burada görünəcək."
   },
   "status": {
     "loading": "Yüklənir",
@@ -664,5 +670,93 @@
     "promptTitle": "Məxfilik bildirişi ilə tanış olun",
     "promptBody": "Məlumatlarınızın necə emal edildiyini və hüquqlarınızı oxuyun.",
     "promptLink": "Bildirişi oxuyun"
+  },
+  "schedule": {
+    "title": "Dərs cədvəli",
+    "description": "Dərsləriniz Bakı vaxtı ilə göstərilir. Cədvəldəki dəyişikliklər ayrıca işarələnir.",
+    "download": "Təqvim faylını yükləyin",
+    "views": {
+      "label": "Görünüş",
+      "week": "Həftə",
+      "day": "Gün"
+    },
+    "navigation": "Tarix seçimi",
+    "previousWeek": "Əvvəlki həftə",
+    "nextWeek": "Növbəti həftə",
+    "thisWeek": "Bu həftə",
+    "previousDay": "Əvvəlki gün",
+    "nextDay": "Növbəti gün",
+    "today": "Bu gün",
+    "weekRange": "{start} – {end}",
+    "parity": {
+      "upper": "Üst həftə",
+      "lower": "Alt həftə",
+      "none": "Semestrdən kənar"
+    },
+    "classTypes": {
+      "lecture": "Mühazirə",
+      "seminar": "Seminar",
+      "laboratory": "Laboratoriya"
+    },
+    "statuses": {
+      "scheduled": "Cədvəl üzrə",
+      "cancelled": "Ləğv olunub",
+      "changed": "Dəyişiklik",
+      "moved_away": "Köçürülüb",
+      "moved_here": "Köçürülmüş dərs"
+    },
+    "movedTo": "Dərs {date}, saat {time} vaxtına köçürülüb.",
+    "movedFrom": "{date}, saat {time} üçün nəzərdə tutulmuş dərs.",
+    "roomChanged": "Otaq dəyişib.",
+    "teacherChanged": "Dərsi əvəzedici müəllim aparır.",
+    "time": "{start}–{end}",
+    "room": "Otaq",
+    "noRoom": "Otaq göstərilməyib",
+    "showOnMap": "{room} otağını xəritədə göstərin",
+    "teachers": "Müəllim",
+    "groups": "Qruplar",
+    "noClasses": "Dərs yoxdur.",
+    "noClassesWeek": "Bu həftə dərsiniz yoxdur.",
+    "noClassesDay": "Bu gün dərsiniz yoxdur.",
+    "goToNextWeek": "Növbəti həftəyə baxın",
+    "todayTitle": "Bugünkü dərslər",
+    "openWeek": "Həftəlik cədvəl"
+  },
+  "map": {
+    "title": "Kampus xəritəsi",
+    "description": "Binaları, mərtəbələri və otaqları tapın. Dərs cədvəlindəki otaq kodu xəritədə həmin otağı göstərir.",
+    "searchLabel": "Otaq axtarışı",
+    "searchHelper": "Otağın kodunu və ya adını yazın, məsələn 1-305 və ya kitabxana.",
+    "search": "Axtarın",
+    "results": "Axtarışın nəticələri",
+    "noResults": "Bu sorğuya uyğun otaq tapılmadı. Kodu yoxlayın, məsələn 1-305.",
+    "buildings": "Binalar",
+    "floors": "Mərtəbələr",
+    "planTitle": "{building}, {floor}: plan",
+    "planHint": "Otağı seçmək üçün onun üzərinə klikləyin və ya Tab düyməsi ilə keçin.",
+    "selectedRoom": "Seçilmiş otaq",
+    "noSelection": "Otaq seçilməyib. Planda otağı seçin və ya axtarışdan istifadə edin.",
+    "roomNotFound": "{room} kodlu otaq tapılmadı. Kodu yoxlayın və ya axtarışdan istifadə edin.",
+    "empty": "Kampus məlumatları hələ əlavə olunmayıb. Binalar və otaqlar idxal olunduqdan sonra xəritə burada görünəcək.",
+    "roomLabel": "{code}, {type}",
+    "facts": {
+      "code": "Kod",
+      "name": "Ad",
+      "type": "Növ",
+      "capacity": "Yerlərin sayı",
+      "building": "Bina",
+      "floor": "Mərtəbə",
+      "address": "Ünvan"
+    },
+    "types": {
+      "lecture_hall": "Mühazirə zalı",
+      "classroom": "Auditoriya",
+      "laboratory": "Laboratoriya",
+      "computer_lab": "Kompüter otağı",
+      "studio": "Emalatxana",
+      "library": "Kitabxana",
+      "office": "Xidməti otaq",
+      "service": "Yardımçı sahə"
+    }
   }
 }

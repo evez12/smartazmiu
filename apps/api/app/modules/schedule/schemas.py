@@ -1,8 +1,9 @@
 import datetime as dt
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from app.modules.schedule.models import ClassType, WeekParity
+from app.modules.schedule.models import ClassType
 from app.modules.schedule.service import OccurrenceStatus
 
 
@@ -52,7 +53,7 @@ class ClassOut(_Frozen):
 
 class ScheduleDayOut(_Frozen):
     date: dt.date
-    parity: WeekParity | None
+    parity: Literal["upper", "lower"] | None
     """``upper`` or ``lower``; null on days outside every semester."""
     classes: list[ClassOut]
 

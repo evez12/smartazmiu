@@ -972,7 +972,8 @@ export interface components {
        * Format: date
        */
       date: string;
-      parity: components["schemas"]["WeekParity"] | null;
+      /** Parity */
+      parity: ("upper" | "lower") | null;
     };
     /** ScheduleOut */
     ScheduleOut: {
@@ -1052,12 +1053,6 @@ export interface components {
      * @enum {string}
      */
     UserStatus: "active" | "inactive";
-    /**
-     * WeekParity
-     * @description ``upper`` (üst) and ``lower`` (alt) weeks alternate; ``every`` entries take place in both.
-     * @enum {string}
-     */
-    WeekParity: "every" | "upper" | "lower";
   };
   responses: never;
   parameters: never;

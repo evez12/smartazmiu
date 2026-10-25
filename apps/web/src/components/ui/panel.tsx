@@ -11,6 +11,8 @@ export function Panel({ className, ...rest }: ComponentProps<"section">) {
 
 type PanelHeaderProps = {
   title: ReactNode;
+  /** Lets the panel name itself after its title (`aria-labelledby`), so it is a navigable region. */
+  titleId?: string;
   description?: ReactNode;
   action?: ReactNode;
   headingLevel?: 2 | 3;
@@ -19,6 +21,7 @@ type PanelHeaderProps = {
 
 export function PanelHeader({
   title,
+  titleId,
   description,
   action,
   headingLevel = 2,
@@ -33,7 +36,9 @@ export function PanelHeader({
       )}
     >
       <div className="flex min-w-0 flex-col">
-        <Heading className="text-md font-semibold text-text">{title}</Heading>
+        <Heading id={titleId} className="text-md font-semibold text-text">
+          {title}
+        </Heading>
         {description ? <p className="text-sm text-muted">{description}</p> : null}
       </div>
       {action}

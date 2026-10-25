@@ -13,6 +13,12 @@ const timeFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
   hourCycle: "h23",
 });
 const numberFormat = new Intl.NumberFormat(DEFAULT_LOCALE);
+const dayMonthFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+  timeZone: "UTC",
+  day: "numeric",
+  month: "long",
+});
+const weekdayFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, { timeZone: "UTC", weekday: "long" });
 
 function capitalize(word: string): string {
   return word.charAt(0).toLocaleUpperCase(DEFAULT_LOCALE) + word.slice(1);
@@ -33,4 +39,22 @@ export function formatDateTime(value: Date | string): string {
 
 export function formatNumber(value: number): string {
   return numberFormat.format(value);
+}
+
+/** A calendar date (`2026-10-26`) has no time zone; it is formatted as the same day everywhere. */
+function calendarDate(day: string): Date {
+  return new Date(`${day}T00:00:00Z`);
+}
+
+/** "26 Oktyabr" for a calendar date. */
+export function formatDayMonth(day: string): string {
+  return dayMonthFormat
+    .formatToParts(calendarDate(day))
+    .map((part) => (part.type === "month" ? capitalize(part.value) : part.value))
+    .join("");
+}
+
+/** "Bazar ertəsi, 26 Oktyabr" for a calendar date. */
+export function formatWeekdayDate(day: string): string {
+  return `${capitalize(weekdayFormat.format(calendarDate(day)))}, ${formatDayMonth(day)}`;
 }
