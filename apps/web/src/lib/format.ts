@@ -1,67 +1,35 @@
 import { DEFAULT_LOCALE, TIME_ZONE } from "@/i18n/config";
 
-const dateFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
-  timeZone: TIME_ZONE,
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-const timeFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
-  timeZone: TIME_ZONE,
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-const numberFormat = new Intl.NumberFormat(DEFAULT_LOCALE);
-const dayMonthFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
-  timeZone: "UTC",
-  day: "numeric",
-  month: "long",
-});
-const weekdayFormat = new Intl.DateTimeFormat(DEFAULT_LOCALE, { timeZone: "UTC", weekday: "long" });
+/*
+ * Month and weekday names are written out here: browsers with reduced ICU data (some Chromium builds) have no
+ * Azerbaijani names and fall back to "2026 M10 26". Intl only supplies the numeric Baku date and time.
+ */
+const MONTHS = [
+  "Yanvar",
+  "Fevral",
+  "Mart",
+  "Aprel",
+  "May",
+  "İyun",
+  "İyul",
+  "Avqust",
+  "Sentyabr",
+  "Oktyabr",
+  "Noyabr",
+  "Dekabr",
+] as const;
+/** ISO order, Monday first (§1.3). */
+const WEEKDAYS = [
+  "Bazar ertəsi",
+  "Çərşənbə axşamı",
+  "Çərşənbə",
+  "Cümə axşamı",
+  "Cümə",
+  "Şənbə",
+  "Bazar",
+] as const;
 
-function capitalize(word: string): string {
-  return word.charAt(0).toLocaleUpperCase(DEFAULT_LOCALE) + word.slice(1);
-}
-
-/** "24 Oktyabr 2026" (§1.3). Intl writes Azerbaijani month names in lower case. */
-export function formatDate(value: Date | string): string {
-  return dateFormat
-    .formatToParts(new Date(value))
-    .map((part) => (part.type === "month" ? capitalize(part.value) : part.value))
-    .join("");
-}
-
-/** "24 Oktyabr 2026, 14:30" in Baku time. */
-export function formatDateTime(value: Date | string): string {
-  return `${formatDate(value)}, ${timeFormat.format(new Date(value))}`;
-}
-
-export function formatNumber(value: number): string {
-  return numberFormat.format(value);
-}
-
-/** A calendar date (`2026-10-26`) has no time zone; it is formatted as the same day everywhere. */
-function calendarDate(day: string): Date {
-  return new Date(`${day}T00:00:00Z`);
-}
-
-/** "26 Oktyabr" for a calendar date. */
-export function formatDayMonth(day: string): string {
-  return dayMonthFormat
-    .formatToParts(calendarDate(day))
-    .map((part) => (part.type === "month" ? capitalize(part.value) : part.value))
-    .join("");
-}
-
-/** "Bazar ertəsi, 26 Oktyabr" for a calendar date. */
-export function formatWeekdayDate(day: string): string {
-  return `${capitalize(weekdayFormat.format(calendarDate(day)))}, ${formatDayMonth(day)}`;
-}
-
-/** Baku has had no daylight saving time since 2016, so its offset is fixed (§1.3). */
-const BAKU_OFFSET = "+04:00";
-const inputParts = new Intl.DateTimeFormat("en-CA", {
+const bakuParts = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,
   year: "numeric",
   month: "2-digit",
@@ -70,6 +38,56 @@ const inputParts = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
   hourCycle: "h23",
 });
+const numberFormat = new Intl.NumberFormat(DEFAULT_LOCALE);
+
+type BakuParts = { year: string; month: string; day: string; hour: string; minute: string };
+
+function partsInBaku(value: Date | string): BakuParts {
+  const parts = Object.fromEntries(
+    bakuParts.formatToParts(new Date(value)).map((part) => [part.type, part.value]),
+  );
+  return parts as BakuParts;
+}
+
+function dayMonth(day: string, month: string): string {
+  return `${Number(day)} ${MONTHS[Number(month) - 1]}`;
+}
+
+/** "24 Oktyabr 2026" (§1.3), the Baku date of an instant. */
+export function formatDate(value: Date | string): string {
+  const { year, month, day } = partsInBaku(value);
+  return `${dayMonth(day, month)} ${year}`;
+}
+
+/** "14:30" in Baku time. */
+export function formatTime(value: Date | string): string {
+  const { hour, minute } = partsInBaku(value);
+  return `${hour}:${minute}`;
+}
+
+/** "24 Oktyabr 2026, 14:30" in Baku time. */
+export function formatDateTime(value: Date | string): string {
+  return `${formatDate(value)}, ${formatTime(value)}`;
+}
+
+export function formatNumber(value: number): string {
+  return numberFormat.format(value);
+}
+
+/** "26 Oktyabr" for a calendar date (`2026-10-26`), which has no time zone. */
+export function formatDayMonth(day: string): string {
+  const [, month, date] = day.split("-");
+  return dayMonth(date!, month!);
+}
+
+/** "Bazar ertəsi, 26 Oktyabr" for a calendar date. */
+export function formatWeekdayDate(day: string): string {
+  const weekday = (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
+  return `${WEEKDAYS[weekday]}, ${formatDayMonth(day)}`;
+}
+
+/** Baku has had no daylight saving time since 2016, so its offset is fixed (§1.3). */
+const BAKU_OFFSET = "+04:00";
 
 /** A `datetime-local` value ("2026-12-01T09:00") read as Baku time, as an ISO instant for the API. */
 export function bakuInputToIso(value: string): string {
@@ -78,15 +96,8 @@ export function bakuInputToIso(value: string): string {
 
 /** An instant as a `datetime-local` value in Baku time, whatever the device's zone. */
 export function isoToBakuInput(value: string): string {
-  const parts = Object.fromEntries(
-    inputParts.formatToParts(new Date(value)).map((part) => [part.type, part.value]),
-  );
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
-}
-
-/** "14:30" in Baku time. */
-export function formatTime(value: Date | string): string {
-  return timeFormat.format(new Date(value));
+  const { year, month, day, hour, minute } = partsInBaku(value);
+  return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
 /** "1 Dekabr 2026, 14:00–16:00" within a Baku day, otherwise both ends in full. */
