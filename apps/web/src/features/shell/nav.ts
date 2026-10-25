@@ -1,5 +1,6 @@
 import {
   Bell,
+  CalendarCheck,
   CalendarDays,
   FileUp,
   House,
@@ -25,6 +26,7 @@ export type NavItem = {
     | "schedule"
     | "map"
     | "announcements"
+    | "events"
     | "notifications"
     | "profile"
     | "imports"
@@ -51,6 +53,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/schedule", labelKey: "schedule", icon: CalendarDays, inTabBar: true },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
+      { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },
       { href: "/notifications", labelKey: "notifications", icon: Bell, inTabBar: true },
       { href: "/profile", labelKey: "profile", icon: UserRound, inTabBar: true },
     ],

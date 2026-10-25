@@ -248,7 +248,8 @@
       "schedule": "Cədvəl",
       "map": "Kampus xəritəsi",
       "notifications": "Bildirişlər",
-      "announcements": "Elanlar"
+      "announcements": "Elanlar",
+      "events": "Tədbirlər"
     }
   },
   "roles": {
@@ -898,6 +899,127 @@
         "status": "Vəziyyət"
       },
       "manageEmpty": "Hələ elan dərc olunmayıb."
+    }
+  },
+  "events": {
+    "title": "Tədbirlər",
+    "description": "Universitetin, fakültənizin və qrupunuzun tədbirləri; qeydiyyat və biletlər.",
+    "create": "Tədbir yaradın",
+    "tickets": "Biletlərim",
+    "filters": {
+      "label": "Tədbirləri süzün",
+      "upcoming": "Gələcək",
+      "past": "Keçmiş",
+      "registered": "Qeydiyyatlarım"
+    },
+    "empty": {
+      "upcoming": "Hazırda sizə aid gələcək tədbir yoxdur. Yeni tədbirlər elan olunanda burada görünəcək.",
+      "past": "Keçmiş tədbir yoxdur.",
+      "registered": "Hələ heç bir tədbirə qeydiyyatdan keçməmisiniz."
+    },
+    "loadMore": "Daha çox yükləyin",
+    "when": "Vaxt",
+    "where": "Yer",
+    "audience": "Auditoriya",
+    "places": "Yerlər",
+    "bakuTime": "Bakı vaxtı",
+    "room": "Otaq {code}",
+    "showOnMap": "{code} otağını xəritədə göstərin",
+    "unlimited": "Məhdudiyyət yoxdur",
+    "spots": "{left, plural, =0 {Boş yer qalmayıb} one {# boş yer} other {# boş yer}} ({going} / {capacity})",
+    "going": "{count, plural, =0 {Hələ qeydiyyat yoxdur} other {# nəfər qeydiyyatdan keçib}}",
+    "status": {
+      "cancelled": "Ləğv edilib",
+      "going": "Qeydiyyatdan keçmisiniz",
+      "checkedIn": "Girişdə qeyd olunub",
+      "ended": "Bitib",
+      "full": "Yer yoxdur"
+    },
+    "rsvp": {
+      "register": "Qeydiyyatdan keçin",
+      "withdraw": "Qeydiyyatı ləğv edin",
+      "registered": "Qeydiyyatdan keçdiniz. Biletiniz aşağıdadır.",
+      "withdrawn": "Qeydiyyatınız ləğv edildi",
+      "failed": "Qeydiyyatı dəyişmək mümkün olmadı",
+      "closed": "Tədbir başlayıb; qeydiyyat bağlıdır.",
+      "withdrawTitle": "Qeydiyyat ləğv edilsin?",
+      "withdrawConsequence": "Biletiniz etibarsız olacaq. Yer qalarsa, yenidən qeydiyyatdan keçə bilərsiniz."
+    },
+    "ticket": {
+      "title": "Bilet",
+      "hint": "Girişdə bu kodu göstərin. Ekran parlaqlığını artırmaq oxunmanı asanlaşdırır.",
+      "qrLabel": "{title} tədbirinin bilet QR kodu",
+      "code": "Bilet kodu",
+      "ticketsDescription": "Qeydiyyatdan keçdiyiniz və hələ bitməmiş tədbirlərin biletləri.",
+      "ticketsEmpty": "Aktiv biletiniz yoxdur. Tədbirə qeydiyyatdan keçəndə bilet burada görünəcək.",
+      "cancelledEvent": "Tədbir ləğv edilib; bilet etibarsızdır."
+    },
+    "editor": {
+      "newTitle": "Yeni tədbir",
+      "newDescription": "Tədbir dərc olunan kimi seçilmiş auditoriyaya bildiriş göndərilir.",
+      "editTitle": "Tədbiri redaktə edin",
+      "editDescription": "Vaxt və ya yer dəyişərsə, qeydiyyatdan keçənlərə bildiriş göndərilir. Auditoriya dəyişmir.",
+      "titleLabel": "Ad",
+      "titleRequired": "Tədbirin adını yazın.",
+      "description": "Təsvir",
+      "descriptionHelp": "Ən çox 5000 simvol. Sətir keçidləri olduğu kimi göstərilir.",
+      "descriptionRequired": "Təsvir yazın.",
+      "startsAt": "Başlama vaxtı",
+      "endsAt": "Bitmə vaxtı",
+      "timesHelp": "Bakı vaxtı ilə.",
+      "timesRequired": "Başlama və bitmə vaxtını seçin.",
+      "timesOrder": "Bitmə vaxtı başlama vaxtından sonra olmalıdır.",
+      "roomCode": "Otaq kodu",
+      "roomCodeHelp": "Kampus otağıdırsa, kodu yazın (məsələn, 1-305); xəritəyə keçid yaranır.",
+      "location": "Yer",
+      "locationHelp": "Kampusdan kənardırsa və ya otaq koduna əlavə olaraq.",
+      "placeRequired": "Otaq kodunu və ya yeri göstərin.",
+      "capacity": "Yer sayı",
+      "capacityHelp": "İstəyə bağlıdır; boş saxlasanız, məhdudiyyət olmayacaq.",
+      "capacityInvalid": "Müsbət tam ədəd yazın.",
+      "publish": "Dərc edin",
+      "save": "Yadda saxlayın",
+      "published": "Tədbir dərc olundu",
+      "saved": "Tədbir yadda saxlanıldı",
+      "failed": "Tədbir yadda saxlanılmadı",
+      "reload": "Səhifəni yeniləyin"
+    },
+    "staff": {
+      "edit": "Redaktə edin",
+      "cancel": "Tədbiri ləğv edin",
+      "cancelTitle": "Tədbir ləğv edilsin?",
+      "cancelConsequence": "Qeydiyyatdan keçənlərə bildiriş göndəriləcək və biletlər etibarsız olacaq. Bu əməliyyatı geri qaytarmaq mümkün deyil.",
+      "cancelled": "Tədbir ləğv edildi",
+      "cancelFailed": "Tədbiri ləğv etmək mümkün olmadı",
+      "checkIn": "Giriş qeydiyyatı"
+    },
+    "checkIn": {
+      "title": "Giriş qeydiyyatı",
+      "description": "Biletin QR kodunu oxudun və ya kodu yazın. Telefonu olmayan iştirakçını siyahıdan tapın.",
+      "code": "Bilet kodu",
+      "codeHelp": "Skaner kodu bu sahəyə özü yazır; Enter düyməsi ilə təsdiqlənir.",
+      "submit": "Təsdiq edin",
+      "scan": "Kamera ilə oxudun",
+      "stopScan": "Kameranı bağlayın",
+      "cameraLabel": "Kamera görüntüsü",
+      "cameraFailed": "Kameranı açmaq mümkün olmadı. Kodu əl ilə yazın.",
+      "admitted": "{name} qeydiyyata alındı",
+      "admittedGroup": "{name} ({group}) qeydiyyata alındı",
+      "refused": "Giriş qeydə alınmadı",
+      "already": "{name} artıq {time} qeydiyyatdan keçib.",
+      "summary": "{checkedIn} / {going} nəfər girişdə qeyd olunub",
+      "attendees": "İştirakçılar",
+      "attendeesEmpty": "Bu tədbirə hələ qeydiyyat yoxdur.",
+      "columns": {
+        "name": "Ad",
+        "group": "Qrup",
+        "state": "Vəziyyət",
+        "action": "Əməliyyat"
+      },
+      "notYet": "Gözlənilir",
+      "manual": "Qeydə alın",
+      "byHand": "siyahıdan",
+      "noGroup": "—"
     }
   }
 }

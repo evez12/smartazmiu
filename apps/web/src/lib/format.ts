@@ -83,3 +83,16 @@ export function isoToBakuInput(value: string): string {
   );
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
+
+/** "14:30" in Baku time. */
+export function formatTime(value: Date | string): string {
+  return timeFormat.format(new Date(value));
+}
+
+/** "1 Dekabr 2026, 14:00–16:00" within a Baku day, otherwise both ends in full. */
+export function formatDateTimeRange(start: string, end: string): string {
+  if (isoToBakuInput(start).slice(0, 10) === isoToBakuInput(end).slice(0, 10)) {
+    return `${formatDateTime(start)}–${formatTime(end)}`;
+  }
+  return `${formatDateTime(start)} – ${formatDateTime(end)}`;
+}
