@@ -47,37 +47,6 @@ describe("sealed cookies", () => {
   });
 });
 
-describe("session cookies", () => {
-  it("keeps the refresh token and CSRF token across a refresh", async () => {
-    const { sessionCookies, readSession, readAccess, SESSION_COOKIE, ACCESS_COOKIE } =
-      await import("./session");
-    const header = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url");
-    const claims = Buffer.from(JSON.stringify({ sub: "kc-aysel" })).toString("base64url");
-    const accessToken = `${header}.${claims}.sig`;
-
-    const first = await sessionCookies({
-      access_token: accessToken,
-      refresh_token: "rt-1",
-      expires_in: 900,
-      refresh_expires_in: 28800,
-    });
-    const jar = (cookies: { name: string; value: string }[]) => ({
-      get: (name: string) => cookies.find((cookie) => cookie.name === name),
-    });
-    const session = await readSession(jar(first));
-    expect(session).toMatchObject({ refreshToken: "rt-1", subject: "kc-aysel" });
-    expect(first.find((c) => c.name === SESSION_COOKIE)?.maxAge).toBe(28800);
-    expect(first.find((c) => c.name === ACCESS_COOKIE)?.maxAge).toBe(900);
-
-    // Keycloak may omit a new refresh token; the previous one and the CSRF token are kept.
-    const second = await sessionCookies({ access_token: accessToken, expires_in: 900 }, session);
-    const refreshed = await readSession(jar(second));
-    expect(refreshed?.refreshToken).toBe("rt-1");
-    expect(refreshed?.csrfToken).toBe(session?.csrfToken);
-    expect((await readAccess(jar(second)))?.accessToken).toBe(accessToken);
-  });
-});
-
 describe("contentSecurityPolicy", () => {
   it("allows scripts only with the nonce in production", () => {
     const csp = contentSecurityPolicy({ nonce: "abc", isDev: false, isHttps: true });
@@ -107,20 +76,5 @@ describe("scrubEvent", () => {
     });
     expect(event.request).toEqual({ headers: { Accept: "*/*" } });
     expect(event.user).toEqual({ id: "0190" });
-  });
-});
-
-describe("session readers without configuration", () => {
-  it("return null without touching SESSION_SECRET when no cookie is present", async () => {
-    const { readSession, readAccess } = await import("./session");
-    const secret = process.env.SESSION_SECRET;
-    delete process.env.SESSION_SECRET;
-    try {
-      const emptyJar = { get: () => undefined };
-      expect(await readSession(emptyJar)).toBeNull();
-      expect(await readAccess(emptyJar)).toBeNull();
-    } finally {
-      process.env.SESSION_SECRET = secret;
-    }
   });
 });

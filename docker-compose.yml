@@ -156,10 +156,13 @@ services:
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
       SESSION_SECRET: ${SESSION_SECRET}
+      SESSION_REDIS_URL: redis://redis:6379/1
       DESIGN_SYSTEM_ENABLED: ${DESIGN_SYSTEM_ENABLED:-true}
       SENTRY_DSN: ${SENTRY_DSN_WEB:-}
     depends_on:
       api:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:

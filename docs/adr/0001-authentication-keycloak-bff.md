@@ -13,8 +13,8 @@ and the WebSocket gateway (Sprint 5) needs its own short-lived credential.
 
 - Keycloak is the identity provider (realm `smartazmiu`, exported in `infra/keycloak/realm`). A future AzMİU SSO is
   federated into this realm rather than integrated into the apps.
-- The Next.js server is a confidential OIDC client running authorization code + PKCE. It keeps tokens in encrypted
-  httpOnly cookies and forwards the access token to FastAPI as a bearer token.
+- The Next.js server is a confidential OIDC client running authorization code + PKCE. It keeps tokens in a server-side
+  session in Redis (the browser holds only an opaque httpOnly session id, DECISIONS D-037) and forwards the access token to FastAPI as a bearer token.
 - FastAPI is a stateless resource server: it validates RS256 signatures against the realm JWKS (cached, refetched on
   an unknown key id at most every 30 s), and checks issuer, audience `smartazmiu-api`, expiry and `typ=Bearer`.
 - Keycloak owns global role membership; the API mirrors it per request and owns role → permission bundles.

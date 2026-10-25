@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { endSession } from "@/lib/auth/oidc";
-import { ACCESS_COOKIE, readSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { destroySession, readSession, SESSION_COOKIE, type SessionData } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
   if (origin && origin !== new URL(env.appUrl).origin) {
     return new NextResponse(null, { status: 403 });
   }
-  const session = await readSession(request.cookies);
+  // If the session store is down there is no session to protect; the cookie is cleared regardless.
+  const session: SessionData | null = await readSession(request.cookies).catch(() => null);
   const form = await request.formData().catch(() => null);
   if (session && form?.get("csrf") !== session.csrfToken) {
     return new NextResponse(null, { status: 403 });
@@ -28,10 +29,10 @@ export async function POST(request: NextRequest) {
       // The local session is cleared regardless; Keycloak expires its session on its own.
       console.warn(JSON.stringify({ event: "keycloak_logout_failed", error: String(error) }));
     }
+    await destroySession(session).catch(() => undefined);
   }
 
   const response = NextResponse.redirect(new URL("/login?status=signed_out", env.appUrl), 303);
   response.cookies.delete(SESSION_COOKIE);
-  response.cookies.delete(ACCESS_COOKIE);
   return response;
 }

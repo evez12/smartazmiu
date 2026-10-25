@@ -9,7 +9,7 @@ import {
   isAllowedMutation,
   SAFE_METHODS,
 } from "@/lib/api/proxy";
-import { readAccess, readSession } from "@/lib/auth/session";
+import { readSession, type SessionData } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -27,19 +27,21 @@ async function proxyError(status: number, code: string, messageKey: ProxyErrorKe
 }
 
 /**
- * Same-origin entry point for browser calls to the API (DECISIONS D-025, D-032): the access token stays in
- * the httpOnly cookie and is added here, so page JavaScript never sees it. The proxy in `src/proxy.ts` has
+ * Same-origin entry point for browser calls to the API (DECISIONS D-025, D-032, D-037): the access token
+ * stays in the server-side session and is added here, so page JavaScript never sees it. The proxy in `src/proxy.ts` has
  * already refreshed the token when it was about to expire.
  */
 async function forward(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const path = apiPath((await context.params).path);
   if (!path) return proxyError(404, "request.not_found", "notFound");
 
-  const [session, access] = await Promise.all([
-    readSession(request.cookies),
-    readAccess(request.cookies),
-  ]);
-  if (!session || !access) return proxyError(401, "auth.unauthenticated", "sessionExpired");
+  let session: SessionData | null;
+  try {
+    session = await readSession(request.cookies);
+  } catch {
+    return proxyError(503, "server.unavailable", "unavailable");
+  }
+  if (!session) return proxyError(401, "auth.unauthenticated", "sessionExpired");
 
   const method = request.method.toUpperCase();
   const allowed = isAllowedMutation({
@@ -52,7 +54,7 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
   if (!allowed) return proxyError(403, "auth.csrf_failed", "forbidden");
 
   const headers = new Headers({
-    Authorization: `Bearer ${access.accessToken}`,
+    Authorization: `Bearer ${session.accessToken}`,
     "Accept-Language": "az",
   });
   for (const name of FORWARDED_REQUEST_HEADERS) {
