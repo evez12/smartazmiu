@@ -35,7 +35,12 @@ import {
   type NavSection,
 } from "./nav";
 
-export type ShellUser = { displayName: string; roles: string[]; permissions: string[] };
+export type ShellUser = {
+  displayName: string;
+  roles: string[];
+  permissions: string[];
+  photoUrl: string | null;
+};
 
 type AppShellProps = {
   user: ShellUser;
@@ -256,7 +261,7 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
           type="button"
           className="flex h-10 items-center gap-2 rounded-control px-1.5 text-left hover:bg-bg-subtle"
         >
-          <Avatar name={user.displayName} size={32} decorative />
+          <Avatar name={user.displayName} src={user.photoUrl ?? undefined} size={32} decorative />
           {/* Visible text is part of the accessible name (WCAG 2.5.3); on phones it is read but not shown. */}
           <span className="flex max-w-48 flex-col leading-tight max-md:sr-only">
             <span className="truncate font-medium">{user.displayName}</span>

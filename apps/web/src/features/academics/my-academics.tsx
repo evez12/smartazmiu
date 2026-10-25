@@ -57,7 +57,10 @@ function NoAcademicData() {
   );
 }
 
-function GroupPanel({ group }: { group: NonNullable<MyAcademicsResponse["group"]> }) {
+type GroupPlacement = NonNullable<MyAcademicsResponse["group"]>;
+
+/** Group, specialty, faculty, admission year and language; shown on the dashboard and the profile. */
+export function GroupFacts({ group }: { group: GroupPlacement }) {
   const t = useTranslations("academics");
   const facts = [
     { label: t("group"), value: group.code },
@@ -67,17 +70,24 @@ function GroupPanel({ group }: { group: NonNullable<MyAcademicsResponse["group"]
     { label: t("language"), value: t(`languages.${group.language}`) },
   ];
   return (
+    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+      {facts.map((fact) => (
+        <div key={fact.label} className="flex flex-col">
+          <dt className="text-sm text-muted">{fact.label}</dt>
+          <dd className="text-text tabular">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function GroupPanel({ group }: { group: GroupPlacement }) {
+  const t = useTranslations("academics");
+  return (
     <Panel>
       <PanelHeader title={t("groupTitle")} />
       <PanelBody>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          {facts.map((fact) => (
-            <div key={fact.label} className="flex flex-col">
-              <dt className="text-sm text-muted">{fact.label}</dt>
-              <dd className="text-text tabular">{fact.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <GroupFacts group={group} />
       </PanelBody>
     </Panel>
   );

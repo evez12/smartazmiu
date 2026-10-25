@@ -139,7 +139,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Web | next 16.4.3, react / react-dom 19.3.1, tailwindcss + @tailwindcss/postcss 4.3.3, radix-ui 1.8.1, class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0, lucide-react 1.61.0, next-intl 4.14.9, next-themes 0.4.6, @fontsource/ibm-plex-sans + ibm-plex-mono 5.3.0, openid-client 6.8.8, jose 6.2.13, openapi-fetch 0.17.0, server-only 0.0.1, @sentry/nextjs 11.9.0 |
   | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0, openapi-typescript 7.13.0 |
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
-  | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5; API dev: types-openpyxl 3.1.5.20261017; web: @tanstack/react-query 5.104.5 |
+  | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -352,3 +352,31 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `Origin`. Path segments are re-encoded and dot segments refused. Pages read data in server components;
   TanStack Query handles client mutations (no automatic retries) followed by `router.refresh()`.
 - **Consequences:** page JavaScript never holds a token; client caching of reads is added when chat needs it.
+
+## D-033 · 2026-10-25 · Profile photos
+
+- **Context:** §5 Sprint 2 asks for photo upload; §14 requires content checks, size limits, virus scanning before
+  availability, randomised keys and no public bucket access. ClamAV is scheduled with attachments (Sprint 6).
+- **Options:** presigned upload and serve after a later scan; upload through the API and re-encode.
+- **Decision:** the API accepts JPEG, PNG or WebP up to 5 MB (format read from the content, not the name), refuses
+  images over 40 megapixels before decoding, applies the EXIF rotation, crops to a centred 512 px square and
+  re-encodes as WebP. Only pixels survive, so EXIF/GPS data and anything hidden in the file are dropped, which makes
+  the stored image safe without a virus scan. Objects use random keys (`avatars/<user>/<random>.webp`) in the
+  private bucket and are served by `GET /users/{id}/photo` to signed-in users only, through the same-origin proxy,
+  with a URL versioned by the key (`?v=`) so browsers may cache it. Uploading a photo is the consent to show it
+  (`profile_photo` consent record); removing it withdraws the consent and deletes the object. 10 uploads per hour.
+- **Consequences:** documents and attachments still need ClamAV (Sprint 6). SeaweedFS needed `-volume.max=0`
+  (D-013): its default slot count allowed only one bucket.
+
+## D-034 · 2026-10-25 · Privacy settings and consent records
+
+- **Context:** Sprint 2 asks for `dm_policy` and contact visibility settings and for consent records (§5.4); DMs
+  and other users' profile views arrive with chat (Sprint 5).
+- **Decision:** `dm_policy` uses the four §5.4 values with default `shared_context`; contact visibility is
+  `hidden` (default) | `shared_context` | `everyone` and covers the e-mail address. No phone number is collected:
+  nothing needs it yet (data minimisation, §14). The settings are stored now and enforced by the screens that show
+  other users or create DMs (Sprint 5). `consent_records` is an append-only history (purpose, granted, policy
+  version, time); the current state of a purpose is its latest record. Making the e-mail visible records a
+  `contact_sharing` grant, hiding it a withdrawal. Profile edits use optimistic concurrency (`version`; stale writes
+  get `409 profile.version_conflict`); photo changes do not bump the version.
+- **Consequences:** the privacy-notice acknowledgement and the data export build on the same table.

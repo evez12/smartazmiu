@@ -19,6 +19,7 @@ DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0
 TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/smartazmiu_test
 REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
 TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
+S3_ENDPOINT_URL ?= http://127.0.0.1:$(S3_PORT)
 OIDC_ISSUER ?= $(OIDC_PUBLIC_URL)/realms/$(KEYCLOAK_REALM)
 OIDC_INTERNAL_URL ?= $(OIDC_ISSUER)
 OIDC_JWKS_URL ?= $(OIDC_INTERNAL_URL)/protocol/openid-connect/certs
@@ -138,11 +139,11 @@ test: test-api test-web ## Run all unit and integration tests
 
 .PHONY: test-deps
 test-deps: .env
-	$(COMPOSE) up -d --wait postgres redis
+	$(COMPOSE) up -d --wait postgres redis s3
 
 .PHONY: test-api
 test-api: test-deps ## Run backend tests with coverage
-	DATABASE_URL=$(TEST_DATABASE_URL) REDIS_URL=$(TEST_REDIS_URL) APP_ENV=test \
+	DATABASE_URL=$(TEST_DATABASE_URL) REDIS_URL=$(TEST_REDIS_URL) S3_BUCKET=smartazmiu-test APP_ENV=test \
 		$(UV) run pytest --cov --cov-report=term-missing
 
 .PHONY: test-web

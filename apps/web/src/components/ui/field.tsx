@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Paperclip } from "lucide-react";
+import { ChevronDown, LoaderCircle, Paperclip } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createContext, useContext, useId, type ComponentProps, type ReactNode } from "react";
 
@@ -129,36 +129,63 @@ export function Select({ className, children, ...rest }: ComponentProps<"select"
   );
 }
 
-type FileInputProps = Omit<ComponentProps<"input">, "type" | "value" | "onChange"> & {
-  file: File | null;
+type FilePickerButtonProps = Omit<ComponentProps<"input">, "type" | "value" | "onChange"> & {
+  label: string;
   onFileChange: (file: File | null) => void;
+  loading?: boolean;
 };
 
 /**
- * File picker with Azerbaijani labels: the browser's own button text follows the browser language (§12.8).
- * The real input stays focusable and labelled by the surrounding Field.
+ * A secondary button that opens the file dialog. The browser's own file button follows the browser
+ * language (§12.8), so the real input is visually hidden but stays focusable and labelled.
  */
-export function FileInput({ file, onFileChange, className, ...rest }: FileInputProps) {
-  const t = useTranslations("ui");
+export function FilePickerButton({
+  label,
+  onFileChange,
+  loading = false,
+  className,
+  ...rest
+}: FilePickerButtonProps) {
   const control = useControlProps(rest);
   return (
+    <label
+      aria-busy={loading || undefined}
+      className={cn(
+        buttonVariants({ variant: "secondary", size: "dense" }),
+        "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
+        "has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60",
+        className,
+      )}
+    >
+      <Icon
+        icon={loading ? LoaderCircle : Paperclip}
+        className={loading ? "animate-spin" : undefined}
+      />
+      {label}
+      <input
+        type="file"
+        className="sr-only"
+        disabled={loading || rest.disabled}
+        onChange={(event) => {
+          onFileChange(event.target.files?.[0] ?? null);
+          // Choosing the same file again must fire another change event.
+          event.target.value = "";
+        }}
+        {...rest}
+        {...control}
+      />
+    </label>
+  );
+}
+
+type FileInputProps = Omit<FilePickerButtonProps, "label"> & { file: File | null };
+
+/** File field for forms: the picker plus the chosen file's name. */
+export function FileInput({ file, className, ...rest }: FileInputProps) {
+  const t = useTranslations("ui");
+  return (
     <div className={cn("flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1", className)}>
-      <label
-        className={cn(
-          buttonVariants({ variant: "secondary", size: "dense" }),
-          "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
-        )}
-      >
-        <Icon icon={Paperclip} />
-        {t("chooseFile")}
-        <input
-          type="file"
-          className="sr-only"
-          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-          {...rest}
-          {...control}
-        />
-      </label>
+      <FilePickerButton label={t("chooseFile")} {...rest} />
       <span className={cn("min-w-0 break-all", file ? "text-text" : "text-muted")}>
         {file ? file.name : t("noFileChosen")}
       </span>

@@ -241,7 +241,8 @@
     },
     "nav": {
       "home": "Ana səhifə",
-      "imports": "Məlumat idxalı"
+      "imports": "Məlumat idxalı",
+      "profile": "Profil"
     }
   },
   "roles": {
@@ -436,5 +437,52 @@
       "conflicting_data": "Tətbiq zamanı məlumatlar dəyişdi. Faylı yenidən yükləyin.",
       "unknown": "Sətirdə xəta var."
     }
+  },
+  "profile": {
+    "title": "Profil",
+    "description": "Şəkliniz, özünüz haqqında qısa məlumat və məxfilik ayarlarınız.",
+    "identityTitle": "Şəxsi məlumatlar",
+    "identityHint": "Ad, soyad və e-poçt universitet qeydlərindən götürülür. Səhv varsa, dekanlığa müraciət edin.",
+    "name": "Ad və soyad",
+    "email": "E-poçt",
+    "universityId": "Universitet nömrəsi",
+    "notAssigned": "Təyin edilməyib",
+    "photo": {
+      "upload": "Şəkil yükləyin",
+      "replace": "Şəkli dəyişin",
+      "remove": "Şəkli silin",
+      "helper": "JPEG, PNG və ya WebP, ən çox 5 MB. Şəkil kvadrat kəsilir və bütün istifadəçilərə görünür.",
+      "uploaded": "Şəkil yeniləndi",
+      "removed": "Şəkil silindi",
+      "confirmTitle": "Şəkli silmək istəyirsiniz?",
+      "confirmConsequence": "Şəkliniz profilinizdən və digər istifadəçilərin gördüyü bütün yerlərdən silinəcək.",
+      "failedTitle": "Şəkil yadda saxlanılmadı"
+    },
+    "academicTitle": "Qrup və ixtisas",
+    "noGroup": "Akademik qrup məlumatınız yoxdur. Tələbəsinizsə və bu səhvdirsə, dekanlığa müraciət edin.",
+    "settingsTitle": "Haqqınızda və məxfilik",
+    "bio": "Haqqınızda",
+    "bioHelper": "Ən çox 300 simvol. Digər istifadəçilər profilinizdə görəcək.",
+    "bioCount": "{count} / 300",
+    "bioTooLong": "Mətn 300 simvoldan uzundur. Qısaldın.",
+    "dmPolicy": "Kimlər sizə şəxsi mesaj yaza bilər",
+    "dmPolicies": {
+      "everyone": "Hamı",
+      "shared_context": "Eyni qrup, fənn və ya icmadakı istifadəçilər",
+      "guides_and_teachers": "Yalnız bələdçilər və müəllimlər",
+      "nobody": "Heç kim"
+    },
+    "dmPolicyNote": "Müəllimlər və dekanlıq həmişə yaza bilər.",
+    "contactVisibility": "E-poçtunuzu kimlər görə bilər",
+    "contactVisibilities": {
+      "hidden": "Heç kim",
+      "shared_context": "Eyni qrup, fənn və ya icmadakı istifadəçilər",
+      "everyone": "Bütün istifadəçilər"
+    },
+    "contactVisibilityNote": "E-poçtunuzu göstərmək sizin razılığınızla olur; istənilən vaxt geri ala bilərsiniz.",
+    "save": "Yadda saxlayın",
+    "saved": "Profil yadda saxlanıldı",
+    "saveFailedTitle": "Profil yadda saxlanılmadı",
+    "reload": "Səhifəni yeniləyin"
   }
 }

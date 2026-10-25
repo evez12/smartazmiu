@@ -2,7 +2,12 @@ import { Avatar as AvatarPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/cn";
 
-const sizes = { 24: "size-6 text-xs", 32: "size-8 text-sm", 40: "size-10 text-base" } as const;
+const sizes = {
+  24: "size-6 text-xs",
+  32: "size-8 text-sm",
+  40: "size-10 text-base",
+  64: "size-16 text-lg",
+} as const;
 
 /** Initials using Azerbaijani case rules, so "ilkin" becomes "İ" rather than "I". */
 export function initials(name: string): string {

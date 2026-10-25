@@ -16,7 +16,7 @@ from app.core.config import Settings
 from app.core.db import create_engine
 from app.core.security import TokenVerifier
 from app.main import create_app
-from tests.support import TEST_AUDIENCE, TEST_ISSUER, TokenFactory
+from tests.support import TEST_AUDIENCE, TEST_ISSUER, MemoryStorage, TokenFactory
 
 API_ROOT = Path(__file__).parent
 
@@ -80,14 +80,22 @@ def tokens() -> TokenFactory:
     return TokenFactory()
 
 
+@pytest.fixture
+def storage() -> MemoryStorage:
+    return MemoryStorage()
+
+
 @pytest_asyncio.fixture
-async def app(settings: Settings, tokens: TokenFactory, db: AsyncSession) -> AsyncIterator[FastAPI]:
-    """The API wired to the test database, with Keycloak replaced by an in-memory signing key."""
+async def app(
+    settings: Settings, tokens: TokenFactory, db: AsyncSession, storage: MemoryStorage
+) -> AsyncIterator[FastAPI]:
+    """The API wired to the test database, with Keycloak and object storage replaced by doubles."""
     application = create_app(settings)
     async with LifespanManager(application):
         application.state.token_verifier = TokenVerifier(
             issuer=TEST_ISSUER, audience=TEST_AUDIENCE, keys=tokens.key_source()
         )
+        application.state.storage = storage
         yield application
 
 
