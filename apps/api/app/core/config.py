@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import Field, PostgresDsn, RedisDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,42 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
 
     sentry_dsn: str | None = None
+
+    # Browser-facing base URL, for links in e-mails and push messages.
+    app_public_url: str = "http://localhost"
+
+    # Notification e-mail through SMTP (Mailpit locally).
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = 1025
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
+    mail_from: str = "bildiris@smartazmiu.test"
+
+    # Web Push: the VAPID key pair is derived from this secret (D-049).
+    vapid_secret: str = ""
+    vapid_subject: str = "mailto:it@smartazmiu.test"
+    # Push endpoints are URLs supplied by browsers; the worker only posts to these services (SSRF guard, §14).
+    push_service_hosts: list[str] = Field(
+        default=[
+            "fcm.googleapis.com",
+            "updates.push.services.mozilla.com",
+            "*.push.services.mozilla.com",
+            "*.notify.windows.com",
+            "web.push.apple.com",
+            "*.push.apple.com",
+        ]
+    )
+
+    # Signs event tickets; a QR code carries the ticket id and this signature (D-051).
+    ticket_secret: str = ""
+
+    @model_validator(mode="after")
+    def production_secrets(self) -> "Settings":
+        # An empty signing key would make ticket codes forgeable; development falls back to .env values.
+        if self.app_env == "production" and not self.ticket_secret:
+            raise ValueError("TICKET_SECRET must be set in production")
+        return self
 
     @property
     def is_production(self) -> bool:

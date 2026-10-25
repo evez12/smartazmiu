@@ -599,6 +599,8 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     enrollments, campus, timetable); its teardown fails the run if any count changed. Account rows of `e2e-`
     users, import records, audit entries and consent records are not seed data and are not counted.
   - Dependency: `pg` 8.23.1 and `@types/pg` 8.23.1 (dev only). The CI E2E job installs uv for the seed step.
+  - The screenshot comparison (`make visual`) runs in a container without the database and sets
+    `E2E_DATA_CHECK=off`; every other run requires the check.
 - **Consequences:** a separate E2E database would also isolate parallel developers; not needed for one dev box.
 
 ## D-046 · 2026-10-25 · Leftover e2e- account rows (product owner decision)
@@ -617,3 +619,119 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   released to staging only. Hotfixes are the only exception, as the roadmap already states for June (§8).
 - **Consequences:** Sprint 4 (January) and the end of Sprint 14 (June) ship to staging; production receives them
   after the session.
+
+## D-048 · 2026-10-25 · Background worker and the redis-py version
+
+- **Context:** §4 names ARQ for background jobs. Its latest release (0.28.0, April 2026) requires `redis<6`; the API
+  pinned redis-py 8.1.0.
+- **Options:** force ARQ onto redis-py 8 with a resolver override (a combination ARQ does not test); move the API
+  to redis-py 5.3.1, the newest release ARQ supports; write our own queue (against §4).
+- **Decision:** redis-py `5.3.1` (with `hiredis` 3.5.0, which ARQ's requirement pulls in) and `arq` `0.28.0`. The
+  API uses only basic asyncio commands (get/set, pipelines, ping), all unchanged in 5.x. One worker process
+  (`worker` service in `make up`, `make dev-worker` natively) runs `app.workers.main.WorkerSettings`, on Redis
+  database 0 (D-039: `noeviction`).
+  - Work is persisted before the worker is woken: the API writes pending rows, then enqueues a job; a failed
+    enqueue (Redis outage, §13.5) is logged and the per-minute cron job picks the rows up. Jobs keep no results
+    and have no fixed ids, so a wake-up is never refused because an earlier one is still recorded.
+  - Dev dependency `http-ece` 1.2.1 (reference implementation of RFC 8188, used only by tests).
+- **Consequences:** revisit when ARQ supports redis-py 6+.
+
+## D-049 · 2026-10-25 · Notification service
+
+- **Context:** Sprint 4 asks for in-app, Web Push and e-mail notifications with preferences and quiet hours;
+  §5.6 requires de-duplication and checks of membership and preferences at delivery time. It lists defaults only
+  for chat and mentorship events, which come later.
+- **Decision:**
+  - `notifications` holds the in-app row (always created; the bell is the record). `UNIQUE (user_id,
+    dedupe_key)` with `ON CONFLICT DO NOTHING` makes an event notify a user once, however often a job or sync
+    runs. Fan-out is one `INSERT … SELECT` per recipient query, so ids come from a SQL `uuid7()` function
+    (PostgreSQL 16 has none) and stay time-ordered for cursor pagination.
+  - Push and e-mail are `notification_deliveries` rows, created only for channels the user has on. The worker
+    takes one due row at a time (`FOR UPDATE SKIP LOCKED`) and checks again: account active, still in the
+    audience (a check per subject type), channel still on, push outside quiet hours, device or address present.
+    Otherwise the row is `suppressed` with a reason. Temporary failures retry 5 times with backoff 2, 4, 8, 16
+    minutes, then `failed`.
+  - Categories now: `announcements` (push and e-mail on by default), `events` and `schedule` (push on, e-mail
+    off). Quiet hours default to 23:00–08:00 Baku time and may span midnight. Inside them push is **suppressed,
+    not postponed** (§5.6 says "push suppressed"); e-mail and in-app are not affected.
+  - Web Push: message encryption (RFC 8291, `aes128gcm`) and VAPID (RFC 8292) are implemented on the existing
+    `cryptography`, `pyjwt` and `httpx` instead of `pywebpush`, which would add `requests` and `aiohttp`. The test
+    decrypts with the reference `http_ece` and verifies the VAPID token. The key pair is derived from
+    `VAPID_SECRET` (one generated value like the other secrets), so it is stable across restarts.
+  - Push endpoints come from browsers and the worker posts to them, so only HTTPS URLs on known push services
+    (FCM, Mozilla, Windows, Apple) are accepted; other endpoints are rejected at registration and again before
+    sending (§14 SSRF). An endpoint registered again moves to the user signed in on that browser; at most 10
+    devices per user. 400/403/404/410 from the push service delete the subscription.
+  - E-mail is plain text in Azerbaijani with a link to the item and to the settings page; push and e-mail
+    carry the same text the bell shows (no more on a lock screen than in the app).
+- **Consequences:** a worker crash between sending and committing can send one message twice (ARQ is
+  at-least-once). Real-time bell updates wait for the WebSocket gateway (Sprint 5); until then the bell polls.
+
+## D-050 · 2026-10-26 · Announcements and their audiences
+
+- **Context:** Sprint 4: announcements for the university, a faculty, a specialty, a group or a course offering;
+  §6.1: the audience is resolved at publication and re-evaluated for people who join it while the
+  announcement is still active. The spec does not say who is "in" a faculty, whether announcements can be
+  edited, or when one stops being active.
+- **Decision:**
+  - One audience per announcement, stored as a type plus one typed foreign key (a CHECK keeps exactly the
+    right one set). Members, resolved in SQL: university = every active account; faculty, specialty, group =
+    the registry students of its groups and those groups' curators; course offering = its students (not
+    dropped) and its teachers. Events use the same audiences.
+  - Publishing is immediate (scheduled announcements are Sprint 20) and accepts `Idempotency-Key`; a repeated
+    key returns the first announcement. Recipients are materialised in `announcement_recipients` at
+    publication; everyone added is notified (category `announcements`).
+  - Re-evaluation: after an import that can move people (groups, students, offerings, enrollments) the API
+    wakes `sync_audiences`, and the worker also runs it every 5 minutes. It adds audience members who are not
+    recipients yet to every **active** announcement (published, not past its optional `expires_at`) and
+    notifies exactly them; notification de-duplication makes reruns harmless.
+  - People who leave an audience keep the announcements they already received (like a letter already
+    delivered), but pending push and e-mail for them are suppressed because the worker re-checks membership.
+  - Staff may correct title, text and end time (optimistic `version`, nobody is notified again) and archive an
+    announcement, which hides it from recipients. The audience never changes; a wrong audience means archiving
+    and publishing again. Publishing, edits and archiving are audited.
+  - Permission `announcements.publish` for `staff` and `admin`; the audience picker searches names and codes
+    without Azerbaijani letters and offers only offerings of running or coming semesters.
+  - Text is plain (line breaks kept); Markdown arrives with chat in Sprint 6.
+- **Consequences:** a university-wide announcement writes one recipient row per active account.
+
+## D-051 · 2026-10-26 · Events, RSVP, tickets and check-in
+
+- **Context:** Sprint 4: events with list, filters, detail, RSVP, a QR ticket and a check-in screen for staff;
+  acceptance: an event for faculty X reaches the students of X by push and in-app, and RSVP produces a QR
+  ticket. The spec says nothing about capacity, cancellations, changes or who checks people in.
+- **Decision:**
+  - Events use the announcement audiences (D-050): materialised recipients, sync for people who join later
+    while the event has not ended, permission-filtered lists. People who registered keep seeing the event
+    after leaving the audience. Staff with `events.manage` see every event.
+  - Filters: coming (not ended, soonest first) or past (most recent first), and "only mine"; cursor paging
+    on `(starts_at, id)`. Event categories are not in the spec and are not added.
+  - Place: a campus room code (links to the map) or free text for places outside the room registry; one of
+    them is required. Capacity is optional; registrations lock the event row, so simultaneous RSVPs cannot
+    overbook it. RSVP opens at publication and closes when the event starts; it can be withdrawn until then.
+  - Ticket = the registration. Its QR code is `SA1.<registration id>.<HMAC-SHA256 under TICKET_SECRET,
+    16 bytes>`: unguessable, verifiable without a lookup, and nothing secret is stored per ticket. Production
+    refuses to start without `TICKET_SECRET`. A withdrawn RSVP or a cancelled event voids the ticket.
+  - Check-in (`events.check_in`, staff and admin) by scanning or typing the code, or manually from the
+    attendee list (audited). It opens 2 hours before the start and closes at the end; a second scan is refused
+    with the time and name of the first. A checked-in attendee cannot withdraw.
+  - Notifications (category `events`): publication to the audience; a change of time or place, and a
+    cancellation, to registered attendees only. Title-only corrections notify nobody. The delivery-time check
+    lets a cancellation through to registered people even though the event is no longer active.
+  - Permissions `events.manage` and `events.check_in` for `staff` and `admin`; publishing, edits, cancellation
+    and manual check-ins are audited.
+- **Consequences:** no waiting list; a full event refuses further RSVPs until someone withdraws.
+
+## D-052 · 2026-10-26 · Notifications for timetable changes
+
+- **Context:** D-041 deferred change notifications to Sprint 4; §13.4 requires that a change on a day already
+  past is stored but not notified. §8 lists no separate task for it, so it is part of the notification service.
+- **Decision:** applying a `schedule_changes` import notifies (category `schedule`, push on by default) every
+  active account that attends or teaches the class (the timetable view's rule, plus a substitute teacher) about
+  each created or edited change whose original or new date is today or later in Baku time. The de-duplication
+  key includes a fingerprint of the change, so re-importing the same file notifies nobody and an edited change
+  notifies again. The title is "<subject>, <day month>", linking to that day in the timetable. At delivery time
+  the worker checks that the change still exists, is not past, and the person still has the class. The
+  notifications are written in the import's transaction, so a failed apply notifies nobody.
+- **Consequences:** a timetable import that removes or edits base entries (not changes) does not notify; the
+  spec only asks for changes to be marked.

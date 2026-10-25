@@ -63,17 +63,33 @@ export function countDifferences(before: RowCounts, after: RowCounts): string[] 
 }
 
 /**
- * Records a test imported for itself, removed when the test ends (also on failure or timeout). Only rows marked
- * as test data are touched: offerings coded `E2E-…` and people with an `e2e-…` address.
+ * Records a test created for itself, removed when the test ends (also on failure or timeout). Only rows marked
+ * as test data are touched: codes starting with `E2E-`, people with an `e2e-…` address, and the events and
+ * announcements whose ids the test registered.
  */
 export class TestRecords {
+  private readonly structure = {
+    faculties: [] as string[],
+    specialties: [] as string[],
+    groups: [] as string[],
+  };
   private readonly offerings: string[] = [];
   private readonly people: string[] = [];
+  private readonly published = { events: [] as string[], announcements: [] as string[] };
+  private readonly mailboxes: string[] = [];
+
+  /** A faculty, specialty and group (one of each, all coded `code`) the test is about to import. */
+  structureCodes(code: string): string {
+    testCode(code);
+    this.structure.faculties.push(code);
+    this.structure.specialties.push(code);
+    this.structure.groups.push(code);
+    return code;
+  }
 
   /** An offering (with its enrollments and timetable) the test is about to import. */
   offering(code: string): string {
-    if (!code.startsWith("E2E-")) throw new Error(`Not a test offering code: ${code}`);
-    this.offerings.push(code);
+    this.offerings.push(testCode(code));
     return code;
   }
 
@@ -81,34 +97,101 @@ export class TestRecords {
   person(email: string): string {
     if (!email.startsWith("e2e-")) throw new Error(`Not a test account: ${email}`);
     this.people.push(email);
+    this.mailboxes.push(email);
     return email;
   }
 
+  event(id: string): void {
+    this.published.events.push(id);
+  }
+
+  announcement(id: string): void {
+    this.published.announcements.push(id);
+  }
+
   async removeAll(): Promise<void> {
-    if (!this.offerings.length && !this.people.length) return;
+    await removeMail(this.mailboxes.splice(0));
     const client = await database().connect();
     try {
       await client.query("BEGIN");
+      const subjects = [...this.published.events, ...this.published.announcements];
+      // Notifications point at their subject without a foreign key; recipients and RSVPs cascade.
+      await client.query("DELETE FROM notifications WHERE subject_id = ANY($1::uuid[])", [
+        subjects,
+      ]);
+      await client.query("DELETE FROM events WHERE id = ANY($1::uuid[])", [this.published.events]);
+      await client.query("DELETE FROM announcements WHERE id = ANY($1::uuid[])", [
+        this.published.announcements,
+      ]);
       const offerings = "SELECT id FROM course_offerings WHERE code = ANY($1)";
       await client.query(`DELETE FROM enrollments WHERE course_offering_id IN (${offerings})`, [
         this.offerings,
       ]);
       // Groups, teachers and timetable entries (with their changes) cascade from the offering.
       await client.query("DELETE FROM course_offerings WHERE code = ANY($1)", [this.offerings]);
-      // The account row stays like every mirrored e2e- account (D-040); it leaves the registry and its group.
+      // The account row stays like every mirrored e2e- account (D-040, D-046); it leaves the registry.
       await client.query(
         `UPDATE users SET university_id = NULL, academic_group_id = NULL, person_type = NULL
          WHERE email = ANY($1)`,
         [this.people],
       );
+      await client.query("DELETE FROM academic_groups WHERE code = ANY($1)", [
+        this.structure.groups,
+      ]);
+      await client.query("DELETE FROM specialties WHERE code = ANY($1)", [
+        this.structure.specialties,
+      ]);
+      await client.query("DELETE FROM faculties WHERE code = ANY($1)", [this.structure.faculties]);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
-      this.offerings.length = 0;
-      this.people.length = 0;
+      for (const list of [
+        this.offerings,
+        this.people,
+        this.structure.faculties,
+        this.structure.specialties,
+        this.structure.groups,
+        this.published.events,
+        this.published.announcements,
+      ]) {
+        list.length = 0;
+      }
     }
   }
+}
+
+function testCode(code: string): string {
+  if (!code.startsWith("E2E-")) throw new Error(`Not a test code: ${code}`);
+  return code;
+}
+
+const mailpitUrl = `http://localhost:${process.env.MAILPIT_UI_PORT ?? 8025}`;
+
+type MailSummary = { ID: string; Subject: string; To: { Address: string }[] };
+
+/** Messages Mailpit caught for an address (newest first). */
+export async function mailFor(address: string): Promise<MailSummary[]> {
+  const response = await fetch(
+    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
+  );
+  if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
+  return ((await response.json()) as { messages: MailSummary[] }).messages;
+}
+
+export async function mailText(id: string): Promise<string> {
+  const response = await fetch(`${mailpitUrl}/api/v1/message/${id}`);
+  return ((await response.json()) as { Text: string }).Text;
+}
+
+async function removeMail(addresses: string[]): Promise<void> {
+  const ids = (await Promise.all(addresses.map(mailFor))).flat().map((message) => message.ID);
+  if (!ids.length) return;
+  await fetch(`${mailpitUrl}/api/v1/messages`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ IDs: ids }),
+  });
 }

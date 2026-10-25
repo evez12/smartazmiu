@@ -25,6 +25,16 @@ APP_TABLES = {
     "academic_imports",
     "audit_logs",
     "consent_records",
+    "notifications",
+    "notification_deliveries",
+    "push_subscriptions",
+    "notification_preferences",
+    "notification_quiet_hours",
+    "announcements",
+    "announcement_recipients",
+    "events",
+    "event_recipients",
+    "event_registrations",
 }
 APP_ENUMS = (
     "user_status",
@@ -37,6 +47,15 @@ APP_ENUMS = (
     "dm_policy",
     "contact_visibility",
     "consent_purpose",
+    "notification_category",
+    "notification_kind",
+    "delivery_channel",
+    "delivery_status",
+    "audience_type",
+    "announcement_status",
+    "event_status",
+    "registration_status",
+    "check_in_method",
 )
 
 
@@ -62,14 +81,28 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
     async with engine.connect() as connection:
         roles = await connection.scalars(text("SELECT code FROM roles ORDER BY code"))
         assert list(roles) == ["admin", "guest", "moderator", "staff", "student", "teacher"]
-        importers = await connection.scalars(
-            text(
-                "SELECT r.code FROM roles r JOIN role_permissions rp ON rp.role_id = r.id"
-                " JOIN permissions p ON p.id = rp.permission_id"
-                " WHERE p.code = 'academics.import' ORDER BY r.code"
+        for permission in (
+            "academics.import",
+            "announcements.publish",
+            "events.manage",
+            "events.check_in",
+        ):
+            holders = await connection.scalars(
+                text(
+                    "SELECT r.code FROM roles r JOIN role_permissions rp ON rp.role_id = r.id"
+                    " JOIN permissions p ON p.id = rp.permission_id"
+                    " WHERE p.code = :code ORDER BY r.code"
+                ),
+                {"code": permission},
             )
+            assert list(holders) == ["admin", "staff"], permission
+        # The SQL UUIDv7 generator: version 7, RFC variant, time-ordered.
+        first, second = (
+            await connection.scalar(text("SELECT uuid7()")),
+            await connection.scalar(text("SELECT uuid7()")),
         )
-        assert list(importers) == ["admin", "staff"]
+        assert (first.version, first.variant) == (7, "specified in RFC 4122")
+        assert first.bytes[:6] <= second.bytes[:6]
 
 
 async def test_downgrade_removes_people_who_never_signed_in(

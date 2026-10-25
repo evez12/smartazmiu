@@ -24,6 +24,9 @@
   --danger: #a12a2a;
   --info: #1f4e8c;
   --focus-ring: #1f3a5f;
+  /* Ticket QR codes stay dark on light in both themes: inverted codes fail on many scanners. */
+  --qr-dark: #1b2430;
+  --qr-light: #ffffff;
   --shadow-overlay: 0 4px 16px rgba(15, 20, 26, 0.12);
   --backdrop: rgba(15, 20, 26, 0.48);
   color-scheme: light;
@@ -47,6 +50,8 @@
   --danger: #e06b6b;
   --info: #6f9bd1;
   --focus-ring: #8ab0e0;
+  --qr-dark: #1b2430;
+  --qr-light: #ffffff;
   --shadow-overlay: 0 4px 16px rgba(15, 20, 26, 0.12);
   --backdrop: rgba(5, 8, 12, 0.64);
   color-scheme: dark;

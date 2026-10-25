@@ -112,6 +112,10 @@ openapi: ## Export the OpenAPI document and regenerate the typed web client
 dev-api: ## Run the API with reload on :8000
 	$(UV) run uvicorn app.main:app --reload --port 8000 --no-access-log
 
+.PHONY: dev-worker
+dev-worker: ## Run the ARQ worker (notification delivery, audience sync)
+	$(UV) run arq app.workers.main.WorkerSettings
+
 .PHONY: dev-web
 dev-web: ## Run the web app with reload on :3000
 	$(PNPM) dev
@@ -161,7 +165,7 @@ e2e: seed ## Run Playwright functional and accessibility tests (starts the dev s
 # Screenshot baselines exist only for the pinned Linux image (DECISIONS D-007). The container keeps its own
 # node_modules and .next so it never touches the host's Windows builds.
 PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.64.1-noble
-VISUAL_RUN = MSYS_NO_PATHCONV=1 docker run --rm --ipc=host -e CI=1 	-v "$(CURDIR)/$(WEB_DIR):/work" -v smartazmiu-visual-node-modules:/work/node_modules 	-v smartazmiu-visual-next:/work/.next -w /work $(PLAYWRIGHT_IMAGE) 	bash -c "npm install --global --silent pnpm@12.15.0 && pnpm install --frozen-lockfile --silent && pnpm exec playwright test --project=visual $(1)"
+VISUAL_RUN = MSYS_NO_PATHCONV=1 docker run --rm --ipc=host -e CI=1 -e E2E_DATA_CHECK=off 	-v "$(CURDIR)/$(WEB_DIR):/work" -v smartazmiu-visual-node-modules:/work/node_modules 	-v smartazmiu-visual-next:/work/.next -w /work $(PLAYWRIGHT_IMAGE) 	bash -c "npm install --global --silent pnpm@12.15.0 && pnpm install --frozen-lockfile --silent && pnpm exec playwright test --project=visual $(1)"
 
 .PHONY: visual
 visual: ## Compare screenshots with the baselines (Docker)

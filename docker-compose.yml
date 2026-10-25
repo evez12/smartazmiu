@@ -18,6 +18,13 @@ x-api-env: &api-env
   S3_SECRET_KEY: ${S3_SECRET_KEY}
   S3_BUCKET: smartazmiu
   SENTRY_DSN: ${SENTRY_DSN_API:-}
+  APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  MAIL_FROM: ${MAIL_FROM}
+  VAPID_SECRET: ${VAPID_SECRET}
+  VAPID_SUBJECT: ${VAPID_SUBJECT}
+  TICKET_SECRET: ${TICKET_SECRET}
 
 services:
   postgres:
@@ -152,6 +159,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+
+  # ARQ worker: notification delivery (push, e-mail) and audience sync (D-048).
+  worker:
+    profiles: ["app"]
+    build: ./apps/api
+    command: ["arq", "app.workers.main.WorkerSettings"]
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "arq", "--check", "app.workers.main.WorkerSettings"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   web:
     profiles: ["app"]
