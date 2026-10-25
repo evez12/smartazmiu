@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy import Uuid, case, delete, literal, select, update
@@ -85,7 +86,10 @@ class UserService:
 
         desired_roles = claims.roles & IDP_MANAGED_ROLES
         current_roles = await self._role_codes(user.id)
-        if current_roles != desired_roles:
+        token_predates_roles = (
+            user.roles_synced_at is not None and claims.issued_at < user.roles_synced_at.timestamp()
+        )
+        if current_roles != desired_roles and not token_predates_roles:
             await self._replace_roles(user.id, desired_roles)
             record_audit(
                 self.session,
@@ -99,6 +103,8 @@ class UserService:
                 },
             )
             current_roles = set(desired_roles)
+            # The token's own issue time, not now: another token from the same second is not "older".
+            user.roles_synced_at = datetime.fromtimestamp(claims.issued_at, UTC)
         await self.session.commit()
 
         return CurrentUser(

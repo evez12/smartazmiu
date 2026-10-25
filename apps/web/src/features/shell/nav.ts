@@ -1,4 +1,4 @@
-import { FileUp, House, UserRound, type LucideIcon } from "lucide-react";
+import { FileUp, House, ScrollText, UserRound, Users, type LucideIcon } from "lucide-react";
 
 /** Remembers the collapsed desktop navigation so the server renders the same width (no layout jump). */
 export const NAV_COOKIE = "sa_nav";
@@ -9,7 +9,7 @@ export const ROLE_CODES = ["student", "teacher", "staff", "moderator", "admin", 
 export type NavItem = {
   href: string;
   /** Key under `shell.nav` in messages. */
-  labelKey: "home" | "profile" | "imports";
+  labelKey: "home" | "profile" | "imports" | "users" | "audit";
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (§12.6: Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). */
   inTabBar: boolean;
@@ -35,11 +35,25 @@ export const NAVIGATION: NavSection[] = [
     labelKey: "admin",
     items: [
       {
+        href: "/admin/users",
+        labelKey: "users",
+        icon: Users,
+        inTabBar: false,
+        permission: "admin.users.read",
+      },
+      {
         href: "/admin/imports",
         labelKey: "imports",
         icon: FileUp,
         inTabBar: false,
         permission: "academics.import",
+      },
+      {
+        href: "/admin/audit",
+        labelKey: "audit",
+        icon: ScrollText,
+        inTabBar: false,
+        permission: "admin.audit.read",
       },
     ],
   },

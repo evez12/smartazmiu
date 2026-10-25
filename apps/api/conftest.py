@@ -16,7 +16,13 @@ from app.core.config import Settings
 from app.core.db import create_engine
 from app.core.security import TokenVerifier
 from app.main import create_app
-from tests.support import TEST_AUDIENCE, TEST_ISSUER, MemoryStorage, TokenFactory
+from tests.support import (
+    TEST_AUDIENCE,
+    TEST_ISSUER,
+    FakeIdentityAdmin,
+    MemoryStorage,
+    TokenFactory,
+)
 
 API_ROOT = Path(__file__).parent
 
@@ -85,17 +91,27 @@ def storage() -> MemoryStorage:
     return MemoryStorage()
 
 
+@pytest.fixture
+def identity_admin() -> FakeIdentityAdmin:
+    return FakeIdentityAdmin()
+
+
 @pytest_asyncio.fixture
 async def app(
-    settings: Settings, tokens: TokenFactory, db: AsyncSession, storage: MemoryStorage
+    settings: Settings,
+    tokens: TokenFactory,
+    db: AsyncSession,
+    storage: MemoryStorage,
+    identity_admin: FakeIdentityAdmin,
 ) -> AsyncIterator[FastAPI]:
-    """The API wired to the test database, with Keycloak and object storage replaced by doubles."""
+    """The API wired to the test database; Keycloak and object storage are replaced by doubles."""
     application = create_app(settings)
     async with LifespanManager(application):
         application.state.token_verifier = TokenVerifier(
             issuer=TEST_ISSUER, audience=TEST_AUDIENCE, keys=tokens.key_source()
         )
         application.state.storage = storage
+        application.state.identity_admin = identity_admin
         yield application
 
 

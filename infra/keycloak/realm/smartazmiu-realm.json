@@ -95,6 +95,22 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "smartazmiu-api-admin",
+      "name": "SmartAzMİU API (role administration)",
+      "description": "Service account the API uses to change realm role mappings (DECISIONS D-035)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KEYCLOAK_ADMIN_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": true
     }
   ],
   "browserFlow": "smartazmiu browser",
@@ -242,6 +258,12 @@
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
       "realmRoles": ["admin"]
+    },
+    {
+      "username": "service-account-smartazmiu-api-admin",
+      "enabled": true,
+      "serviceAccountClientId": "smartazmiu-api-admin",
+      "clientRoles": { "realm-management": ["manage-users", "view-users", "view-realm"] }
     }
   ]
 }

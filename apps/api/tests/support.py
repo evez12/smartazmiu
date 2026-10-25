@@ -2,12 +2,14 @@
 
 import time
 import uuid
+from collections.abc import Iterable
 from typing import Any
 
 import jwt
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 
+from app.core.identity_admin import IdentityAdminUnavailableError
 from app.core.security import InvalidTokenError
 from app.core.storage import StorageUnavailableError
 
@@ -96,3 +98,27 @@ class MemoryStorage:
     async def delete(self, key: str) -> None:
         self._check()
         self.objects.pop(key, None)
+
+
+class FakeIdentityAdmin:
+    """Keycloak admin API double: realm roles per subject; ``available = False`` simulates an outage."""
+
+    def __init__(self) -> None:
+        self.roles: dict[str, set[str]] = {}
+        self.available = True
+        self.changes: list[tuple[str, set[str], set[str]]] = []
+
+    async def realm_roles(self, subject: str) -> set[str]:
+        if not self.available:
+            raise IdentityAdminUnavailableError
+        # Keycloak also lists default and composite helper roles; the API must ignore them.
+        return self.roles.get(subject, set()) | {"default-roles-smartazmiu", "mfa_required"}
+
+    async def change_realm_roles(
+        self, subject: str, *, add: Iterable[str], remove: Iterable[str]
+    ) -> None:
+        if not self.available:
+            raise IdentityAdminUnavailableError
+        added, removed = set(add), set(remove)
+        self.changes.append((subject, added, removed))
+        self.roles[subject] = (self.roles.get(subject, set()) | added) - removed

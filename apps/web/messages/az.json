@@ -242,7 +242,9 @@
     "nav": {
       "home": "Ana səhifə",
       "imports": "Məlumat idxalı",
-      "profile": "Profil"
+      "profile": "Profil",
+      "users": "İstifadəçilər",
+      "audit": "Audit jurnalı"
     }
   },
   "roles": {
@@ -484,5 +486,101 @@
     "saved": "Profil yadda saxlanıldı",
     "saveFailedTitle": "Profil yadda saxlanılmadı",
     "reload": "Səhifəni yeniləyin"
+  },
+  "admin": {
+    "users": {
+      "title": "İstifadəçilər",
+      "description": "Universitet qeydlərindəki və sistemə daxil olmuş şəxslər, onların qrupları və rolları.",
+      "search": "Axtarış",
+      "searchHelper": "Ad, soyad, e-poçt və ya universitet nömrəsi. Azərbaycan hərfləri olmadan da yaza bilərsiniz.",
+      "role": "Rol",
+      "allRoles": "Bütün rollar",
+      "status": "Vəziyyət",
+      "allStatuses": "Hamısı",
+      "apply": "Axtarın",
+      "reset": "Filtrləri sıfırlayın",
+      "empty": "Axtarışa uyğun istifadəçi tapılmadı.",
+      "tableCaption": "İstifadəçilərin siyahısı",
+      "columns": {
+        "name": "Ad və soyad",
+        "universityId": "Universitet nömrəsi",
+        "group": "Qrup",
+        "roles": "Rollar",
+        "status": "Vəziyyət",
+        "access": "Giriş"
+      },
+      "statuses": {
+        "active": "Aktiv",
+        "inactive": "Deaktiv"
+      },
+      "linked": "Daxil olub",
+      "notLinked": "Hələ daxil olmayıb",
+      "noRoles": "Rol yoxdur",
+      "personTypes": {
+        "student": "Tələbə",
+        "teacher": "Müəllim"
+      }
+    },
+    "user": {
+      "factsTitle": "Məlumatlar",
+      "email": "E-poçt",
+      "universityId": "Universitet nömrəsi",
+      "personType": "Universitet qeydində",
+      "group": "Qrup",
+      "status": "Vəziyyət",
+      "access": "Giriş",
+      "createdAt": "Sistemdə yaradılıb",
+      "none": "—",
+      "rolesTitle": "Rollar",
+      "rolesDescription": "Rollar universitetin giriş xidmətində dəyişdirilir və dərhal qüvvəyə minir.",
+      "roleHints": {
+        "student": "Tələbə məzmununa giriş.",
+        "teacher": "Fənn kanallarında yazmaq, material yükləmək.",
+        "staff": "Dekanlıq: məlumat idxalı, elanlar. İki mərhələli giriş tələb olunur.",
+        "moderator": "Kanal və icmalarda moderasiya.",
+        "admin": "Rollar, istifadəçilər və audit jurnalı. İki mərhələli giriş tələb olunur."
+      },
+      "ownAdmin": "Öz administrator rolunuzu silə bilməzsiniz.",
+      "notLinkedTitle": "Rollar hələ təyin edilə bilməz",
+      "notLinkedBody": "Bu şəxs sistemə hələ daxil olmayıb. İlk girişdən sonra rolları təyin edə bilərsiniz.",
+      "save": "Rolları yadda saxlayın",
+      "confirmTitle": "Rollar dəyişdirilsin?",
+      "confirmAdded": "Əlavə ediləcək: {roles}.",
+      "confirmRemoved": "Silinəcək: {roles}.",
+      "confirmNote": "Dəyişiklik audit jurnalına yazılacaq.",
+      "saved": "Rollar yadda saxlanıldı",
+      "saveFailedTitle": "Rollar dəyişdirilmədi",
+      "activityTitle": "Son fəaliyyət",
+      "activityEmpty": "Bu istifadəçi ilə bağlı qeyd yoxdur."
+    },
+    "audit": {
+      "title": "Audit jurnalı",
+      "description": "Rol dəyişiklikləri, idxallar, hesab əlaqələri və məlumat yükləmələri. Qeydlər dəyişdirilə və silinə bilməz.",
+      "action": "Hərəkət",
+      "allActions": "Bütün hərəkətlər",
+      "from": "Başlanğıc tarixi",
+      "to": "Son tarix",
+      "apply": "Göstərin",
+      "empty": "Seçilmiş dövr üçün qeyd yoxdur.",
+      "tableCaption": "Audit qeydləri",
+      "columns": {
+        "time": "Vaxt",
+        "action": "Hərəkət",
+        "actor": "İcra edən",
+        "target": "Obyekt",
+        "details": "Təfərrüat"
+      },
+      "system": "Sistem",
+      "actions": {
+        "user_roles_synced": "Rollar giriş xidmətindən yeniləndi",
+        "user_roles_changed": "Rollar dəyişdirildi",
+        "user_account_linked": "Hesab universitet qeydi ilə əlaqələndirildi",
+        "import_applied": "Məlumat idxalı tətbiq olundu",
+        "user_data_exported": "Şəxsi məlumatlar yükləndi"
+      },
+      "rolesAdded": "Əlavə: {roles}",
+      "rolesRemoved": "Silinən: {roles}",
+      "importResult": "{kind}: {created} yeni, {updated} yenilənən, {unchanged} dəyişməyən"
+    }
   }
 }

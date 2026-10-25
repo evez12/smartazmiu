@@ -5,6 +5,7 @@ from fastapi import Depends, Request
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.identity_admin import IdentityAdmin
 from app.core.storage import ObjectStorage
 
 
@@ -23,6 +24,12 @@ def get_storage(request: Request) -> ObjectStorage:
     return storage
 
 
+def get_identity_admin(request: Request) -> IdentityAdmin:
+    identity_admin: IdentityAdmin = request.app.state.identity_admin
+    return identity_admin
+
+
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 StorageDep = Annotated[ObjectStorage, Depends(get_storage)]
+IdentityAdminDep = Annotated[IdentityAdmin, Depends(get_identity_admin)]
