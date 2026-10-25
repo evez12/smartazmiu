@@ -12,6 +12,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.observability import init_sentry
 from app.core.security import JWKSKeySource, TokenVerifier
+from app.core.storage import S3Storage
 from app.modules.academics.router import imports as imports_router
 from app.modules.academics.router import router as academics_router
 from app.modules.health.router import router as health_router
@@ -30,6 +31,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.database = Database(str(settings.database_url))
         app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
+        app.state.storage = S3Storage(
+            endpoint_url=settings.s3_endpoint_url,
+            access_key=settings.s3_access_key,
+            secret_key=settings.s3_secret_key,
+            bucket=settings.s3_bucket,
+            region=settings.s3_region,
+        )
         app.state.token_verifier = TokenVerifier(
             issuer=settings.oidc_issuer,
             audience=settings.oidc_audience,

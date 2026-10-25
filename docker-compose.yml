@@ -10,6 +10,10 @@ x-api-env: &api-env
   OIDC_ISSUER: ${OIDC_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
   OIDC_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
   OIDC_AUDIENCE: ${OIDC_AUDIENCE}
+  S3_ENDPOINT_URL: http://s3:8333
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  S3_SECRET_KEY: ${S3_SECRET_KEY}
+  S3_BUCKET: smartazmiu
   SENTRY_DSN: ${SENTRY_DSN_API:-}
 
 services:
@@ -122,6 +126,8 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      s3:
         condition: service_healthy
       keycloak:
         condition: service_healthy

@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = "http://localhost:8080/realms/smartazmiu/protocol/openid-connect/certs"
     oidc_audience: str = "smartazmiu-api"
 
+    # S3-compatible object storage (profile photos; attachments and materials later).
+    s3_endpoint_url: str = "http://127.0.0.1:8333"
+    s3_access_key: str = "smartazmiu"
+    s3_secret_key: str = ""
+    s3_bucket: str = "smartazmiu"
+    s3_region: str = "us-east-1"
+
     sentry_dsn: str | None = None
 
     @property

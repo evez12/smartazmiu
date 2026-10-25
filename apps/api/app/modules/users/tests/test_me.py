@@ -49,6 +49,7 @@ async def test_first_request_provisions_the_user(
         "status": "active",
         "roles": ["moderator", "student"],
         "permissions": [],
+        "photo_url": None,
     }
     assert uuid.UUID(body["id"]).version == 7
     user = await db.scalar(select(User).where(User.idp_subject == subject))

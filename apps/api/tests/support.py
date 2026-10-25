@@ -1,4 +1,4 @@
-"""Test helpers: an in-memory signing key that stands in for Keycloak."""
+"""Test helpers: an in-memory signing key that stands in for Keycloak, and an in-memory object store."""
 
 import time
 import uuid
@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 
 from app.core.security import InvalidTokenError
+from app.core.storage import StorageUnavailableError
 
 TEST_ISSUER = "http://keycloak.test/realms/smartazmiu"
 TEST_AUDIENCE = "smartazmiu-api"
@@ -70,3 +71,28 @@ class TokenFactory:
             algorithm="RS256",
             headers={"kid": self.key_id, **(headers or {})},
         )
+
+
+class MemoryStorage:
+    """Object storage double; ``available = False`` simulates an outage (§13.5)."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, tuple[bytes, str]] = {}
+        self.available = True
+
+    def _check(self) -> None:
+        if not self.available:
+            raise StorageUnavailableError
+
+    async def put(self, key: str, data: bytes, content_type: str) -> None:
+        self._check()
+        self.objects[key] = (data, content_type)
+
+    async def get(self, key: str) -> bytes | None:
+        self._check()
+        stored = self.objects.get(key)
+        return stored[0] if stored else None
+
+    async def delete(self, key: str) -> None:
+        self._check()
+        self.objects.pop(key, None)

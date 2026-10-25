@@ -24,6 +24,7 @@ APP_TABLES = {
     "enrollments",
     "academic_imports",
     "audit_logs",
+    "consent_records",
 }
 APP_ENUMS = (
     "user_status",
@@ -33,6 +34,9 @@ APP_ENUMS = (
     "import_kind",
     "import_status",
     "person_type",
+    "dm_policy",
+    "contact_visibility",
+    "consent_purpose",
 )
 
 

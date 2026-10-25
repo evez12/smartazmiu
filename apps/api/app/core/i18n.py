@@ -63,6 +63,22 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Yoxlamanın müddəti bitib. Faylı yenidən yükləyin.",
         "en": "The preview has expired. Upload the file again.",
     },
+    "profile.version_conflict": {
+        "az": "Profil başqa pəncərədə dəyişdirilib. Səhifəni yeniləyib dəyişiklikləri yenidən edin.",
+        "en": "The profile was changed in another window. Reload the page and make your changes again.",
+    },
+    "photo.invalid_image": {
+        "az": "Şəkil oxunmadı. JPEG, PNG və ya WebP formatında şəkil seçin.",
+        "en": "The image could not be read. Choose a JPEG, PNG or WebP image.",
+    },
+    "photo.too_large": {
+        "az": "Şəkil çox böyükdür. Ən çox 5 MB ölçüdə şəkil seçin.",
+        "en": "The image is too large. Choose an image of at most 5 MB.",
+    },
+    "storage.unavailable": {
+        "az": "Fayl xidməti müvəqqəti əlçatan deyil. Bir az sonra yenidən cəhd edin.",
+        "en": "File storage is temporarily unavailable. Please try again shortly.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",
