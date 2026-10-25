@@ -217,7 +217,8 @@ class AcademicImport(Base):
     errors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     error_count: Mapped[int] = mapped_column(Integer, default=0)
     # The file's cells, kept only until the import is applied or expires: they contain personal data.
-    payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # SQL NULL, never JSON null, so `payload IS NULL` finds every cleared file (D-038).
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL")
     )
