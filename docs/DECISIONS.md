@@ -599,6 +599,8 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     enrollments, campus, timetable); its teardown fails the run if any count changed. Account rows of `e2e-`
     users, import records, audit entries and consent records are not seed data and are not counted.
   - Dependency: `pg` 8.23.1 and `@types/pg` 8.23.1 (dev only). The CI E2E job installs uv for the seed step.
+  - The screenshot comparison (`make visual`) runs in a container without the database and sets
+    `E2E_DATA_CHECK=off`; every other run requires the check.
 - **Consequences:** a separate E2E database would also isolate parallel developers; not needed for one dev box.
 
 ## D-046 · 2026-10-25 · Leftover e2e- account rows (product owner decision)

@@ -6,6 +6,8 @@ import { countDifferences, seedRowCounts } from "./database";
  * (`TestRecords`); this check catches the ones that forget.
  */
 export default async function globalSetup() {
+  // The screenshot comparison (`make visual`) runs in a container without the stack's database.
+  if (process.env.E2E_DATA_CHECK === "off") return;
   const before = await seedRowCounts();
   return async () => {
     const differences = countDifferences(before, await seedRowCounts());
