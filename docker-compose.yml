@@ -6,7 +6,9 @@ x-api-env: &api-env
   APP_ENV: ${APP_ENV:-development}
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-  REDIS_URL: redis://redis:6379/0
+  # Instance B: cache, rate limits, presence (D-053). Instance A: the job queue.
+  REDIS_URL: redis://redis-cache:6379/0
+  QUEUE_REDIS_URL: redis://redis:6379/0
   OIDC_ISSUER: ${OIDC_PUBLIC_URL}/realms/${KEYCLOAK_REALM}
   OIDC_JWKS_URL: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
   OIDC_AUDIENCE: ${OIDC_AUDIENCE}
@@ -25,6 +27,8 @@ x-api-env: &api-env
   VAPID_SECRET: ${VAPID_SECRET}
   VAPID_SUBJECT: ${VAPID_SUBJECT}
   TICKET_SECRET: ${TICKET_SECRET}
+  MAIL_BATCH_SIZE: ${MAIL_BATCH_SIZE:-200}
+  MAIL_BATCH_INTERVAL_SECONDS: ${MAIL_BATCH_INTERVAL_SECONDS:-60}
 
 services:
   postgres:
@@ -47,7 +51,8 @@ services:
 
   redis:
     image: redis:7.4.11-alpine
-    # Web sessions live in database 1 (D-037): they must never be evicted and must survive a restart (D-039).
+    # Instance A (D-053): web sessions in database 1 (D-037) and the ARQ job queue in database 0. Neither may be
+    # evicted or lost on a restart (D-039), so: no eviction, append-only file synced every second.
     command:
       - redis-server
       - --appendonly
@@ -60,6 +65,28 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Instance B (D-053): disposable data only. When full it evicts the least recently used keys, and nothing
+  # is written to disk; sessions and the job queue live in instance A (`redis`), which never evicts.
+  redis-cache:
+    image: redis:7.4.11-alpine
+    command:
+      - redis-server
+      - --maxmemory
+      - ${REDIS_CACHE_MAXMEMORY:-256mb}
+      - --maxmemory-policy
+      - allkeys-lru
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+    ports:
+      - "${REDIS_CACHE_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -145,6 +172,8 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
       s3:
         condition: service_healthy

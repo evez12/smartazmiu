@@ -28,7 +28,7 @@ from app.modules.events.models import (
     RegistrationStatus,
 )
 from app.modules.notifications.models import NotificationCategory, NotificationKind
-from app.modules.notifications.service import NotificationSpec, Notifier
+from app.modules.notifications.service import LateJoinBudget, NotificationSpec, Notifier
 from app.modules.users.models import User
 
 SUBJECT_TYPE = "event"
@@ -210,8 +210,9 @@ class EventService:
         event.starts_at, event.ends_at = details.starts_at, details.ends_at
         event.room_id, event.location, event.capacity = room_id, details.location, details.capacity
 
-    async def _add_recipients(self, event: Event) -> int:
-        """Adds audience members who are not recipients yet and announces the event to exactly them."""
+    async def _add_recipients(self, event: Event, late: LateJoinBudget | None = None) -> int:
+        """Adds audience members who are not recipients yet and announces the event to exactly them; people
+        added after publication (``late``) in-app only, within the budget (D-054)."""
         audience = members(event.audience).subquery()
         added = await self.session.scalars(
             insert(EventRecipient)
@@ -223,22 +224,28 @@ class EventService:
             .returning(EventRecipient.user_id)
         )
         new = list(added)
-        if new:
+        notified = late.take(new) if late else new
+        if notified:
             await Notifier(self.session).notify(
                 select(EventRecipient.user_id).where(
-                    EventRecipient.event_id == event.id, EventRecipient.user_id.in_(new)
+                    EventRecipient.event_id == event.id, EventRecipient.user_id.in_(notified)
                 ),
                 _spec(event, NotificationKind.EVENT_PUBLISHED, f"event:{event.id}"),
+                deliver=late is None,
             )
         return len(new)
 
-    async def sync_recipients(self) -> int:
-        """People who joined an audience hear about its events that have not ended (§6.1); idempotent."""
+    async def sync_recipients(self, late: LateJoinBudget | None = None) -> int:
+        """People who joined an audience hear about its events that have not ended (§6.1), soonest first,
+        in-app only (D-054); idempotent."""
+        late = late or LateJoinBudget()
         added = 0
         for event in await self.session.scalars(
-            select(Event).where(Event.status == EventStatus.PUBLISHED, Event.ends_at > utc_now())
+            select(Event)
+            .where(Event.status == EventStatus.PUBLISHED, Event.ends_at > utc_now())
+            .order_by(Event.starts_at, Event.id)
         ):
-            added += await self._add_recipients(event)
+            added += await self._add_recipients(event, late)
         await self.session.commit()
         return added
 
@@ -267,16 +274,21 @@ class EventService:
     ) -> Attendee:
         """Admits one attendee by ticket code (scan) or by registration (manual, audited)."""
         method = CheckInMethod.SCAN if code is not None else CheckInMethod.MANUAL
+        scanned = tickets.parse_ticket(code) if code is not None else None
         if code is not None:
-            registration_id = tickets.read_ticket(secret, code)
-            if registration_id is None:
+            if scanned is None:
                 raise AppError("events.ticket_invalid", 422)
+            registration_id = scanned.registration_id
         registration = await self.session.scalar(
             select(EventRegistration)
             .where(EventRegistration.id == registration_id)
             .with_for_update()
         )
         if registration is None:
+            raise AppError("events.ticket_invalid", 422)
+        # The signature covers the registration's own event: a forged or altered code fails here, and a genuine
+        # ticket for another event is reported as such below.
+        if scanned is not None and not tickets.is_genuine(secret, scanned, registration.event_id):
             raise AppError("events.ticket_invalid", 422)
         if registration.event_id != event_id:
             raise AppError("events.ticket_other_event", 409)

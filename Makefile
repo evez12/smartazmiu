@@ -17,8 +17,11 @@ COMPOSE := docker compose
 # 127.0.0.1 rather than localhost: on Windows the IPv6 attempt adds ~2 s per new connection.
 DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/$(POSTGRES_DB)
 TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:$(POSTGRES_PORT)/smartazmiu_test
-REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
-TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
+# Two Redis instances (D-053): A (`REDIS_PORT`) for web sessions and the job queue, B (`REDIS_CACHE_PORT`) for
+# disposable data such as rate limits.
+REDIS_URL ?= redis://127.0.0.1:$(REDIS_CACHE_PORT)/0
+QUEUE_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
+TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_CACHE_PORT)/15
 # Web sessions (D-037) use their own database so API cache flushes never sign anyone out.
 SESSION_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/1
 S3_ENDPOINT_URL ?= http://127.0.0.1:$(S3_PORT)
@@ -146,7 +149,7 @@ test: test-api test-web ## Run all unit and integration tests
 
 .PHONY: test-deps
 test-deps: .env
-	$(COMPOSE) up -d --wait postgres redis s3
+	$(COMPOSE) up -d --wait postgres redis redis-cache s3
 
 .PHONY: test-api
 test-api: test-deps ## Run backend tests with coverage

@@ -20,7 +20,7 @@ from app.modules.audiences.service import Audience, Audiences, is_member, member
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.notifications.models import NotificationCategory, NotificationKind
-from app.modules.notifications.service import NotificationSpec, Notifier
+from app.modules.notifications.service import LateJoinBudget, NotificationSpec, Notifier
 
 SUBJECT_TYPE = "announcement"
 MAX_PAGE = 50
@@ -104,8 +104,14 @@ class AnnouncementService:
         await self.session.commit()
         return announcement, True
 
-    async def _add_recipients(self, announcement: Announcement) -> int:
-        """Adds audience members who are not recipients yet and notifies exactly those."""
+    async def _add_recipients(
+        self, announcement: Announcement, late: LateJoinBudget | None = None
+    ) -> int:
+        """Adds audience members who are not recipients yet and notifies exactly those.
+
+        At publication everyone is notified on every channel they have on. People added later (``late``)
+        get an in-app notification only, within the budget: no push or e-mail burst after a transfer (D-054).
+        """
         audience = members(announcement.audience).subquery()
         added = await self.session.scalars(
             insert(AnnouncementRecipient)
@@ -122,24 +128,30 @@ class AnnouncementService:
             .returning(AnnouncementRecipient.user_id)
         )
         new = list(added)
-        if new:
+        notified = late.take(new) if late else new
+        if notified:
             await Notifier(self.session).notify(
                 select(AnnouncementRecipient.user_id).where(
                     AnnouncementRecipient.announcement_id == announcement.id,
-                    AnnouncementRecipient.user_id.in_(new),
+                    AnnouncementRecipient.user_id.in_(notified),
                 ),
                 _spec(announcement),
+                deliver=late is None,
             )
         return len(new)
 
-    async def sync_recipients(self) -> int:
+    async def sync_recipients(self, late: LateJoinBudget | None = None) -> int:
         """People who joined an audience after publication (group transfer, late enrollment) receive the
-        announcements that are still active (§6.1). Idempotent: run after imports and on a schedule."""
+        announcements that are still active (§6.1), newest first, in-app only (D-054). Idempotent: run after
+        imports and on a schedule."""
+        late = late or LateJoinBudget()
         added = 0
         for announcement in await self.session.scalars(
-            select(Announcement).where(is_active(utc_now()))
+            select(Announcement)
+            .where(is_active(utc_now()))
+            .order_by(Announcement.published_at.desc(), Announcement.id.desc())
         ):
-            added += await self._add_recipients(announcement)
+            added += await self._add_recipients(announcement, late)
         await self.session.commit()
         return added
 

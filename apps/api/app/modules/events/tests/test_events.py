@@ -160,7 +160,9 @@ async def test_faculty_event_notifies_its_students_and_rsvp_gives_a_ticket(
     registered = await rsvp(client, aysel, event["id"])
     mine = registered["my_registration"]
     assert mine["status"] == "going"
-    assert tickets.read_ticket(SECRET, mine["ticket_code"]) is not None
+    scanned = tickets.parse_ticket(mine["ticket_code"])
+    assert scanned is not None
+    assert tickets.is_genuine(SECRET, scanned, uuid.UUID(event["id"]))
     assert registered["going"] == 1
     # Idempotent: a second RSVP keeps the same ticket.
     assert (await rsvp(client, aysel, event["id"]))["my_registration"]["ticket_code"] == mine[
@@ -512,12 +514,76 @@ async def test_input_is_validated_and_only_managers_publish(
     assert both["error"]["code"] == "request.validation_failed"
 
 
-def test_ticket_codes_cannot_be_forged() -> None:
-    registration = uuid.uuid4()
-    code = tickets.ticket_code(SECRET, registration)
+def test_ticket_codes_are_signed_for_one_registration_of_one_event() -> None:
+    event, other_event, registration = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    code = tickets.ticket_code(SECRET, event, registration)
     assert code.startswith("SA1.")
-    assert tickets.read_ticket(SECRET, code) == registration
-    assert tickets.read_ticket("another-secret", code) is None
-    assert tickets.read_ticket(SECRET, code.replace(registration.hex, uuid.uuid4().hex)) is None
+    scanned = tickets.parse_ticket(" " + code + chr(10))
+    assert scanned is not None
+    assert scanned.registration_id == registration
+    assert tickets.is_genuine(SECRET, scanned, event)
+    # The same registration id signed for another event, or under another key, is not genuine.
+    assert not tickets.is_genuine(SECRET, scanned, other_event)
+    assert not tickets.is_genuine("another-secret", scanned, event)
+    swapped = tickets.parse_ticket(code.replace(registration.hex, uuid.uuid4().hex))
+    assert swapped is not None
+    assert not tickets.is_genuine(SECRET, swapped, event)
     for garbage in ("", "SA1", "SA1.nothex.sig", "SA2" + code[3:], code + ".extra"):
-        assert tickets.read_ticket(SECRET, garbage) is None
+        assert tickets.parse_ticket(garbage) is None
+
+
+async def test_check_in_is_bound_to_the_event_and_its_registrants(
+    client: AsyncClient,
+    db: AsyncSession,
+    seed: Seed,
+    staff_headers: Headers,
+    aysel: Headers,
+    ramin: Headers,
+    tokens: TokenFactory,
+) -> None:
+    await seed(ImportKind.ROOMS)
+    event = await publish(client, staff_headers, await group_audience(db))
+    other = await publish(client, staff_headers, await group_audience(db), title="Başqa tədbir")
+    await rsvp(client, aysel, event["id"])
+    other_rsvp = (await rsvp(client, ramin, other["id"]))["my_registration"]["ticket_code"]
+    attendees = (
+        await client.get(f"/api/v1/events/{event['id']}/attendees", headers=staff_headers)
+    ).json()
+    aysel_row = attendees["items"][0]
+    other_registration = tickets.parse_ticket(other_rsvp)
+    assert other_registration is not None
+
+    # By name: only this event's registrants, and only once.
+    foreign = await check_in(
+        client,
+        staff_headers,
+        event["id"],
+        409,
+        registration_id=str(other_registration.registration_id),
+    )
+    assert foreign["error"]["code"] == "events.ticket_other_event"
+    unknown = await check_in(
+        client, staff_headers, event["id"], 422, registration_id=str(uuid.uuid4())
+    )
+    assert unknown["error"]["code"] == "events.ticket_invalid"
+    await check_in(client, staff_headers, event["id"], registration_id=aysel_row["registration_id"])
+    again = await check_in(
+        client, staff_headers, event["id"], 409, registration_id=aysel_row["registration_id"]
+    )
+    assert again["error"]["code"] == "events.already_checked_in"
+
+    # Ramin's registration re-signed for this event with a guessed key is refused before anything else.
+    forged = tickets.ticket_code(
+        "guessed-key", uuid.UUID(event["id"]), other_registration.registration_id
+    )
+    assert (await check_in(client, staff_headers, event["id"], 422, code=forged))["error"][
+        "code"
+    ] == "events.ticket_invalid"
+    # Teachers cannot admit people: check-in needs the staff permission.
+    teacher = person(tokens, "leyla.hasanova@smartazmiu.test", ["teacher"], "Leyla", "Həsənova")
+    denied = await client.post(
+        f"/api/v1/events/{event['id']}/check-ins",
+        json={"registration_id": aysel_row["registration_id"]},
+        headers=teacher,
+    )
+    assert denied.status_code == 403

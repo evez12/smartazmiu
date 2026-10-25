@@ -83,7 +83,9 @@ async def _out(session: SessionDep, secret: str, views: list[EventView]) -> list
                 version=event.version,
                 my_registration=MyRegistrationOut(
                     status=mine.status,
-                    ticket_code=ticket_code(secret, mine.id) if has_ticket(mine, event) else None,
+                    ticket_code=ticket_code(secret, event.id, mine.id)
+                    if has_ticket(mine, event)
+                    else None,
                     checked_in_at=mine.checked_in_at,
                 )
                 if mine
