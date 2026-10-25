@@ -8,6 +8,7 @@ import time
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import structlog
 from redis.asyncio import Redis
@@ -93,15 +94,19 @@ class WorkerLease:
                 return candidate
         raise SnowflakeUnavailableError("every worker id is leased")
 
+    def _renew_script(self, worker_id: int, ttl: str) -> Awaitable[int]:
+        # redis-py types eval for sync and async clients alike; on the asyncio client it is always awaitable.
+        return cast(
+            "Awaitable[int]", self.redis.eval(_RENEW, 1, self._key(worker_id), self.token, ttl)
+        )
+
     async def renew(self) -> None:
         """One renewal. A failed call keeps the lease trusted until 50 s have passed; a lost key ends it."""
         if self.worker_id is None:
             await self.acquire()
             return
         try:
-            renewed = await self.redis.eval(  # type: ignore[no-untyped-call]
-                _RENEW, 1, self._key(self.worker_id), self.token, str(LEASE_TTL_SECONDS)
-            )
+            renewed = await self._renew_script(self.worker_id, str(LEASE_TTL_SECONDS))
         except (RedisError, OSError) as exc:
             logger.warning("snowflake_lease_renewal_failed", error=type(exc).__name__)
             return
@@ -132,9 +137,7 @@ class WorkerLease:
                 await self._task
         if self.worker_id is not None:
             with contextlib.suppress(RedisError, OSError):
-                await self.redis.eval(  # type: ignore[no-untyped-call]
-                    _RENEW, 1, self._key(self.worker_id), self.token, "1"
-                )
+                await self._renew_script(self.worker_id, "1")
 
 
 class Snowflake:

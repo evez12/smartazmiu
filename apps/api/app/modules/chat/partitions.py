@@ -82,6 +82,7 @@ async def purge_client_ids(session: AsyncSession, now: datetime | None = None) -
             )
         )
         await session.commit()
-        purged += result.rowcount  # type: ignore[attr-defined]
-        if result.rowcount < PURGE_BATCH:  # type: ignore[attr-defined]
+        deleted = int(getattr(result, "rowcount", 0) or 0)
+        purged += deleted
+        if deleted < PURGE_BATCH:
             return purged
