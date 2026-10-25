@@ -27,12 +27,13 @@ export function EventFacts({ event }: { event: EventItem }) {
           {event.room ? (
             <Link
               href={`/map?room=${encodeURIComponent(event.room.code)}`}
-              aria-label={t("showOnMap", { code: event.room.code })}
               className="inline-flex items-center gap-1 text-primary hover:underline"
             >
               <Icon icon={MapPin} />
               {t("room", { code: event.room.code })}
               {event.room.name ? ` · ${event.room.name}` : ""}
+              {/* The visible text starts the link's name (WCAG 2.5.3); the purpose follows for screen readers. */}
+              <span className="sr-only">, {t("showOnMap")}</span>
             </Link>
           ) : null}
           {event.location ? <span>{event.location}</span> : null}

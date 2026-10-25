@@ -924,7 +924,7 @@
     "places": "Yerlər",
     "bakuTime": "Bakı vaxtı",
     "room": "Otaq {code}",
-    "showOnMap": "{code} otağını xəritədə göstərin",
+    "showOnMap": "xəritədə göstərin",
     "unlimited": "Məhdudiyyət yoxdur",
     "spots": "{left, plural, =0 {Boş yer qalmayıb} one {# boş yer} other {# boş yer}} ({going} / {capacity})",
     "going": "{count, plural, =0 {Hələ qeydiyyat yoxdur} other {# nəfər qeydiyyatdan keçib}}",

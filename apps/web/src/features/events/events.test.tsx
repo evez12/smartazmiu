@@ -86,10 +86,9 @@ describe("event display", () => {
   it("shows time with its zone, the room on the map, places and the audience", () => {
     renderWithIntl(<EventFacts event={event()} />);
     expect(screen.getByText("(Bakı vaxtı)")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "1-305 otağını xəritədə göstərin" })).toHaveAttribute(
-      "href",
-      "/map?room=1-305",
-    );
+    expect(
+      screen.getByRole("link", { name: "Otaq 1-305 · Auditoriya, xəritədə göstərin" }),
+    ).toHaveAttribute("href", "/map?room=1-305");
     expect(screen.getByText("18 boş yer (12 / 30)")).toBeInTheDocument();
     expect(screen.getByText(/Fakültə · Tikinti iqtisadiyyatı fakültəsi/)).toBeInTheDocument();
   });
