@@ -2,6 +2,7 @@
 from Redis instance A, 12 bits of sequence. Ids sort by creation time and carry their partition key."""
 
 import asyncio
+import contextlib
 import random
 import time
 import uuid
@@ -127,17 +128,13 @@ class WorkerLease:
     async def stop(self) -> None:
         if self._task is not None:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
         if self.worker_id is not None:
-            try:
+            with contextlib.suppress(RedisError, OSError):
                 await self.redis.eval(  # type: ignore[no-untyped-call]
                     _RENEW, 1, self._key(self.worker_id), self.token, "1"
                 )
-            except (RedisError, OSError):
-                pass
 
 
 class Snowflake:
