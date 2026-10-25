@@ -21,6 +21,7 @@ from app.modules.admin.router import router as admin_router
 from app.modules.announcements.router import router as announcements_router
 from app.modules.audiences.router import router as audiences_router
 from app.modules.campus.router import router as campus_router
+from app.modules.chat.snowflake import Snowflake, WorkerLease
 from app.modules.events.router import router as events_router
 from app.modules.health.router import router as health_router
 from app.modules.notifications.router import router as notifications_router
@@ -42,6 +43,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.database = Database(str(settings.database_url))
         app.state.jobs = ArqQueue(str(settings.queue_redis_url))
         app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
+        # Instance A (never evicts, D-053): snowflake worker-id leases and WebSocket tickets.
+        app.state.durable_redis = Redis.from_url(
+            str(settings.queue_redis_url), decode_responses=True
+        )
+        lease = WorkerLease(app.state.durable_redis)
+        # Leases in the background, so the API serves reads while Redis A is still unreachable (ADR 0002).
+        lease.start()
+        app.state.snowflake = Snowflake(lease)
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
         app.state.identity_admin = KeycloakAdmin(
             app.state.http,
@@ -65,6 +74,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await lease.stop()
+            await app.state.durable_redis.aclose()
             await app.state.http.aclose()
             await app.state.jobs.close()
             await app.state.redis.aclose()
