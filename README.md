@@ -18,7 +18,8 @@ For day-to-day work run the infrastructure in Docker and the apps natively:
 
 ```bash
 make infra     # postgres, redis, s3, keycloak, mailpit
-make migrate && make dev-api   # http://localhost:8000
+make migrate && make seed      # schema and the sample groups 764a1, 765a1, 765a2
+make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
 ```
 
@@ -35,6 +36,17 @@ Keycloak seeds six made-up users that share the password in `.env` (`KEYCLOAK_TE
 | `leyla.hasanova` | teacher |
 | `elvin.quliyev` | staff (asks for an authenticator app on first sign-in) |
 | `tural.babayev` | admin (asks for an authenticator app on first sign-in) |
+
+Aysel, Ramin (765a2), Nigar (765a1) and Leyla (teacher) are also part of the sample roster in
+`infra/seed/academics/`; after `make seed`, or after importing those files, their dashboards show their group and
+subjects.
+
+### Academic data import
+
+Staff and administrators import academic data at **Məlumat idxalı** (`/admin/imports`): one CSV or XLSX file per
+kind, in the order faculties, specialties, subjects, semesters, teachers, groups, students, offerings, enrollments.
+Each kind has a downloadable template; a file is validated first and applied only after confirmation. The sample
+files in `infra/seed/academics/` show the expected format. Rules: [docs/DECISIONS.md](docs/DECISIONS.md) D-029–D-031.
 
 ## Architecture
 

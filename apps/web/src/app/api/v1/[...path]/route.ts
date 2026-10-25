@@ -27,7 +27,7 @@ async function proxyError(status: number, code: string, messageKey: ProxyErrorKe
 }
 
 /**
- * Same-origin entry point for browser calls to the API (DECISIONS D-025, D-037): the access token stays in
+ * Same-origin entry point for browser calls to the API (DECISIONS D-025, D-032): the access token stays in
  * the httpOnly cookie and is added here, so page JavaScript never sees it. The proxy in `src/proxy.ts` has
  * already refreshed the token when it was about to expire.
  */
