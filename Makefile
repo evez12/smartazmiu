@@ -22,6 +22,8 @@ TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@
 REDIS_URL ?= redis://127.0.0.1:$(REDIS_CACHE_PORT)/0
 QUEUE_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/0
 TEST_REDIS_URL ?= redis://127.0.0.1:$(REDIS_CACHE_PORT)/15
+# Snowflake leases and WebSocket tickets live on A (D-056); tests use their own database there.
+TEST_QUEUE_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
 # Web sessions (D-037) use their own database so API cache flushes never sign anyone out.
 SESSION_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/1
 S3_ENDPOINT_URL ?= http://127.0.0.1:$(S3_PORT)
@@ -153,7 +155,7 @@ test-deps: .env
 
 .PHONY: test-api
 test-api: test-deps ## Run backend tests with coverage
-	DATABASE_URL=$(TEST_DATABASE_URL) REDIS_URL=$(TEST_REDIS_URL) S3_BUCKET=smartazmiu-test APP_ENV=test \
+	DATABASE_URL=$(TEST_DATABASE_URL) REDIS_URL=$(TEST_REDIS_URL) QUEUE_REDIS_URL=$(TEST_QUEUE_REDIS_URL) S3_BUCKET=smartazmiu-test APP_ENV=test \
 		$(UV) run pytest --cov --cov-report=term-missing
 
 .PHONY: test-web
