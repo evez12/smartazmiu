@@ -25,17 +25,17 @@ export const AUDIT_ACTIONS = [
   "user.account_linked",
   "import.applied",
   "user.data_exported",
+  "announcement.published",
+  "announcement.edited",
+  "announcement.archived",
 ] as const satisfies readonly AuditAction[];
 
 /** Message key of an action code: next-intl reads dots as nesting. */
 export function actionKey(action: AuditAction) {
-  return action.replaceAll(".", "_") as
-    | "user_roles_changed"
-    | "user_roles_synced"
-    | "user_account_linked"
-    | "import_applied"
-    | "user_data_exported";
+  return action.replaceAll(".", "_") as ActionKey<AuditAction>;
 }
+
+type ActionKey<T extends string> = T extends `${infer Head}.${infer Tail}` ? `${Head}_${Tail}` : T;
 
 /** Query string for list pages: drops empty values and the first page. */
 export function listHref(

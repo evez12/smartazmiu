@@ -247,7 +247,8 @@
       "audit": "Audit jurnalı",
       "schedule": "Cədvəl",
       "map": "Kampus xəritəsi",
-      "notifications": "Bildirişlər"
+      "notifications": "Bildirişlər",
+      "announcements": "Elanlar"
     }
   },
   "roles": {
@@ -266,9 +267,10 @@
     "noAcademicData": "Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb.",
     "noAcademicDataHint": "Məlumatlar dekanlıq tərəfindən əlavə olunduqdan sonra burada avtomatik görünəcək. Sualınız varsa, dekanlığa müraciət edin.",
     "announcementsTitle": "Elanlar",
-    "announcementsEmpty": "Hazırda sizə aid elan yoxdur. Dekanlığın və universitetin elanları burada görünəcək.",
+    "announcementsEmpty": "Hazırda sizə aid aktiv elan yoxdur. Dekanlığın və universitetin elanları burada görünəcək.",
     "chatTitle": "Oxunmamış mesajlar",
-    "chatPlaceholder": "Çat bölməsi hələ istifadəyə verilməyib. Fənn və qrup kanallarınız açıldıqdan sonra oxunmamış mesajların sayı burada görünəcək."
+    "chatPlaceholder": "Çat bölməsi hələ istifadəyə verilməyib. Fənn və qrup kanallarınız açıldıqdan sonra oxunmamış mesajların sayı burada görünəcək.",
+    "allAnnouncements": "Bütün elanlar"
   },
   "status": {
     "loading": "Yüklənir",
@@ -626,7 +628,10 @@
         "user_roles_changed": "Rollar dəyişdirildi",
         "user_account_linked": "Hesab universitet qeydi ilə əlaqələndirildi",
         "import_applied": "Məlumat idxalı tətbiq olundu",
-        "user_data_exported": "Şəxsi məlumatlar yükləndi"
+        "user_data_exported": "Şəxsi məlumatlar yükləndi",
+        "announcement_published": "Elan dərc olundu",
+        "announcement_edited": "Elan redaktə olundu",
+        "announcement_archived": "Elan arxivə köçürüldü"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -813,6 +818,82 @@
       "denied": "Bu sayt üçün bildirişlərə icazə verilməyib. İcazəni brauzerin sayt ayarlarından dəyişə bilərsiniz.",
       "unavailable": "Brauzer bildirişləri hazırda istifadəyə verilməyib. Bildirişlər saytda və e-poçtla gəlir.",
       "deviceFailed": "Brauzer bildirişlərini dəyişmək mümkün olmadı. Yenidən cəhd edin."
+    }
+  },
+  "audiences": {
+    "types": {
+      "university": "Bütün universitet",
+      "faculty": "Fakültə",
+      "specialty": "İxtisas",
+      "group": "Qrup",
+      "course_offering": "Fənn təyinatı"
+    },
+    "typeLabel": "Kimə",
+    "target": "Seçim",
+    "search": "Axtarış",
+    "searchHelp": "Ad və ya kodla axtarın; Azərbaycan hərfləri olmadan da tapılır.",
+    "none": "Uyğun nəticə tapılmadı. Axtarışı dəyişin.",
+    "failed": "Siyahını yükləmək mümkün olmadı. Yenidən cəhd edin.",
+    "required": "Auditoriyanı seçin.",
+    "universityHint": "Universitetin bütün aktiv istifadəçiləri daxildir.",
+    "retry": "Yenidən cəhd edin"
+  },
+  "announcements": {
+    "title": "Elanlar",
+    "description": "Universitetin, fakültənizin, qrupunuzun və fənlərinizin elanları.",
+    "empty": "Hazırda sizə aid aktiv elan yoxdur. Yeni elanlar dərc olunanda burada görünəcək.",
+    "create": "Elan yaradın",
+    "manage": "Bütün elanlar",
+    "loadMore": "Daha çox yükləyin",
+    "loadFailed": "Elanları yükləmək mümkün olmadı.",
+    "audience": "Auditoriya",
+    "published": "Dərc olunub",
+    "expires": "Aktivdir",
+    "until": "{date} tarixinədək",
+    "noExpiry": "Arxivə köçürülənədək",
+    "status": {
+      "published": "Dərc olunub",
+      "archived": "Arxivdə"
+    },
+    "editor": {
+      "newTitle": "Yeni elan",
+      "newDescription": "Elan dərc olunan kimi seçilmiş auditoriyaya bildiriş göndərilir.",
+      "editTitle": "Elanı redaktə edin",
+      "editDescription": "Başlıq, mətn və bitmə vaxtı dəyişdirilə bilər. Auditoriya dəyişmir və bildiriş təkrar göndərilmir.",
+      "titleLabel": "Başlıq",
+      "titleHelp": "Ən çox 200 simvol.",
+      "titleRequired": "Başlıq yazın.",
+      "body": "Mətn",
+      "bodyHelp": "Ən çox 5000 simvol. Sətir keçidləri olduğu kimi göstərilir.",
+      "bodyRequired": "Mətn yazın.",
+      "bodyCount": "{count} / 5000",
+      "expires": "Bitmə vaxtı",
+      "expiresHelp": "İstəyə bağlıdır. Bakı vaxtı ilə; bu vaxtdan sonra elan göstərilmir.",
+      "publish": "Dərc edin",
+      "save": "Yadda saxlayın",
+      "published": "Elan dərc olundu",
+      "saved": "Elan yadda saxlanıldı",
+      "failed": "Elan yadda saxlanılmadı",
+      "reload": "Səhifəni yeniləyin"
+    },
+    "staff": {
+      "edit": "Redaktə edin",
+      "archive": "Arxivə köçürün",
+      "archiveTitle": "Elan arxivə köçürülsün?",
+      "archiveConsequence": "Elan alıcılara artıq göstərilməyəcək. Bu əməliyyatı geri qaytarmaq mümkün deyil.",
+      "archived": "Elan arxivə köçürüldü",
+      "archiveFailed": "Elanı arxivə köçürmək mümkün olmadı",
+      "manageTitle": "Bütün elanlar",
+      "manageDescription": "Dərc olunmuş və arxivə köçürülmüş elanlar, onları alan şəxslərin sayı ilə.",
+      "tableLabel": "Elanlar",
+      "columns": {
+        "title": "Başlıq",
+        "audience": "Auditoriya",
+        "published": "Dərc tarixi",
+        "recipients": "Alıcılar",
+        "status": "Vəziyyət"
+      },
+      "manageEmpty": "Hələ elan dərc olunmayıb."
     }
   }
 }

@@ -58,3 +58,28 @@ export function formatDayMonth(day: string): string {
 export function formatWeekdayDate(day: string): string {
   return `${capitalize(weekdayFormat.format(calendarDate(day)))}, ${formatDayMonth(day)}`;
 }
+
+/** Baku has had no daylight saving time since 2016, so its offset is fixed (§1.3). */
+const BAKU_OFFSET = "+04:00";
+const inputParts = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** A `datetime-local` value ("2026-12-01T09:00") read as Baku time, as an ISO instant for the API. */
+export function bakuInputToIso(value: string): string {
+  return `${value}:00${BAKU_OFFSET}`;
+}
+
+/** An instant as a `datetime-local` value in Baku time, whatever the device's zone. */
+export function isoToBakuInput(value: string): string {
+  const parts = Object.fromEntries(
+    inputParts.formatToParts(new Date(value)).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}

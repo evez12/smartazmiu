@@ -3,6 +3,7 @@ import {
   CalendarDays,
   FileUp,
   House,
+  Megaphone,
   Map as MapIcon,
   ScrollText,
   UserRound,
@@ -20,7 +21,15 @@ export type NavItem = {
   href: string;
   /** Key under `shell.nav` in messages. */
   labelKey:
-    "home" | "schedule" | "map" | "notifications" | "profile" | "imports" | "users" | "audit";
+    | "home"
+    | "schedule"
+    | "map"
+    | "announcements"
+    | "notifications"
+    | "profile"
+    | "imports"
+    | "users"
+    | "audit";
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (§12.6: Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). */
   inTabBar: boolean;
@@ -41,6 +50,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/", labelKey: "home", icon: House, inTabBar: true },
       { href: "/schedule", labelKey: "schedule", icon: CalendarDays, inTabBar: true },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
+      { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/notifications", labelKey: "notifications", icon: Bell, inTabBar: true },
       { href: "/profile", labelKey: "profile", icon: UserRound, inTabBar: true },
     ],
