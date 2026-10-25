@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Paperclip } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createContext, useContext, useId, type ComponentProps, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { buttonVariants } from "./button";
 import { Icon } from "./icon";
 
 type FieldControl = {
@@ -73,7 +74,8 @@ const controlClasses = [
   "w-full rounded-control border border-border-control bg-surface px-3 text-base text-text",
   "transition-colors hover:border-muted aria-invalid:border-danger",
   "disabled:cursor-not-allowed disabled:border-border-strong disabled:bg-bg-subtle disabled:text-muted",
-  "read-only:border-dashed read-only:bg-bg-subtle",
+  // The attribute, not `:read-only`: browsers also match <select> and file inputs with the pseudo-class.
+  "[&[readonly]]:border-dashed [&[readonly]]:bg-bg-subtle",
 ].join(" ");
 
 function useControlProps(props: {
@@ -123,6 +125,43 @@ export function Select({ className, children, ...rest }: ComponentProps<"select"
         icon={ChevronDown}
         className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted"
       />
+    </div>
+  );
+}
+
+type FileInputProps = Omit<ComponentProps<"input">, "type" | "value" | "onChange"> & {
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+};
+
+/**
+ * File picker with Azerbaijani labels: the browser's own button text follows the browser language (§12.8).
+ * The real input stays focusable and labelled by the surrounding Field.
+ */
+export function FileInput({ file, onFileChange, className, ...rest }: FileInputProps) {
+  const t = useTranslations("ui");
+  const control = useControlProps(rest);
+  return (
+    <div className={cn("flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1", className)}>
+      <label
+        className={cn(
+          buttonVariants({ variant: "secondary", size: "dense" }),
+          "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
+        )}
+      >
+        <Icon icon={Paperclip} />
+        {t("chooseFile")}
+        <input
+          type="file"
+          className="sr-only"
+          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+          {...rest}
+          {...control}
+        />
+      </label>
+      <span className={cn("min-w-0 break-all", file ? "text-text" : "text-muted")}>
+        {file ? file.name : t("noFileChosen")}
+      </span>
     </div>
   );
 }

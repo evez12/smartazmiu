@@ -74,4 +74,9 @@ describe("design rules", () => {
   it("uses no emoji in UI chrome", () => {
     expect(offenders(/\p{Extended_Pictographic}/gu)).toEqual([]);
   });
+
+  it("writes invisible and control characters as escapes, never literally", () => {
+    // Zero-width spaces, BOMs and stray control characters are invisible in review.
+    expect(offenders(/[\p{Cf}\p{Co}]|[^\P{Cc}\t\n\r]/gu, () => false, files)).toEqual([]);
+  });
 });

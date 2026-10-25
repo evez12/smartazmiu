@@ -94,10 +94,10 @@ async def test_row_errors_are_reported_together(upload: Upload, db: AsyncSession
 
     assert body["status"] == "invalid"
     assert issues(body) == [
+        (3, "code", "duplicate_in_file"),
         (4, "code", "invalid_format"),
         (4, "name_az", "required"),
         (4, "credits", "invalid_number"),
-        (3, "code", "duplicate_in_file"),
         (5, "faculty_code", "unknown_reference"),
     ]
     assert body["error_count"] == 5
@@ -210,9 +210,9 @@ async def test_people_rules(seed: Seed, upload: Upload, db: AsyncSession) -> Non
     )
 
     assert issues(body) == [
-        (4, "family_name", "invalid_characters"),
         (2, "email", "email_conflict"),
         (3, "university_id", "person_type_mismatch"),
+        (4, "family_name", "invalid_characters"),
     ]
 
 

@@ -10,7 +10,15 @@
     "notifications": "Bildirişlər",
     "sortBy": "{column} üzrə sıralayın",
     "unreadCount": "{count} oxunmamış mesaj",
-    "mentionCount": "{count} qeyd olunma"
+    "mentionCount": "{count} qeyd olunma",
+    "pagination": {
+      "label": "Səhifələr",
+      "range": "{from}–{to}, cəmi {total}",
+      "previous": "Əvvəlki",
+      "next": "Növbəti"
+    },
+    "chooseFile": "Fayl seçin",
+    "noFileChosen": "Fayl seçilməyib"
   },
   "theme": {
     "label": "Mövzu",
@@ -228,10 +236,12 @@
     "profileMenu": "Profil menyusu",
     "signOut": "Çıxış edin",
     "sections": {
-      "main": "Əsas"
+      "main": "Əsas",
+      "admin": "İdarəetmə"
     },
     "nav": {
-      "home": "Ana səhifə"
+      "home": "Ana səhifə",
+      "imports": "Məlumat idxalı"
     }
   },
   "roles": {
@@ -261,6 +271,170 @@
     "inactiveBody": "Akademik məzuniyyət, məzunluq və ya digər səbəbdən hesabınız deaktiv edilib. Ətraflı məlumat üçün dekanlığa müraciət edin.",
     "notFoundTitle": "Səhifə tapılmadı",
     "notFoundBody": "Ünvan səhv yazılıb və ya səhifə silinib.",
-    "goHome": "Ana səhifəyə keçin"
+    "goHome": "Ana səhifəyə keçin",
+    "forbiddenTitle": "Bu səhifəyə baxmaq üçün icazəniz yoxdur",
+    "forbiddenBody": "İcazə lazımdırsa, sistem administratoruna və ya dekanlığa müraciət edin."
+  },
+  "api": {
+    "sessionExpired": "Sessiyanızın müddəti bitib. Yenidən daxil olun.",
+    "forbidden": "Bu əməliyyat üçün icazəniz yoxdur.",
+    "notFound": "Axtardığınız məlumat tapılmadı.",
+    "unavailable": "Xidmət müvəqqəti əlçatan deyil. Bir az sonra yenidən cəhd edin."
+  },
+  "errors": {
+    "network": "Serverlə əlaqə qurmaq mümkün olmadı. İnternet bağlantınızı yoxlayıb yenidən cəhd edin."
+  },
+  "academics": {
+    "groupTitle": "Qrupunuz",
+    "group": "Qrup",
+    "specialty": "İxtisas",
+    "faculty": "Fakültə",
+    "admissionYear": "Qəbul ili",
+    "language": "Tədris dili",
+    "languages": {
+      "az": "Azərbaycan dili",
+      "en": "İngilis dili",
+      "ru": "Rus dili"
+    },
+    "coursesTitle": "Fənləriniz",
+    "coursesDescription": "{semester} semestrində keçdiyiniz fənlər.",
+    "noCourses": "Bu semestr üçün fənləriniz hələ əlavə olunmayıb.",
+    "teachingTitle": "Dərs dediyiniz fənlər",
+    "teachingDescription": "Cari və gələcək semestrlər üzrə fənn təyinatlarınız.",
+    "subject": "Fənn",
+    "credits": "Kredit",
+    "teachers": "Müəllimlər",
+    "groups": "Qruplar",
+    "students": "Tələbə sayı",
+    "semester": "Semestr",
+    "noTeacher": "Təyin edilməyib",
+    "semesterLabel": "{year} {term}",
+    "terms": {
+      "fall": "Payız",
+      "spring": "Yaz",
+      "summer": "Yay"
+    }
+  },
+  "imports": {
+    "title": "Məlumat idxalı",
+    "description": "Akademik məlumatları CSV və ya XLSX faylından əlavə edin və yeniləyin. Fayl əvvəlcə yoxlanılır; dəyişikliklər yalnız siz təsdiq etdikdən sonra yazılır.",
+    "upload": "Fayl yükləyin",
+    "recentTitle": "Son idxallar",
+    "empty": "Hələ heç bir fayl idxal olunmayıb.",
+    "system": "Sistem",
+    "columns": {
+      "file": "Fayl",
+      "kind": "Məlumat növü",
+      "status": "Vəziyyət",
+      "rows": "Sətir",
+      "result": "Nəticə",
+      "createdBy": "Yükləyən",
+      "createdAt": "Tarix"
+    },
+    "result": "{created} yeni, {updated} yenilənən, {unchanged} dəyişməyən",
+    "kinds": {
+      "faculties": "Fakültələr",
+      "specialties": "İxtisaslar",
+      "subjects": "Fənlər",
+      "semesters": "Semestrlər",
+      "teachers": "Müəllimlər",
+      "groups": "Qruplar",
+      "students": "Tələbələr",
+      "offerings": "Fənn təyinatları",
+      "enrollments": "Fənn qeydiyyatları"
+    },
+    "statuses": {
+      "ready": "Tətbiqə hazırdır",
+      "invalid": "Xətalar var",
+      "applied": "Tətbiq olunub",
+      "failed": "Tətbiq olunmayıb",
+      "expired": "Müddəti bitib"
+    },
+    "new": {
+      "title": "Fayl yükləyin",
+      "description": "Faylı seçin: sistem onu yoxlayacaq və nəyin dəyişəcəyini göstərəcək. Bu mərhələdə heç bir məlumat yazılmır.",
+      "kind": "Məlumat növü",
+      "kindHelper": "Məlumatları siyahıdakı ardıcıllıqla idxal edin: sonrakı növlər əvvəlkilərə istinad edir.",
+      "template": "Şablonu yükləyin (CSV)",
+      "file": "Fayl",
+      "fileHelper": "CSV və ya XLSX, ən çox 5 MB və 20 000 sətir. Birinci sətir şablondakı başlıqdır.",
+      "fileRequired": "Yoxlamaq üçün fayl seçin.",
+      "encoding": "Kodlaşdırma",
+      "encodingHelper": "Yalnız CSV faylları üçün. Avtomatik təyin olunan kodlaşdırma yoxlamadan sonra göstərilir.",
+      "encodings": {
+        "auto": "Avtomatik təyin edilsin",
+        "utf-8": "UTF-8",
+        "windows-1254": "Windows-1254 (Türk)",
+        "windows-1251": "Windows-1251 (Kiril)"
+      },
+      "submit": "Faylı yoxlayın",
+      "failedTitle": "Fayl yoxlanılmadı"
+    },
+    "detail": {
+      "kindAndUpload": "{kind} · {name}, {date}",
+      "summaryTitle": "Yoxlamanın nəticəsi",
+      "rows": "Sətir sayı",
+      "created": "Yeni qeydlər",
+      "updated": "Yenilənən qeydlər",
+      "unchanged": "Dəyişməyən qeydlər",
+      "encoding": "Kodlaşdırma",
+      "appliedBy": "Tətbiq edən",
+      "apply": "Tətbiq edin",
+      "confirmTitle": "İdxalı tətbiq etmək istəyirsiniz?",
+      "confirmConsequence": "{created} yeni qeyd yaradılacaq və {updated} qeyd yenilənəcək. Faylda olmayan qeydlər dəyişməyəcək.",
+      "appliedToast": "İdxal tətbiq olundu",
+      "uploadAnother": "Başqa fayl yükləyin",
+      "readyTitle": "Fayl yoxlanıldı, xəta tapılmadı",
+      "readyBody": "Dəyişikliklər tətbiq edildikdən sonra qüvvəyə minəcək. Yoxlama {expires} tarixinədək etibarlıdır.",
+      "alreadyAppliedTitle": "Bu fayl artıq tətbiq olunub",
+      "alreadyAppliedBody": "Eyni fayl {date} tarixində tətbiq olunub. Yenidən tətbiq heç nəyi dəyişməyəcək.",
+      "invalidTitle": "Faylda {count} xəta tapıldı",
+      "invalidBody": "Heç bir məlumat yazılmayıb. Xətaları faylda düzəldib onu yenidən yükləyin.",
+      "appliedTitle": "İdxal tətbiq olunub",
+      "appliedBody": "Dəyişikliklər {date} tarixində yazılıb.",
+      "failedTitle": "İdxal tətbiq olunmayıb",
+      "failedBody": "Yoxlamadan sonra məlumatlar dəyişib, ona görə heç nə yazılmayıb. Faylı yenidən yükləyin.",
+      "expiredTitle": "Yoxlamanın müddəti bitib",
+      "expiredBody": "Yoxlanılmış fayl 24 saat saxlanılır. Faylı yenidən yükləyin.",
+      "encodingTitle": "Fayl {encoding} kodlaşdırmasında oxundu",
+      "encodingBody": "Adlarda hərflər düzgün görünmürsə, faylı UTF-8 kimi saxlayın və ya başqa kodlaşdırma seçib yenidən yükləyin.",
+      "errorsTitle": "Xətalar",
+      "errorsTruncated": "İlk {shown} xəta göstərilir, cəmi {total} xəta var.",
+      "row": "Sətir",
+      "column": "Sütun",
+      "problem": "Xəta",
+      "wholeFile": "Bütün fayl",
+      "downloadReport": "Xəta hesabatını yükləyin"
+    },
+    "issues": {
+      "required": "Xana boşdur. Dəyər daxil edin.",
+      "too_long": "Dəyər çox uzundur. Qısaldın.",
+      "invalid_format": "Format düzgün deyil. Yalnız latın hərfləri, rəqəmlər və - . / + işarələrindən istifadə edin.",
+      "invalid_email": "E-poçt ünvanı düzgün deyil.",
+      "invalid_number": "Tam rəqəm daxil edin.",
+      "out_of_range": "Rəqəm icazə verilən aralıqda deyil.",
+      "invalid_choice": "Dəyər icazə verilən variantlardan biri deyil. Şablondakı dəyərlərdən istifadə edin.",
+      "invalid_date": "Tarixi İİİİ-AA-GG və ya GG.AA.İİİİ formatında yazın.",
+      "excel_date_serial": "Excel tarixi rəqəm kimi saxlayıb. Xananı tarix formatında yazın.",
+      "invalid_characters": "Mətndə tanınmayan simvollar var. Faylı UTF-8 kodlaşdırmasında saxlayın.",
+      "duplicate_in_file": "Bu qeyd faylda təkrarlanır. Təkrar sətri silin.",
+      "unknown_reference": "İstinad edilən qeyd tapılmadı. Əvvəlcə onu idxal edin və ya kodu yoxlayın.",
+      "email_conflict": "Bu e-poçt başqa şəxsə məxsusdur. Ünvanı yoxlayın.",
+      "person_type_mismatch": "Bu nömrə başqa növ şəxsə (tələbə və ya müəllim) aiddir.",
+      "not_a_teacher": "Göstərilən şəxs müəllim kimi qeydiyyatda deyil.",
+      "not_a_student": "Göstərilən şəxs tələbə kimi qeydiyyatda deyil.",
+      "ambiguous_offering": "Bu fənn üçün bir neçə təyinat var. offering_code sütununu doldurun.",
+      "result_required": "Tamamlanmış qeydiyyat üçün nəticəni (passed) göstərin.",
+      "result_not_allowed": "Nəticə və bal yalnız tamamlanmış qeydiyyat üçün göstərilir.",
+      "dates_out_of_order": "Bitmə tarixi başlama tarixindən sonra olmalıdır.",
+      "merged_cells": "Birləşdirilmiş xanalar var. Birləşməni ləğv edib hər xanaya dəyər yazın.",
+      "missing_column": "Məcburi sütun yoxdur. Şablondakı başlıqdan istifadə edin.",
+      "unknown_column": "Naməlum sütun. Şablonda olmayan sütunları silin.",
+      "duplicate_column": "Sütun başlığı təkrarlanır.",
+      "empty_file": "Faylda məlumat yoxdur.",
+      "too_many_rows": "Faylda 20 000-dən çox sətir var. Faylı hissələrə bölün.",
+      "conflicting_data": "Tətbiq zamanı məlumatlar dəyişdi. Faylı yenidən yükləyin.",
+      "unknown": "Sətirdə xəta var."
+    }
   }
 }

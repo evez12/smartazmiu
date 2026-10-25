@@ -170,8 +170,10 @@ class ImportService:
 
 
 def _store_result(record: AcademicImport, run: ImportRun) -> None:
+    # File-level problems first, then by row; the sort is stable, so columns keep their order.
+    issues = sorted(run.issues, key=lambda issue: issue.row or 0)
     record.summary = dict(run.counts)
-    record.errors = [issue.as_dict() for issue in run.issues[:MAX_STORED_ISSUES]]
+    record.errors = [issue.as_dict() for issue in issues[:MAX_STORED_ISSUES]]
     record.error_count = len(run.issues)
 
 
