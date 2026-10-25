@@ -441,7 +441,9 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     session cookie never connect to Redis. If Redis is unreachable, pages show their "unavailable" state and the
     proxy route answers `503`; users are not signed out.
   - All Set-Cookie headers of a response must stay within `SET_COOKIE_BUDGET_BYTES = 1024` (unit test on the real
-    callback handler with an oversized token set; E2E through nginx). A sign-in now sends ~0.3 KB of cookies.
+    callback handler with an oversized token set; E2E through nginx). Measured through nginx on 2026-10-25 for
+    `kanan.babayev`: 203 B in 2 Set-Cookie headers (`sa_session` set, `sa_oidc` deleted); the E2E test prints
+    the value on every run.
   - `smartazmiu-web` has `fullScopeAllowed: false` and a realm scope mapping for `student`, `teacher`, `staff`,
     `moderator`, `admin` only, so Keycloak's default and helper roles and the `account` client roles are not put
     into access tokens. The API already maps only catalogue roles; its test now covers `uma_authorization`,
@@ -464,3 +466,40 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   Məmmədova's completed `SOS-1101` (2025, Payız) enrollment is seeded with grade 87. The four audit entries are kept
   unchanged; their actor shows as "system" because the actor account no longer exists (`actor_id` is `NULL`).
 - **Consequences:** none for users; the export of the seed student now includes a grade.
+
+## D-039 · 2026-10-25 · Redis persistence for web sessions (product owner request)
+
+- **Context:** web sessions live in Redis database 1 of the shared instance (D-037). Eviction under memory pressure
+  or a restart without persistence would sign everyone out. Options: one shared instance with `noeviction` and
+  AOF; a separate instance for sessions.
+- **Decision:** keep one instance, configured explicitly in `docker-compose.yml`: `--maxmemory-policy noeviction`
+  (no key is ever evicted; at a memory limit writes fail visibly instead of dropping sessions) and
+  `--appendonly yes --appendfsync everysec` (at most one second of writes lost on a crash). These were already
+  the effective values (image defaults plus `--appendonly yes`); stating them keeps them from drifting. Verified:
+  `CONFIG GET` returns `noeviction`/`everysec`, and all 42 session keys were present after `docker compose restart
+  redis`. Database 0 (API rate limits) and the coming ARQ queue need `noeviction` too, so a shared policy fits.
+- **Consequences:** Redis memory must be sized for sessions plus queues (sessions are ~2 KB each and expire with
+  their TTL). A separate session instance remains an option for production if memory isolation is needed.
+
+## D-040 · 2026-10-25 · Session lifecycle and throwaway E2E accounts (product owner request)
+
+- **Context:** the product owner accepted the server-side session change (D-037) retroactively and asked for
+  verified session handling and for tests that never change real accounts. Future authentication changes need
+  owner approval first (§0.3).
+- **Decision:**
+  - Every sign-in creates a new random session id; a session cookie the browser already had is destroyed in the
+    callback, and an unknown id is never adopted (no fixation). Sign-out deletes the Redis key even when Keycloak
+    cannot be reached.
+  - Each stored session has an absolute end, `expiresAt` = sign-in + 12 h (`SESSION_MAX_LIFETIME`, equal to the
+    realm's `ssoSessionMaxLifespan`). A refresh keeps it and sets the Redis TTL and cookie max-age to
+    `min(refresh_expires_in, expiresAt - now)`; at the end the refresh fails and the user signs in again. Sessions
+    read past `expiresAt`, or stored before this field existed, are deleted. Unit tests cover rotation, sign-out
+    deletion, the 12-hour cap under refreshes every 14 minutes, and legacy entries; the E2E test replays a signed-out
+    cookie and gets `401`.
+  - E2E tests that change accounts (staff 2FA enrolment, imports, role assignment, profile edits) create throwaway
+    Keycloak users (`e2e-<role>-<random>`, random password) through the admin API and delete them when the test
+    ends. The application keeps their mirrored rows (as for any account removed from the identity provider; there is
+    no account deletion yet) and the audit entries about them. Seeded users are only signed in to, never changed.
+    The invalid-import test runs after the roster import in a serial group, because it refers to imported data.
+- **Consequences:** a fresh database can run the full suite in parallel; repeated runs leave inactive `e2e-` rows in
+  the user list until account deletion (§5.4) exists.

@@ -12,6 +12,8 @@ export type StoredSession = {
   accessExpiresAt: number;
   subject: string;
   csrfToken: string;
+  /** Unix seconds; absolute end of the session, never moved by a refresh. */
+  expiresAt: number;
 };
 
 export type SessionStore = {

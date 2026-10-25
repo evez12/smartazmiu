@@ -40,7 +40,15 @@ services:
 
   redis:
     image: redis:7.4.11-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    # Web sessions live in database 1 (D-037): they must never be evicted and must survive a restart (D-039).
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:

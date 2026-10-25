@@ -1,6 +1,6 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
-import { expect, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
 
 /** Shared password of the seeded Keycloak test users (D-020); `make e2e` exports it from .env. */
 export const password = process.env.KEYCLOAK_TEST_USER_PASSWORD;
@@ -32,42 +32,107 @@ async function adminToken(): Promise<string> {
   return ((await response.json()) as { access_token: string }).access_token;
 }
 
-/** Forgets a staff member's authenticator, so the next sign-in enrols a new one the test controls. */
-async function removeOtpCredentials(username: string): Promise<void> {
-  const headers = { Authorization: `Bearer ${await adminToken()}` };
-  const base = `${keycloakUrl}/admin/realms/${realm}/users`;
-  const users = (await (
-    await fetch(`${base}?exact=true&username=${encodeURIComponent(username)}`, { headers })
-  ).json()) as { id: string }[];
-  const user = users[0];
-  if (!user) throw new Error(`Keycloak user ${username} not found`);
-  const credentials = (await (
-    await fetch(`${base}/${user.id}/credentials`, { headers })
-  ).json()) as { id: string; type: string }[];
-  for (const credential of credentials.filter((item) => item.type === "otp")) {
-    await fetch(`${base}/${user.id}/credentials/${credential.id}`, { method: "DELETE", headers });
+async function keycloakAdmin(path: string, init: RequestInit = {}): Promise<Response> {
+  const response = await fetch(`${keycloakUrl}/admin/realms/${realm}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${await adminToken()}`,
+      "Content-Type": "application/json",
+      ...init.headers,
+    },
+  });
+  if (!response.ok) throw new Error(`Keycloak ${init.method ?? "GET"} ${path}: ${response.status}`);
+  return response;
+}
+
+export type TestAccount = {
+  username: string;
+  email: string;
+  password: string;
+  givenName: string;
+  familyName: string;
+};
+
+/**
+ * Creates and deletes Keycloak accounts that exist only for one test, so tests never change the seeded users
+ * (their roles, authenticators or passwords). Mirrored rows in the application database stay behind, like those
+ * of any account removed from the identity provider, and are recognisable by their `e2e-` e-mail address.
+ */
+export class TestAccounts {
+  private readonly ids: string[] = [];
+
+  async create(
+    role: "student" | "teacher" | "staff" | "admin",
+    name: { givenName: string; familyName: string },
+  ): Promise<TestAccount> {
+    const username = `e2e-${role}-${randomBytes(4).toString("hex")}`;
+    const account = {
+      ...name,
+      username,
+      email: `${username}@smartazmiu.test`,
+      password: randomBytes(18).toString("base64url"),
+    };
+    const created = await keycloakAdmin("/users", {
+      method: "POST",
+      body: JSON.stringify({
+        username,
+        email: account.email,
+        emailVerified: true,
+        firstName: name.givenName,
+        lastName: name.familyName,
+        enabled: true,
+        credentials: [{ type: "password", value: account.password, temporary: false }],
+      }),
+    });
+    const id = created.headers.get("location")!.split("/").pop()!;
+    this.ids.push(id);
+    const roleRepresentation = await (await keycloakAdmin(`/roles/${role}`)).json();
+    await keycloakAdmin(`/users/${id}/role-mappings/realm`, {
+      method: "POST",
+      body: JSON.stringify([roleRepresentation]),
+    });
+    return account;
+  }
+
+  async deleteAll(): Promise<void> {
+    for (const id of this.ids.splice(0)) {
+      await keycloakAdmin(`/users/${id}`, { method: "DELETE" });
+    }
   }
 }
 
 /** Opens the app signed out and submits the Keycloak login form. */
-export async function signIn(page: Page, username: string, startAt = "/") {
+export async function signIn(page: Page, user: string | TestAccount, startAt = "/"): Promise<void> {
+  const [username, secret] =
+    typeof user === "string" ? [user, password!] : [user.username, user.password];
   await page.goto(startAt);
   await expect(page).toHaveURL(/\/login\?returnTo=/);
   await page.getByRole("link", { name: "Universitet hesabı ilə daxil olun" }).click();
 
   await expect(page.getByRole("heading", { name: "Hesabınıza daxil olun" })).toBeVisible();
   await page.getByLabel("İstifadəçi adı və ya e-poçt").fill(username);
-  await page.getByLabel("Şifrə", { exact: true }).fill(password!);
+  await page.getByLabel("Şifrə", { exact: true }).fill(secret);
   await page.getByRole("button", { name: "Daxil olun" }).click();
 }
 
-/** Signs in a staff or admin user, enrolling a fresh authenticator on the way (D-018). */
-export async function signInWithSecondFactor(page: Page, username: string, startAt = "/") {
-  await removeOtpCredentials(username);
-  await signIn(page, username, startAt);
+/** First sign-in of a new staff or admin account, which must enrol an authenticator (D-018). */
+export async function signInWithSecondFactor(page: Page, account: TestAccount, startAt = "/") {
+  await signIn(page, account, startAt);
   await expect(page.getByRole("heading", { name: "İki mərhələli girişi qurun" })).toBeVisible();
   const secret = await page.locator("#totpSecret").inputValue();
   await page.locator("#totp").fill(totp(secret));
   await page.locator("#userLabel").fill("Playwright");
   await page.locator("#saveTOTPBtn").click();
 }
+
+/** Playwright `test` with an `accounts` fixture whose accounts are deleted when the test ends. */
+export const test = base.extend<{ accounts: TestAccounts }>({
+  accounts: async ({}, provide) => {
+    const accounts = new TestAccounts();
+    try {
+      await provide(accounts);
+    } finally {
+      await accounts.deleteAll();
+    }
+  },
+});
