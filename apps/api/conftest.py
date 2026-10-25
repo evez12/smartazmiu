@@ -20,6 +20,7 @@ from tests.support import (
     TEST_AUDIENCE,
     TEST_ISSUER,
     FakeIdentityAdmin,
+    FakeJobs,
     MemoryStorage,
     TokenFactory,
 )
@@ -29,7 +30,14 @@ API_ROOT = Path(__file__).parent
 
 @pytest.fixture(scope="session")
 def settings() -> Settings:
-    settings = Settings(app_env="test", oidc_issuer=TEST_ISSUER, oidc_audience=TEST_AUDIENCE)
+    settings = Settings(
+        app_env="test",
+        oidc_issuer=TEST_ISSUER,
+        oidc_audience=TEST_AUDIENCE,
+        app_public_url="https://smartazmiu.test",
+        vapid_secret="test-vapid-secret",
+        ticket_secret="test-ticket-secret",
+    )
     database = settings.database_url.path or ""
     # The suite truncates tables; refuse to run against anything but a dedicated test database.
     if not database.endswith("_test"):
@@ -96,6 +104,11 @@ def identity_admin() -> FakeIdentityAdmin:
     return FakeIdentityAdmin()
 
 
+@pytest.fixture
+def jobs() -> FakeJobs:
+    return FakeJobs()
+
+
 @pytest_asyncio.fixture
 async def app(
     settings: Settings,
@@ -103,6 +116,7 @@ async def app(
     db: AsyncSession,
     storage: MemoryStorage,
     identity_admin: FakeIdentityAdmin,
+    jobs: FakeJobs,
 ) -> AsyncIterator[FastAPI]:
     """The API wired to the test database; Keycloak and object storage are replaced by doubles."""
     application = create_app(settings)
@@ -112,6 +126,8 @@ async def app(
         )
         application.state.storage = storage
         application.state.identity_admin = identity_admin
+        await application.state.jobs.close()
+        application.state.jobs = jobs
         yield application
 
 

@@ -112,6 +112,10 @@ openapi: ## Export the OpenAPI document and regenerate the typed web client
 dev-api: ## Run the API with reload on :8000
 	$(UV) run uvicorn app.main:app --reload --port 8000 --no-access-log
 
+.PHONY: dev-worker
+dev-worker: ## Run the ARQ worker (notification delivery, audience sync)
+	$(UV) run arq app.workers.main.WorkerSettings
+
 .PHONY: dev-web
 dev-web: ## Run the web app with reload on :3000
 	$(PNPM) dev

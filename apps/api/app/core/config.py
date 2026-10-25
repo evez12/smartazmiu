@@ -37,6 +37,35 @@ class Settings(BaseSettings):
 
     sentry_dsn: str | None = None
 
+    # Browser-facing base URL, for links in e-mails and push messages.
+    app_public_url: str = "http://localhost"
+
+    # Notification e-mail through SMTP (Mailpit locally).
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = 1025
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
+    mail_from: str = "bildiris@smartazmiu.test"
+
+    # Web Push: the VAPID key pair is derived from this secret (D-049).
+    vapid_secret: str = ""
+    vapid_subject: str = "mailto:it@smartazmiu.test"
+    # Push endpoints are URLs supplied by browsers; the worker only posts to these services (SSRF guard, §14).
+    push_service_hosts: list[str] = Field(
+        default=[
+            "fcm.googleapis.com",
+            "updates.push.services.mozilla.com",
+            "*.push.services.mozilla.com",
+            "*.notify.windows.com",
+            "web.push.apple.com",
+            "*.push.apple.com",
+        ]
+    )
+
+    # Signs event tickets; a QR code carries the ticket id and this signature (D-051).
+    ticket_secret: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"

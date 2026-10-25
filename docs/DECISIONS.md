@@ -617,3 +617,50 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   released to staging only. Hotfixes are the only exception, as the roadmap already states for June (§8).
 - **Consequences:** Sprint 4 (January) and the end of Sprint 14 (June) ship to staging; production receives them
   after the session.
+
+## D-048 · 2026-10-25 · Background worker and the redis-py version
+
+- **Context:** §4 names ARQ for background jobs. Its latest release (0.28.0, April 2026) requires `redis<6`; the API
+  pinned redis-py 8.1.0.
+- **Options:** force ARQ onto redis-py 8 with a resolver override (a combination ARQ does not test); move the API
+  to redis-py 5.3.1, the newest release ARQ supports; write our own queue (against §4).
+- **Decision:** redis-py `5.3.1` (with `hiredis` 3.5.0, which ARQ's requirement pulls in) and `arq` `0.28.0`. The
+  API uses only basic asyncio commands (get/set, pipelines, ping), all unchanged in 5.x. One worker process
+  (`worker` service in `make up`, `make dev-worker` natively) runs `app.workers.main.WorkerSettings`, on Redis
+  database 0 (D-039: `noeviction`).
+  - Work is persisted before the worker is woken: the API writes pending rows, then enqueues a job; a failed
+    enqueue (Redis outage, §13.5) is logged and the per-minute cron job picks the rows up. Jobs keep no results
+    and have no fixed ids, so a wake-up is never refused because an earlier one is still recorded.
+  - Dev dependency `http-ece` 1.2.1 (reference implementation of RFC 8188, used only by tests).
+- **Consequences:** revisit when ARQ supports redis-py 6+.
+
+## D-049 · 2026-10-25 · Notification service
+
+- **Context:** Sprint 4 asks for in-app, Web Push and e-mail notifications with preferences and quiet hours;
+  §5.6 requires de-duplication and checks of membership and preferences at delivery time. It lists defaults only
+  for chat and mentorship events, which come later.
+- **Decision:**
+  - `notifications` holds the in-app row (always created; the bell is the record). `UNIQUE (user_id,
+    dedupe_key)` with `ON CONFLICT DO NOTHING` makes an event notify a user once, however often a job or sync
+    runs. Fan-out is one `INSERT … SELECT` per recipient query, so ids come from a SQL `uuid7()` function
+    (PostgreSQL 16 has none) and stay time-ordered for cursor pagination.
+  - Push and e-mail are `notification_deliveries` rows, created only for channels the user has on. The worker
+    takes one due row at a time (`FOR UPDATE SKIP LOCKED`) and checks again: account active, still in the
+    audience (a check per subject type), channel still on, push outside quiet hours, device or address present.
+    Otherwise the row is `suppressed` with a reason. Temporary failures retry 5 times with backoff 2, 4, 8, 16
+    minutes, then `failed`.
+  - Categories now: `announcements` (push and e-mail on by default), `events` and `schedule` (push on, e-mail
+    off). Quiet hours default to 23:00–08:00 Baku time and may span midnight. Inside them push is **suppressed,
+    not postponed** (§5.6 says "push suppressed"); e-mail and in-app are not affected.
+  - Web Push: message encryption (RFC 8291, `aes128gcm`) and VAPID (RFC 8292) are implemented on the existing
+    `cryptography`, `pyjwt` and `httpx` instead of `pywebpush`, which would add `requests` and `aiohttp`. The test
+    decrypts with the reference `http_ece` and verifies the VAPID token. The key pair is derived from
+    `VAPID_SECRET` (one generated value like the other secrets), so it is stable across restarts.
+  - Push endpoints come from browsers and the worker posts to them, so only HTTPS URLs on known push services
+    (FCM, Mozilla, Windows, Apple) are accepted; other endpoints are rejected at registration and again before
+    sending (§14 SSRF). An endpoint registered again moves to the user signed in on that browser; at most 10
+    devices per user. 400/403/404/410 from the push service delete the subscription.
+  - E-mail is plain text in Azerbaijani with a link to the item and to the settings page; push and e-mail
+    carry the same text the bell shows (no more on a lock screen than in the app).
+- **Consequences:** a worker crash between sending and committing can send one message twice (ARQ is
+  at-least-once). Real-time bell updates wait for the WebSocket gateway (Sprint 5); until then the bell polls.

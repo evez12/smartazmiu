@@ -43,6 +43,18 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Tarix aralığı düzgün deyil. Son tarix başlanğıcdan sonra və ən çox 42 gün sonra olmalıdır.",
         "en": "The date range is invalid. The end must follow the start by at most 42 days.",
     },
+    "notifications.quiet_hours_empty": {
+        "az": "Sakit saatların başlanğıcı və sonu eyni ola bilməz. Fərqli vaxt seçin.",
+        "en": "Quiet hours cannot start and end at the same time. Choose different times.",
+    },
+    "notifications.push_endpoint_rejected": {
+        "az": "Bu brauzerin bildiriş xidməti dəstəklənmir. Başqa brauzerdən istifadə edin.",
+        "en": "This browser's push service is not supported. Use another browser.",
+    },
+    "notifications.push_unavailable": {
+        "az": "Brauzer bildirişləri hazırda istifadəyə verilməyib. Bildirişlər saytda və e-poçtla gəlir.",
+        "en": "Browser notifications are not available yet. Notifications arrive in the app and by e-mail.",
+    },
     "import.file_too_large": {
         "az": "Fayl çox böyükdür. Ən çox 5 MB və 20 000 sətirlik fayl yükləyin.",
         "en": "The file is too large. Upload at most 5 MB and 20,000 rows.",

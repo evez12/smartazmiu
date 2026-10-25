@@ -9,6 +9,7 @@ from app.core.config import Settings, get_settings
 from app.core.db import Database
 from app.core.errors import register_error_handlers
 from app.core.identity_admin import KeycloakAdmin
+from app.core.jobs import ArqQueue
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.observability import init_sentry
@@ -19,6 +20,7 @@ from app.modules.academics.router import router as academics_router
 from app.modules.admin.router import router as admin_router
 from app.modules.campus.router import router as campus_router
 from app.modules.health.router import router as health_router
+from app.modules.notifications.router import router as notifications_router
 from app.modules.privacy.router import router as privacy_router
 from app.modules.schedule.router import router as schedule_router
 from app.modules.users.router import router as users_router
@@ -33,7 +35,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.settings = settings
         app.state.database = Database(str(settings.database_url))
+        app.state.jobs = ArqQueue(str(settings.redis_url))
         app.state.redis = Redis.from_url(str(settings.redis_url), decode_responses=True)
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
         app.state.identity_admin = KeycloakAdmin(
@@ -59,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
         finally:
             await app.state.http.aclose()
+            await app.state.jobs.close()
             await app.state.redis.aclose()
             await app.state.database.dispose()
 
@@ -82,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(privacy_router, prefix=API_PREFIX)
     app.include_router(schedule_router, prefix=API_PREFIX)
     app.include_router(campus_router, prefix=API_PREFIX)
+    app.include_router(notifications_router, prefix=API_PREFIX)
     return app
 
 

@@ -122,3 +122,16 @@ class FakeIdentityAdmin:
         added, removed = set(add), set(remove)
         self.changes.append((subject, added, removed))
         self.roles[subject] = (self.roles.get(subject, set()) | added) - removed
+
+
+class FakeJobs:
+    """Job queue double: counts wake-ups instead of enqueueing ARQ jobs."""
+
+    def __init__(self) -> None:
+        self.dispatches = 0
+
+    async def dispatch_notifications(self) -> None:
+        self.dispatches += 1
+
+    async def close(self) -> None:
+        return None

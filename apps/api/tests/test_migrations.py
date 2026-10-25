@@ -25,6 +25,11 @@ APP_TABLES = {
     "academic_imports",
     "audit_logs",
     "consent_records",
+    "notifications",
+    "notification_deliveries",
+    "push_subscriptions",
+    "notification_preferences",
+    "notification_quiet_hours",
 }
 APP_ENUMS = (
     "user_status",
@@ -37,6 +42,10 @@ APP_ENUMS = (
     "dm_policy",
     "contact_visibility",
     "consent_purpose",
+    "notification_category",
+    "notification_kind",
+    "delivery_channel",
+    "delivery_status",
 )
 
 
@@ -70,6 +79,13 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
             )
         )
         assert list(importers) == ["admin", "staff"]
+        # The SQL UUIDv7 generator: version 7, RFC variant, time-ordered.
+        first, second = (
+            await connection.scalar(text("SELECT uuid7()")),
+            await connection.scalar(text("SELECT uuid7()")),
+        )
+        assert (first.version, first.variant) == (7, "specified in RFC 4122")
+        assert first.bytes[:6] <= second.bytes[:6]
 
 
 async def test_downgrade_removes_people_who_never_signed_in(
