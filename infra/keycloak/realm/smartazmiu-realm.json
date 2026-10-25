@@ -78,7 +78,7 @@
         "post.logout.redirect.uris": "${APP_PUBLIC_URL}/*##${WEB_DEV_URL}/*",
         "backchannel.logout.session.required": "true"
       },
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "defaultClientScopes": ["basic", "profile", "email", "roles", "acr"],
       "optionalClientScopes": [],
       "protocolMappers": [
@@ -111,6 +111,12 @@
       "serviceAccountsEnabled": true,
       "frontchannelLogout": false,
       "fullScopeAllowed": true
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "smartazmiu-web",
+      "roles": ["student", "teacher", "staff", "moderator", "admin"]
     }
   ],
   "browserFlow": "smartazmiu browser",
@@ -258,6 +264,16 @@
       "enabled": true,
       "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
       "realmRoles": ["admin"]
+    },
+    {
+      "username": "kanan.babayev",
+      "email": "kanan.babayev@smartazmiu.test",
+      "emailVerified": true,
+      "firstName": "Kənan",
+      "lastName": "Babayev",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "${KEYCLOAK_TEST_USER_PASSWORD}", "temporary": false }],
+      "realmRoles": ["default-roles-smartazmiu", "student", "moderator"]
     },
     {
       "username": "service-account-smartazmiu-api-admin",

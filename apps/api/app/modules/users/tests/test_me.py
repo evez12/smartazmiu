@@ -67,7 +67,14 @@ async def test_profile_and_roles_follow_the_identity_provider(
         headers=bearer(
             tokens.issue(
                 subject,
-                ["staff", "offline_access", "default-roles-smartazmiu", "guest"],
+                [
+                    "staff",
+                    "offline_access",
+                    "uma_authorization",
+                    "default-roles-smartazmiu",
+                    "mfa_required",
+                    "guest",
+                ],
                 given_name="Leyla",
                 family_name="Həsənova",
             )
@@ -76,7 +83,7 @@ async def test_profile_and_roles_follow_the_identity_provider(
 
     assert first.json()["id"] == second.json()["id"]
     assert first.json()["roles"] == ["teacher"]
-    # Non-catalogue roles and `guest` are never accepted from the token.
+    # Keycloak's default and helper roles and `guest` are never accepted from the token (D-037).
     assert second.json()["roles"] == ["staff"]
     assert second.json()["display_name"] == "Leyla Həsənova"
 
