@@ -1395,3 +1395,37 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     backups and rollback. The automated backup job and restore drill stay in their later sprint.
 - **Consequences:** the contacts table must be filled in before the pilot week. A pilot at university scale would
   make one support channel too large; per-faculty support or the helpdesk replaces it then.
+
+## D-075 · 2026-10-26 · Touch targets, the 4 px spacing grid and visual coverage of the Sprint 6 screens
+
+- **Context:** the Sprint 6 audit measured controls below the 44 px touch size at 320 px (menu and bell 32 px, profile
+  menu 39 × 35 px, tour buttons, stand-alone links 20–22 px, tabs, selects). The code already tried to reach 44 px
+  (`after:-inset-3.5`, `min-h-11`, `pointer-coarse:h-11`), so the intent was there. The cause: `html` is 14 px (the
+  type scale needs it) and Tailwind's spacing is rem-based, so every spacing utility rendered at 0.875 of the 4 px
+  grid of §12: `h-9` was 31.5 px (spec: 36), `h-14` 49 px (spec: 56), `min-h-11` 38.5 px.
+- **Options:** (a) patch each control with pixel values; (b) root font 16 px, which moves the whole type scale; (c) set
+  Tailwind's spacing base to 4 px, which makes every existing class mean what its author assumed.
+- **Decision:** (c): `--spacing: 4px` in `globals.css`. On top of it: `components/ui/touch-target.ts`, one helper
+  that centres a box of at least 44 × 44 px on a control for coarse pointers (an `::after`, sized in pixels, hidden for
+  fine pointers; used by `Button`, checkboxes, radios, switches, `TextLink`, breadcrumb links, the wordmark and the
+  profile menu); inputs, selects, tabs, map floor links, the archive summary and reaction chips are `pointer-coarse:h-11`.
+  `TextLink` gets the touch area unless it is `inline` (a link inside a sentence is exempt in WCAG 2.5.8 and a tap
+  area would cover the words around it). Headings now wrap long words like body text (§13.6).
+  `e2e/touch-targets.spec.ts` is the guard: on a 320 px touch device it fails when a control, or the tap area it adds,
+  is under 44 px, on the dashboard and tour, profile, feedback dialog, schedule, events, chat and a channel, the
+  materials catalogue, the upload form and the staff feedback and report lists. It was run against the build without
+  the fix first and failed with the audit's findings.
+- **Visual coverage:** `make visual` runs without an API, so signed-in screens cannot be baselined there and their
+  data (dates, counts, names) is not fixed. The Sprint 6 screens are covered through the design-system page instead,
+  with the real components and fixed data: tour, materials catalogue, material reports, feedback list and message
+  reports (each in the panel the app puts it in), next to the chat specimen (threads, reactions, attachments,
+  Markdown, composer states). The spec now also runs at 320 px (`phone-` baselines), the sticky page header is taken
+  out of flow while screenshots are taken (it was captured on top of sections), and the two themes stack below 1536 px
+  so wide tables get the width they have in the app. The 22 existing baselines were re-recorded after the spacing change and 42 are new (64 in all);
+  they were compared section by section in contact sheets (light and dark, 1440 and 320 px) before and after. Review found
+  and fixed: attachment cards whose file name collapsed to one character at phone width (the actions now wrap below
+  the name).
+- **Consequences:** every screen is about 14 % roomier than before, as §12 specified; all real pages were recaptured
+  and the functional suite, including the 320 px overflow and accessibility checks, passes. Signed-in screens still
+  have no screenshot baselines; they are checked by the e2e accessibility and overflow tests and by manual review.
+  Devices whose primary pointer is fine (touch-screen laptops) get no extra tap area, by design.
