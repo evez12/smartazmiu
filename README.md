@@ -159,6 +159,30 @@ make load-down     # removes the accounts, channels and their messages
 the run if delivery or acknowledgement p95 exceed 300 ms, fewer than 99 % of sockets connect, or the server
 refuses ten or more events; `infra/load/summary.json` holds the numbers.
 
+**Windows and Docker Desktop.** The k6 container runs with `--network host` and reaches the app, the API and Keycloak
+on `localhost` (the sign-in redirects to Keycloak's public address `http://localhost:8080`). Docker Desktop only
+shares the host's `localhost` with such containers when host networking is switched on (Settings > Resources >
+Network > "Enable host networking", Docker Desktop 4.34 or later; apply and restart). With it off, setup fails with
+`no login form for load-0001 (status 0)`. Check first, from the repository root:
+
+```bash
+docker run --rm --network host --entrypoint sh grafana/k6:1.3.0 -c "wget -q -T 5 -O /dev/null http://localhost:8080/realms/smartazmiu && echo reachable"
+```
+
+The native `make dev-api` and `make dev-web` servers must be running (or the API started with two workers, as in
+production), because the defaults point at `localhost:3000` and `localhost:8000`.
+
+**Against another server** (the pilot server, D-077): run `make load-up` and `make load-down` on a machine that can
+reach that server's database and Keycloak admin API, and pass its public addresses to the run:
+
+```bash
+make load APP_URL=https://pilot.example.az WS_URL=wss://pilot.example.az/ws
+```
+
+`load-down` removes only e-mail addresses `load-…@smartazmiu.test`, Keycloak users whose name starts with `load-`
+and private groups named "Yük testi …". Count them before and after (`select count(*) from users where email like
+'load-%'`) and only run `load-up` on a shared database with the product owner's agreement.
+
 ## Adding a backend module
 
 1. Create `apps/api/app/modules/<name>/` with `models.py`, `schemas.py`, `service.py`, `router.py` and `tests/`.
