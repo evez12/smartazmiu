@@ -15,5 +15,6 @@ async def test_a_lost_wake_up_does_not_fail_the_request() -> None:
     try:
         await queue.dispatch_notifications()
         await queue.sync_audiences()
+        await queue.provision_channels()
     finally:
         await queue.close()

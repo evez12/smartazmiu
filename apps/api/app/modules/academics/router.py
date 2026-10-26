@@ -37,6 +37,14 @@ IMPORT_UPLOADS = RateLimit("import_upload", limit=60, window_seconds=3600)
 AUDIENCE_KINDS = frozenset(
     {ImportKind.GROUPS, ImportKind.STUDENTS, ImportKind.OFFERINGS, ImportKind.ENROLLMENTS}
 )
+# Kinds that create, rename or close channels or move people between them (§5.1).
+CHANNEL_KINDS = AUDIENCE_KINDS | {
+    ImportKind.FACULTIES,
+    ImportKind.SPECIALTIES,
+    ImportKind.SUBJECTS,
+    ImportKind.SEMESTERS,
+    ImportKind.TEACHERS,
+}
 
 router = APIRouter(responses=COMMON_ERROR_RESPONSES)
 Importer = Annotated[CurrentUser, Depends(require_permission(IMPORT_PERMISSION))]
@@ -165,6 +173,9 @@ async def apply_import(
     if record.status is ImportStatus.APPLIED and record.kind in AUDIENCE_KINDS:
         # Registry changes can move people into an audience; they receive its active announcements (§6.1).
         await jobs.sync_audiences()
+    if record.status is ImportStatus.APPLIED and record.kind in CHANNEL_KINDS:
+        # Persisted first; a lost wake-up is caught by the per-minute run (D-061).
+        await jobs.provision_channels()
     if record.status is ImportStatus.APPLIED and record.kind is ImportKind.SCHEDULE_CHANGES:
         await jobs.dispatch_notifications()
     return await _detail(session, record)

@@ -6,14 +6,17 @@ from typing import Any, ClassVar
 import httpx
 from arq import cron
 from arq.connections import RedisSettings
+from redis.asyncio import Redis
 
 from app.core.config import get_settings
 from app.core.db import Database
-from app.core.jobs import DISPATCH_NOTIFICATIONS, SYNC_AUDIENCES
+from app.core.jobs import DISPATCH_NOTIFICATIONS, PROVISION_CHANNELS, SYNC_AUDIENCES
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.modules.announcements import service as announcements
 from app.modules.chat import partitions
+from app.modules.chat.bus import ChatBus
+from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
@@ -46,6 +49,8 @@ async def startup(ctx: dict[str, Any]) -> None:
     )
     ctx["database"] = database
     ctx["http"] = http
+    # Instance B: chat pub/sub (D-053).
+    ctx["cache_redis"] = Redis.from_url(str(settings.redis_url), decode_responses=True)
     ctx["dispatcher"] = Dispatcher(
         database.sessionmaker,
         push=push,
@@ -63,6 +68,7 @@ async def startup(ctx: dict[str, Any]) -> None:
 
 async def shutdown(ctx: dict[str, Any]) -> None:
     await ctx["http"].aclose()
+    await ctx["cache_redis"].aclose()
     await ctx["database"].dispose()
 
 
@@ -90,6 +96,17 @@ async def sync_audiences(ctx: dict[str, Any]) -> int:
     return added
 
 
+async def provision_channels(ctx: dict[str, Any]) -> int:
+    """Syncs registry channels and memberships, then tells connected sockets about the changes (§5.9)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        result = await ChannelProvisioner(session).run()
+    bus = ChatBus(ctx["cache_redis"])
+    await bus.membership_changed(result.added, result.removed)
+    await bus.channels_changed(result.state_changed)
+    return len(result.added) + len(result.removed) + len(result.state_changed)
+
+
 async def ensure_message_partitions(ctx: dict[str, Any]) -> int:
     """Keeps this month and the next three partitions of ``messages`` (ADR 0002)."""
     database: Database = ctx["database"]
@@ -107,12 +124,14 @@ async def purge_message_client_ids(ctx: dict[str, Any]) -> int:
 
 
 class WorkerSettings:
-    functions: ClassVar = [dispatch_notifications, sync_audiences]
+    functions: ClassVar = [dispatch_notifications, sync_audiences, provision_channels]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
     cron_jobs: ClassVar = [
         cron(dispatch_notifications, name=f"{DISPATCH_NOTIFICATIONS}_cron"),
         # Imports wake the sync directly; this catches people added any other way.
         cron(sync_audiences, name=f"{SYNC_AUDIENCES}_cron", minute=set(range(0, 60, 5))),
+        # Every minute: picks up wake-ups lost in a Redis outage and changes made outside imports.
+        cron(provision_channels, name=f"{PROVISION_CHANNELS}_cron"),
         # Daily, at night in Baku (UTC+4); both are idempotent, so a retried or doubled run is harmless.
         cron(ensure_message_partitions, hour={22}, minute={10}),
         cron(purge_message_client_ids, hour={22}, minute={20}),

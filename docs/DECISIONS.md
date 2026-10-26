@@ -857,3 +857,41 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   - Partition upkeep (`ensure_message_partitions`) and the client-id purge (`purge_message_client_ids`) are daily
     ARQ cron jobs at 02:10 and 02:20 Baku time; the worker also creates missing partitions when it starts.
 - **Consequences:** ADR 0002 is amended in place (the index list, the consistency job and the lease holders).
+
+## D-061 · 2026-10-26 · Channel provisioning from the registry
+
+- **Context:** Sprint 5 asks for an idempotent job that creates `course_offering`, `subject_community`,
+  `academic_group` and `faculty` channels with their members and default topics, handles removals (dropped
+  enrollment, group transfer, teacher replacement, inactive accounts), archives ended course channels and is woken
+  like the audience sync (D-050). The spec does not say how members of archived channels change, which channel
+  role teachers hold, or what the channels are called.
+- **Options:** recompute everything per run vs. only the difference; keep archived channels in sync vs. freeze
+  them; give teachers a moderator role vs. a plain membership.
+- **Decision:**
+  - `ChannelProvisioner.run` (module `chat/provisioning.py`) compares the registry with the stored state in
+    set-based statements and writes only the difference: upsert channels (renaming them when the subject, group
+    or faculty is renamed), insert missing default topics, insert missing members, delete revoked members,
+    archive or reopen course channels. A transaction-level advisory lock serialises runs; a second run with
+    unchanged data writes nothing.
+  - Members (active accounts only, §13.1): course channel = students *of the offering's groups* whose enrollment
+    is not dropped, plus the offering's teachers (D-030), so a group transfer also leaves the old group's course
+    channels; subject community = active enrollees of the subject in any group, never teachers; academic group =
+    its students and its curator; faculty = the students of its groups. Everyone joins with channel role
+    `member`; teachers are recognised through `course_offering_teachers`, not through a channel role, so the
+    moderator role stays for moderation (Sprint 10).
+  - A course channel is archived and read-only from the day after its semester's `ends_on` (Baku calendar) and
+    reopened if the dates are corrected. **Archived channels keep their membership as it was**: history stays
+    readable for the people who took part, even after a transfer or deactivation. Channels created for a semester
+    that has already ended get their members once, in the same run, and are then archived.
+  - Names: course channel and community = the subject's Azerbaijani name; group = the group code; faculty = the
+    faculty's name. The UI groups them by type (§12.7), and the channel payload carries the offering's group codes
+    and semester for course channels.
+  - Wake-ups: applying an import of faculties, specialties, subjects, semesters, teachers, groups, students,
+    offerings or enrollments enqueues `provision_channels` after the commit; the worker also runs it every minute
+    (lost wake-ups, §13.5). `make seed` runs the provisioner directly, so the sample data and its channels are
+    deterministic for the E2E data check (D-045), which now also counts registry channels, topics and members.
+  - After committing, the job publishes `membership.added` / `membership.revoked` on each person's control channel
+    and `channel.changed` for archived or reopened channels (Redis B, §5.9); messages and their authors stay.
+- **Consequences:** guides (Sprint 7) and moderator-assigned roles (Sprint 10) must be added to the desired-member
+  query, or the job would remove them. A per-minute run costs a few set-based queries; at the pilot's size this is
+  milliseconds.
