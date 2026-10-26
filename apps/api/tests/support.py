@@ -130,12 +130,16 @@ class FakeJobs:
     def __init__(self) -> None:
         self.dispatches = 0
         self.syncs = 0
+        self.provisions = 0
 
     async def dispatch_notifications(self) -> None:
         self.dispatches += 1
 
     async def sync_audiences(self) -> None:
         self.syncs += 1
+
+    async def provision_channels(self) -> None:
+        self.provisions += 1
 
     async def close(self) -> None:
         return None

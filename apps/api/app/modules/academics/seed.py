@@ -13,6 +13,7 @@ from app.core.db import Database
 from app.core.logging import configure_logging
 from app.modules.academics.import_service import ImportService
 from app.modules.academics.models import ImportKind, ImportStatus
+from app.modules.chat.provisioning import ChannelProvisioner
 
 
 async def seed(directory: Path) -> int:
@@ -32,6 +33,11 @@ async def seed(directory: Path) -> int:
                     return 1
                 counts = ", ".join(f"{name} {count}" for name, count in record.summary.items())
                 print(f"{kind.value}: {counts}")
+            # The derivation the worker runs after an import, so a fresh stack has its channels at once.
+            provisioned = await ChannelProvisioner(session).run()
+            print(
+                f"channels: created {provisioned.channels_created}, members {len(provisioned.added)}"
+            )
     finally:
         await database.dispose()
     return 0
