@@ -255,6 +255,18 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Canlı bağlantı müvəqqəti əlçatan deyil. Mesajlar adi yolla göndərilir.",
         "en": "The live connection is temporarily unavailable. Messages are sent the regular way.",
     },
+    "chat.dm_self": {
+        "az": "Özünüzə şəxsi mesaj yaza bilməzsiniz.",
+        "en": "You cannot send a direct message to yourself.",
+    },
+    "chat.user_not_found": {
+        "az": "İstifadəçi tapılmadı.",
+        "en": "The person was not found.",
+    },
+    "chat.block_self": {
+        "az": "Özünüzü bloklaya bilməzsiniz.",
+        "en": "You cannot block yourself.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

@@ -6,6 +6,7 @@ from redis.asyncio import Redis
 from app.core.deps import RedisDep, SessionDep
 from app.modules.chat.access import ChannelAccess
 from app.modules.chat.bus import ChatBus
+from app.modules.chat.channels import ChannelService
 from app.modules.chat.messages import MessageService
 
 
@@ -29,3 +30,10 @@ def get_messages(
 
 DurableRedisDep = Annotated[Redis, Depends(get_durable_redis)]
 MessagesDep = Annotated[MessageService, Depends(get_messages)]
+
+
+def get_channels(session: SessionDep, cache: RedisDep, access: AccessDep) -> ChannelService:
+    return ChannelService(session, access, ChatBus(cache))
+
+
+ChannelsDep = Annotated[ChannelService, Depends(get_channels)]
