@@ -36,3 +36,7 @@ Thumbs.db
 
 # Temporary dependency export for make audit
 .audit-requirements.txt
+
+# Chat load test state (accounts, password, channel ids), D-073
+infra/load/.state.json
+infra/load/summary.json

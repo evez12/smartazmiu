@@ -136,6 +136,22 @@ it needs. After changing an API schema, run `make openapi` to regenerate the typ
 `make e2e` loads the sample data first and fails if a run leaves any seed table with a different row count: tests
 remove what they import, using throwaway `e2e-…` accounts and `E2E-…` codes (D-040, D-045).
 
+### Load test
+
+The chat load test (D-073) signs throwaway accounts in through the real login flow and holds WebSockets open while
+they send messages; k6 runs in Docker. With the stack running (API ideally as in production, two workers without
+reload):
+
+```bash
+make load-up       # 500 Keycloak accounts load-NNNN and 20 private channels "Yük testi NN" (25 people each)
+make load          # 1 000 sockets (two per account), 50 messages/s, 2 min ramp + 5 min hold; thresholds p95 < 300 ms
+make load-down     # removes the accounts, channels and their messages
+```
+
+`LOAD_USERS`, `LOAD_CHANNELS`, `LOAD_SOCKETS`, `LOAD_RATE`, `LOAD_RAMP` and `LOAD_HOLD` change the shape. k6 fails
+the run if delivery or acknowledgement p95 exceed 300 ms, fewer than 99 % of sockets connect, or the server
+refuses ten or more events; `infra/load/summary.json` holds the numbers.
+
 ## Adding a backend module
 
 1. Create `apps/api/app/modules/<name>/` with `models.py`, `schemas.py`, `service.py`, `router.py` and `tests/`.

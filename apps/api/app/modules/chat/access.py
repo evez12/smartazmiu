@@ -3,11 +3,12 @@
 import uuid
 from dataclasses import replace
 from datetime import datetime, timedelta
+from typing import Any
 
 import structlog
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
-from sqlalchemy import and_, case, exists, select
+from sqlalchemy import Select, Uuid, and_, bindparam, case, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -55,6 +56,45 @@ def deny(decision: Decision, *, missing: str = "chat.channel_not_found") -> AppE
     return AppError(reason.value, status, details=details, headers=headers)
 
 
+def _states_query() -> Select[tuple[Any, ...]]:
+    """The policy columns for one user and a set of channels. Built once with bind parameters: constructing this
+    aliased statement per call cost about a fifth of a worker's time under load (D-073)."""
+    user_id = bindparam("user_id", type_=Uuid())
+    member = aliased(ChannelMember)
+    peer_id = case(
+        (Channel.user_low_id == user_id, Channel.user_high_id), else_=Channel.user_low_id
+    )
+    peer = aliased(User)
+    teaches = exists().where(
+        CourseOfferingTeacher.course_offering_id == Channel.course_offering_id,
+        CourseOfferingTeacher.teacher_id == user_id,
+    )
+    i_blocked = exists().where(UserBlock.blocker_id == user_id, UserBlock.blocked_id == peer_id)
+    blocked_me = exists().where(UserBlock.blocker_id == peer_id, UserBlock.blocked_id == user_id)
+    return (
+        select(
+            Channel.id,
+            Channel.type,
+            Channel.is_archived,
+            Channel.is_readonly,
+            Channel.slow_mode_seconds,
+            member.user_id.is_not(None),
+            member.role,
+            member.posting_muted_until,
+            Channel.course_offering_id.is_not(None) & teaches,
+            case((Channel.type == ChannelType.DM, i_blocked), else_=False),
+            case((Channel.type == ChannelType.DM, blocked_me), else_=False),
+            peer.dm_policy,
+        )
+        .outerjoin(member, and_(member.channel_id == Channel.id, member.user_id == user_id))
+        .outerjoin(peer, and_(Channel.type == ChannelType.DM, peer.id == peer_id))
+        .where(Channel.id.in_(bindparam("channel_ids", expanding=True)))
+    )
+
+
+STATES_QUERY = _states_query()
+
+
 def slow_mode_key(channel_id: uuid.UUID, user_id: uuid.UUID) -> str:
     return f"chat:slow:{channel_id}:{user_id}"
 
@@ -72,37 +112,8 @@ class ChannelAccess:
         now = now or utc_now()
         if not channel_ids:
             return {}
-        member = aliased(ChannelMember)
-        peer_id = case(
-            (Channel.user_low_id == user.id, Channel.user_high_id), else_=Channel.user_low_id
-        )
-        peer = aliased(User)
-        teaches = exists().where(
-            CourseOfferingTeacher.course_offering_id == Channel.course_offering_id,
-            CourseOfferingTeacher.teacher_id == user.id,
-        )
-        i_blocked = exists().where(UserBlock.blocker_id == user.id, UserBlock.blocked_id == peer_id)
-        blocked_me = exists().where(
-            UserBlock.blocker_id == peer_id, UserBlock.blocked_id == user.id
-        )
         rows = await self.session.execute(
-            select(
-                Channel.id,
-                Channel.type,
-                Channel.is_archived,
-                Channel.is_readonly,
-                Channel.slow_mode_seconds,
-                member.user_id.is_not(None),
-                member.role,
-                member.posting_muted_until,
-                Channel.course_offering_id.is_not(None) & teaches,
-                case((Channel.type == ChannelType.DM, i_blocked), else_=False),
-                case((Channel.type == ChannelType.DM, blocked_me), else_=False),
-                peer.dm_policy,
-            )
-            .outerjoin(member, and_(member.channel_id == Channel.id, member.user_id == user.id))
-            .outerjoin(peer, and_(Channel.type == ChannelType.DM, peer.id == peer_id))
-            .where(Channel.id.in_(channel_ids))
+            STATES_QUERY, {"user_id": user.id, "channel_ids": list(channel_ids)}
         )
         windows = await self.exams.windows(list(channel_ids), now)
         exam_until: dict[uuid.UUID, datetime] = {}

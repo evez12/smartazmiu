@@ -37,6 +37,7 @@ from app.modules.chat.presence import OFFLINE_GRACE_SECONDS, Presence
 from app.modules.chat.reactions import ReactionService
 from app.modules.chat.schemas import MESSAGE_ID_PATTERN
 from app.modules.chat.snowflake import Snowflake
+from app.modules.users.models import User, UserStatus
 from app.modules.users.service import UserService
 
 logger = structlog.get_logger(__name__)
@@ -474,9 +475,11 @@ class SocketSession:
 
     async def _recheck(self) -> None:
         connection = self.connection
+        user_id = connection.user.id
+        # Status and memberships only: this runs for every socket on every heartbeat (D-073).
         async with self.gateway.database.sessionmaker() as session:
-            user = await UserService(session).current(connection.user.id)
-            if user is None or not user.is_active:
+            status = await session.scalar(select(User.status).where(User.id == user_id))
+            if status is not UserStatus.ACTIVE:
                 connection.terminate(CloseCode.FORBIDDEN, "auth.account_inactive")
                 return
             if not connection.channels:
@@ -484,10 +487,10 @@ class SocketSession:
             kept = set(
                 await session.scalars(
                     select(ChannelMember.channel_id).where(
-                        ChannelMember.user_id == user.id,
+                        ChannelMember.user_id == user_id,
                         ChannelMember.channel_id.in_(connection.channels),
                     )
                 )
             )
         for channel_id in connection.channels - kept:
-            self.gateway.hub.revoke(user.id, channel_id)
+            self.gateway.hub.revoke(user_id, channel_id)

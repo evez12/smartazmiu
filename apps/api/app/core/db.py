@@ -23,8 +23,16 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
+# Every chat event opens a short session; with the default pool (5) a busy worker kept opening and closing overflow
+# connections, each with a full SCRAM handshake (D-073). Two API workers stay well below max_connections (100).
+POOL_SIZE = 20
+MAX_OVERFLOW = 10
+
+
 def create_engine(database_url: str) -> AsyncEngine:
-    return create_async_engine(database_url, pool_pre_ping=True)
+    return create_async_engine(
+        database_url, pool_pre_ping=True, pool_size=POOL_SIZE, max_overflow=MAX_OVERFLOW
+    )
 
 
 class Database:
