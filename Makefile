@@ -196,6 +196,10 @@ visual-update: ## Re-record screenshot baselines after an intended UI change (Do
 # Chat load test (D-073): throwaway accounts and channels, then k6 against the running stack (sign-in through
 # the web app, sockets to the API). LOAD_USERS accounts with two sockets each; see README "Load test".
 K6_IMAGE := grafana/k6:1.3.0
+# `load-compose` forwards through a container of the stack's own nginx image (no extra dependency).
+NGINX_IMAGE := nginx:1.30.6-alpine
+COMPOSE_NETWORK := smartazmiu_default
+LOAD_FORWARDER := smartazmiu-load-forward
 # Overridable so a run can target another server (wss://host/ws); locally the API listens on :8000.
 WS_URL ?= ws://localhost:8000/ws
 LOAD_USERS ?= 500
@@ -207,15 +211,21 @@ LOAD_HOLD ?= 5m
 
 .PHONY: load-up
 load-up: ## Create the load-test accounts and channels
-	PYTHONPATH=. $(UV) run python ../../infra/load/prepare.py up --users $(LOAD_USERS) --channels $(LOAD_CHANNELS)
+	PYTHONPATH=. $(UV) run python ../../infra/k6/prepare.py up --users $(LOAD_USERS) --channels $(LOAD_CHANNELS)
 
 .PHONY: load
 load: ## Run the k6 chat scenario (1 000 sockets, 50 msg/s by default) against the running stack
-	MSYS_NO_PATHCONV=1 docker run --rm --network host --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/infra/load:/scripts" -w /scripts \
+	MSYS_NO_PATHCONV=1 docker run --rm --network host --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/infra/k6:/scripts" -w /scripts \
 		-e APP_URL=$(APP_URL) -e WS_URL=$(WS_URL) -e SOCKETS=$(LOAD_SOCKETS) -e RATE=$(LOAD_RATE) \
 		-e RAMP=$(LOAD_RAMP) -e HOLD=$(LOAD_HOLD) \
 		$(K6_IMAGE) run --summary-export /scripts/summary.json chat.js
 
+.PHONY: load-compose
+load-compose: ## Run the k6 chat scenario against the Docker stack (`make up`), without Docker host networking
+	@docker rm -f $(LOAD_FORWARDER) >/dev/null 2>&1 || true
+	MSYS_NO_PATHCONV=1 docker run -d --name $(LOAD_FORWARDER) --network $(COMPOSE_NETWORK) 		-v "$(CURDIR)/infra/k6/forward.conf:/etc/nginx/nginx.conf:ro" $(NGINX_IMAGE) >/dev/null
+	MSYS_NO_PATHCONV=1 docker run --rm --network container:$(LOAD_FORWARDER) --user "$$(id -u):$$(id -g)" 		-v "$(CURDIR)/infra/k6:/scripts" -w /scripts 		-e APP_URL=http://localhost -e WS_URL=ws://localhost/ws -e SOCKETS=$(LOAD_SOCKETS) -e RATE=$(LOAD_RATE) 		-e RAMP=$(LOAD_RAMP) -e HOLD=$(LOAD_HOLD) 		$(K6_IMAGE) run --summary-export /scripts/summary.json chat.js; 		status=$$?; docker rm -f $(LOAD_FORWARDER) >/dev/null; exit $$status
+
 .PHONY: load-down
 load-down: ## Remove the load-test accounts, channels and their messages
-	PYTHONPATH=. $(UV) run python ../../infra/load/prepare.py down
+	PYTHONPATH=. $(UV) run python ../../infra/k6/prepare.py down

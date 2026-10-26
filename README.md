@@ -157,9 +157,15 @@ make load-down     # removes the accounts, channels and their messages
 
 `LOAD_USERS`, `LOAD_CHANNELS`, `LOAD_SOCKETS`, `LOAD_RATE`, `LOAD_RAMP` and `LOAD_HOLD` change the shape. k6 fails
 the run if delivery or acknowledgement p95 exceed 300 ms, fewer than 99 % of sockets connect, or the server
-refuses ten or more events; `infra/load/summary.json` holds the numbers.
+refuses ten or more events; `infra/k6/summary.json` holds the numbers.
 
-**Windows and Docker Desktop.** The k6 container runs with `--network host` and reaches the app, the API and Keycloak
+**Against the Docker stack** (`make up`, the API with two workers as in production): `make load-compose` instead of
+`make load`. k6 runs inside the network namespace of a small forwarder container (the stack's nginx image with
+`infra/k6/forward.conf`), where `localhost:80` is the stack's nginx and `localhost:8080` is Keycloak, so it needs no
+host networking and the sign-in, cookies and WebSocket Origin behave as in a browser (D-082). CI runs this target
+with a small profile after the E2E suite.
+
+**Windows and Docker Desktop.** `make load` runs the k6 container with `--network host` and reaches the app, the API and Keycloak
 on `localhost` (the sign-in redirects to Keycloak's public address `http://localhost:8080`). Docker Desktop only
 shares the host's `localhost` with such containers when host networking is switched on (Settings > Resources >
 Network > "Enable host networking", Docker Desktop 4.34 or later; apply and restart). With it off, setup fails with
