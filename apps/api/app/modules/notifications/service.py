@@ -23,6 +23,8 @@ DEFAULT_CHANNELS: dict[NotificationCategory, tuple[bool, bool]] = {
     NotificationCategory.EVENTS: (True, False),
     NotificationCategory.SCHEDULE: (True, False),
     NotificationCategory.CHAT: (True, False),
+    # The guide invitation goes by e-mail too (§5.2); requests and digests are push and in-app.
+    NotificationCategory.MENTORSHIP: (True, True),
 }
 # §5.6 lists e-mail for chat only as a digest, which arrives in Phase 3: until then it cannot be switched on (D-067).
 WITHOUT_EMAIL = frozenset({NotificationCategory.CHAT})

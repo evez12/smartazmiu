@@ -52,6 +52,8 @@ from app.modules.chat.models import (
 from app.modules.chat.policy import Action, authorize
 from app.modules.chat.schemas import AuthorOut, Badge, ChannelOut, PostingOut, TopicOut
 from app.modules.chat.snowflake import EPOCH_MS, TIMESTAMP_SHIFT
+from app.modules.mentorship.badges import guide_terms
+from app.modules.mentorship.models import MentorProfile
 from app.modules.users.models import DmPolicy, User, UserStatus
 from app.modules.users.profile import photo_url
 from app.modules.users.service import CurrentUser
@@ -97,16 +99,20 @@ class ChannelService:
 
     async def get(
         self, user: CurrentUser, channel_id: uuid.UUID
-    ) -> tuple[ChannelOut, list[TopicOut]]:
+    ) -> tuple[ChannelOut, list[TopicOut], uuid.UUID | None]:
         found = await self._channels(user, channel_id)
         if not found:
             raise AppError("chat.channel_not_found", 404)
+        subject_id = await self.session.scalar(
+            select(Channel.subject_id).where(Channel.id == channel_id)
+        )
         topics = await self.session.execute(
             select(ChannelTopic.id, ChannelTopic.slug, ChannelTopic.name)
             .where(ChannelTopic.channel_id == channel_id)
             .order_by(ChannelTopic.position)
         )
-        return found[0], [TopicOut(id=str(i), slug=slug, name=name) for i, slug, name in topics]
+        topic_list = [TopicOut(id=str(i), slug=slug, name=name) for i, slug, name in topics]
+        return found[0], topic_list, subject_id
 
     async def _channels(self, user: CurrentUser, only: uuid.UUID | None) -> list[ChannelOut]:
         """The user's channels with their unread counts in one query (capped, from the later of the read
@@ -232,10 +238,19 @@ class ChannelService:
             .order_by(User.display_name, User.id)
             .limit(MAX_MEMBERS)
         )
-        return [
-            _author(person, "teacher" if is_teacher else "curator" if is_curator else None)
-            for person, is_teacher, is_curator in rows
-        ]
+        people = list(rows)
+        guides = await guide_terms(
+            self.session, ((channel_id, person.id) for person, _, _ in people)
+        )
+        result = []
+        for person, is_teacher, is_curator in people:
+            author = _author(person, "teacher" if is_teacher else "curator" if is_curator else None)
+            term = guides.get((channel_id, person.id))
+            if author.badge is None and term is not None:
+                author.badge = "guide"
+                author.guide_semester = term
+            result.append(author)
+        return result
 
     async def open_dm(self, user: CurrentUser, other_id: uuid.UUID) -> tuple[ChannelOut, bool]:
         """The existing DM with ``other_id``, or a new one if ``dm_policy`` and blocks allow it (§5.4).
@@ -263,11 +278,22 @@ class ChannelService:
         # apart from a closed inbox (§5.4).
         if await self._blocked(other_id, user.id) or not await self._policy_allows(user, other):
             raise AppError("chat.dm_unavailable", 403)
+        channel_id = await self.ensure_dm(user.id, other_id)
+        await self.session.commit()
+        await self.bus.membership_changed([(channel_id, low), (channel_id, high)], [])
+        return (await self._channels(user, channel_id))[0], True
 
+    async def ensure_dm(self, creator: uuid.UUID, other_id: uuid.UUID) -> uuid.UUID:
+        """The DM of the pair, created with both members if missing; in the caller's transaction, no policy check.
+
+        Callers decide whether the pair may talk: ``open_dm`` through ``dm_policy`` and blocks, an accepted advice
+        request through the request itself (§5.2). The caller commits and announces the membership.
+        """
+        low, high = sorted((creator, other_id))
         statement = insert(Channel).values(
-            type=ChannelType.DM, name="", user_low_id=low, user_high_id=high, created_by=user.id
+            type=ChannelType.DM, name="", user_low_id=low, user_high_id=high, created_by=creator
         )
-        channel_id = await self.session.scalar(
+        channel_id: uuid.UUID | None = await self.session.scalar(
             statement.on_conflict_do_update(
                 index_elements=["user_low_id", "user_high_id"],
                 index_where=text("type = 'dm'"),
@@ -286,9 +312,7 @@ class ChannelService:
             )
             .on_conflict_do_nothing()
         )
-        await self.session.commit()
-        await self.bus.membership_changed([(channel_id, low), (channel_id, high)], [])
-        return (await self._channels(user, channel_id))[0], True
+        return channel_id
 
     async def _blocked(self, blocker: uuid.UUID, blocked: uuid.UUID) -> bool:
         return bool(
@@ -320,8 +344,16 @@ class ChannelService:
                 )
             )
             return bool(shared)
-        # guides_and_teachers: guides exist from Sprint 7, teachers and staff were let through above.
-        return False
+        # guides_and_teachers: teachers and staff were let through above; guides of any subject pass (§5.4).
+        return bool(
+            await self.session.scalar(
+                select(
+                    exists().where(
+                        MentorProfile.user_id == user.id, MentorProfile.revoked_at.is_(None)
+                    )
+                )
+            )
+        )
 
     async def update_membership(
         self,

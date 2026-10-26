@@ -33,6 +33,7 @@ from app.modules.chat.schemas import (
     ReactionOut,
 )
 from app.modules.chat.snowflake import created_at_of
+from app.modules.mentorship.badges import guide_terms
 from app.modules.users.models import User
 from app.modules.users.profile import photo_url
 
@@ -154,9 +155,23 @@ async def enrich(
             assert attachment.message_id is not None
             attached[attachment.message_id].append(attachment_out(attachment))
 
+    # Teacher and curator badges come from the query; guides only matter in subject communities (§5.2).
+    guides = await guide_terms(
+        session,
+        (
+            (message.channel_id, author.id)
+            for message, author, badge in rows
+            if author is not None and badge is None
+        ),
+    )
     result = []
     for message, author, badge in rows:
         out = message_out(message, author, badge)
+        if out.author is not None and author is not None:
+            term = guides.get((message.channel_id, author.id))
+            if term is not None:
+                out.author.badge = "guide"
+                out.author.guide_semester = term
         if message.id in replies:
             out.reply_count, out.last_reply_at = replies[message.id]
         if message.deleted_at is None:

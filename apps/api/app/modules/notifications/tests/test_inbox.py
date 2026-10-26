@@ -134,6 +134,7 @@ async def test_settings_default_update_and_validate(
         "events": (True, False),
         "schedule": (True, False),
         "chat": (True, False),
+        "mentorship": (True, True),
     }
     assert defaults["push_public_key"].startswith("B")
     assert defaults["devices"] == 0

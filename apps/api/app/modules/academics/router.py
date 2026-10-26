@@ -176,6 +176,9 @@ async def apply_import(
     if record.status is ImportStatus.APPLIED and record.kind in CHANNEL_KINDS:
         # Persisted first; a lost wake-up is caught by the per-minute run (D-061).
         await jobs.provision_channels()
+    if record.status is ImportStatus.APPLIED and record.kind is ImportKind.ENROLLMENTS:
+        # Results can make people guides or revoke them (§5.2).
+        await jobs.sync_guides()
     if record.status is ImportStatus.APPLIED and record.kind is ImportKind.SCHEDULE_CHANGES:
         await jobs.dispatch_notifications()
     return await _detail(session, record)

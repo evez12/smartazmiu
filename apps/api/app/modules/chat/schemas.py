@@ -10,7 +10,7 @@ from app.modules.chat.policy import Reason
 # Ids are strings in JSON (§4.2): snowflakes exceed JavaScript's 53-bit integers.
 
 
-Badge = Literal["teacher", "curator"]
+Badge = Literal["teacher", "curator", "guide"]
 
 
 class AuthorOut(BaseModel):
@@ -18,7 +18,10 @@ class AuthorOut(BaseModel):
     display_name: str
     photo_url: str | None
     badge: Badge | None = None
-    """The person's role in this channel: the offering's teacher or the group's curator (§12.7)."""
+    """The person's role in this channel: the offering's teacher, the group's curator (§12.7) or a guide of the
+    community's subject (§5.2)."""
+    guide_semester: str | None = None
+    """For guides: the semester they passed the subject in, e.g. "2025 Payız"; never the grade."""
 
 
 class ReactionOut(BaseModel):
@@ -192,6 +195,8 @@ class ChannelListOut(BaseModel):
 
 class ChannelDetailOut(ChannelOut):
     topics: list[TopicOut]
+    subject_id: str | None = None
+    """Course and community channels: their subject, for links to materials and guides (§5.1)."""
 
 
 class MessagePageOut(BaseModel):

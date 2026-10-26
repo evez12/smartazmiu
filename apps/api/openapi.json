@@ -794,7 +794,8 @@
               {
                 "enum": [
                   "teacher",
-                  "curator"
+                  "curator",
+                  "guide"
                 ],
                 "type": "string"
               },
@@ -807,6 +808,17 @@
           "display_name": {
             "title": "Display Name",
             "type": "string"
+          },
+          "guide_semester": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guide Semester"
           },
           "id": {
             "title": "Id",
@@ -831,6 +843,15 @@
         ],
         "title": "AuthorOut",
         "type": "object"
+      },
+      "Availability": {
+        "enum": [
+          "available",
+          "busy",
+          "paused"
+        ],
+        "title": "Availability",
+        "type": "string"
       },
       "Body_createImport": {
         "properties": {
@@ -1016,6 +1037,17 @@
           },
           "posting": {
             "$ref": "#/components/schemas/PostingOut"
+          },
+          "subject_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Id"
           },
           "topics": {
             "items": {
@@ -1537,6 +1569,64 @@
         "title": "EditResultOut",
         "type": "object"
       },
+      "EligibleSubjectOut": {
+        "description": "A subject the signed-in person may guide, with their profile if they opted in.",
+        "properties": {
+          "grade": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade"
+          },
+          "opted_in": {
+            "title": "Opted In",
+            "type": "boolean"
+          },
+          "semester": {
+            "title": "Semester",
+            "type": "string"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          },
+          "teacher_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Name"
+          }
+        },
+        "required": [
+          "subject_id",
+          "subject_code",
+          "subject_name",
+          "semester",
+          "teacher_name",
+          "grade",
+          "opted_in"
+        ],
+        "title": "EligibleSubjectOut",
+        "type": "object"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -1936,6 +2026,72 @@
         "title": "FeedbackIn",
         "type": "object"
       },
+      "FeedbackNoteOut": {
+        "description": "Staff view of feedback with a private note (§5.2).",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/RequestFeedback"
+          },
+          "mentor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MentorPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "subject_name",
+          "mentor",
+          "feedback",
+          "note",
+          "created_at"
+        ],
+        "title": "FeedbackNoteOut",
+        "type": "object"
+      },
+      "FeedbackNotePageOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackNoteOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "FeedbackNotePageOut",
+        "type": "object"
+      },
       "FeedbackOut": {
         "properties": {
           "category": {
@@ -2094,6 +2250,24 @@
         "title": "FileEncoding",
         "type": "string"
       },
+      "FilterOptionOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "FilterOptionOut",
+        "type": "object"
+      },
       "FloorPlanOut": {
         "description": "One storey drawn in a ``width × height`` frame (decimetres); rooms are rectangles inside it.",
         "properties": {
@@ -2153,6 +2327,15 @@
         "title": "FloorRef",
         "type": "object"
       },
+      "GradeVisibility": {
+        "enum": [
+          "hidden",
+          "range",
+          "exact"
+        ],
+        "title": "GradeVisibility",
+        "type": "string"
+      },
       "GroupPlacementOut": {
         "properties": {
           "admission_year": {
@@ -2181,6 +2364,337 @@
           "faculty"
         ],
         "title": "GroupPlacementOut",
+        "type": "object"
+      },
+      "GuideDirectoryOut": {
+        "properties": {
+          "guides": {
+            "items": {
+              "$ref": "#/components/schemas/GuideOut"
+            },
+            "title": "Guides",
+            "type": "array"
+          },
+          "i_am_guide": {
+            "title": "I Am Guide",
+            "type": "boolean"
+          },
+          "semesters": {
+            "items": {
+              "$ref": "#/components/schemas/FilterOptionOut"
+            },
+            "title": "Semesters",
+            "type": "array"
+          },
+          "specialties": {
+            "items": {
+              "$ref": "#/components/schemas/FilterOptionOut"
+            },
+            "title": "Specialties",
+            "type": "array"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          },
+          "teachers": {
+            "items": {
+              "$ref": "#/components/schemas/FilterOptionOut"
+            },
+            "title": "Teachers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "subject_id",
+          "subject_name",
+          "subject_code",
+          "guides",
+          "specialties",
+          "semesters",
+          "teachers",
+          "i_am_guide"
+        ],
+        "title": "GuideDirectoryOut",
+        "type": "object"
+      },
+      "GuideOut": {
+        "description": "A guide in the directory: what the guide chose to show, never contact data (§5.4).",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "bio": {
+            "title": "Bio",
+            "type": "string"
+          },
+          "grade_exact": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Exact"
+          },
+          "grade_range": {
+            "anyOf": [
+              {
+                "enum": [
+                  "51-70",
+                  "71-90",
+                  "91-100"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Range"
+          },
+          "same_specialty": {
+            "title": "Same Specialty",
+            "type": "boolean"
+          },
+          "same_teacher": {
+            "title": "Same Teacher",
+            "type": "boolean"
+          },
+          "semester": {
+            "title": "Semester",
+            "type": "string"
+          },
+          "semester_id": {
+            "title": "Semester Id",
+            "type": "string"
+          },
+          "specialty_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty Id"
+          },
+          "specialty_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty Name"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/GuideStatsOut"
+          },
+          "teacher_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Id"
+          },
+          "teacher_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teacher Name"
+          },
+          "user": {
+            "$ref": "#/components/schemas/MentorPersonOut"
+          }
+        },
+        "required": [
+          "user",
+          "semester",
+          "semester_id",
+          "teacher_name",
+          "teacher_id",
+          "specialty_name",
+          "specialty_id",
+          "grade_exact",
+          "grade_range",
+          "bio",
+          "availability",
+          "same_teacher",
+          "same_specialty",
+          "stats"
+        ],
+        "title": "GuideOut",
+        "type": "object"
+      },
+      "GuideProfileIn": {
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/Availability",
+            "default": "available"
+          },
+          "bio": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Bio",
+            "type": "string"
+          },
+          "consent": {
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "grade_visibility": {
+            "$ref": "#/components/schemas/GradeVisibility",
+            "default": "hidden"
+          },
+          "max_open_requests": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Max Open Requests",
+            "type": "integer"
+          },
+          "show_teacher": {
+            "default": false,
+            "title": "Show Teacher",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "consent"
+        ],
+        "title": "GuideProfileIn",
+        "type": "object"
+      },
+      "GuideProfilePatch": {
+        "properties": {
+          "availability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Availability"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "grade_visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradeVisibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_open_requests": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Open Requests"
+          },
+          "show_teacher": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Teacher"
+          }
+        },
+        "title": "GuideProfilePatch",
+        "type": "object"
+      },
+      "GuideStatsOut": {
+        "properties": {
+          "avg_response_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Response Minutes"
+          },
+          "helped_count": {
+            "title": "Helped Count",
+            "type": "integer"
+          },
+          "helpful_count": {
+            "title": "Helpful Count",
+            "type": "integer"
+          },
+          "helpful_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Helpful Rate"
+          },
+          "unhelpful_count": {
+            "title": "Unhelpful Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "helped_count",
+          "helpful_count",
+          "unhelpful_count",
+          "helpful_rate",
+          "avg_response_minutes"
+        ],
+        "title": "GuideStatsOut",
         "type": "object"
       },
       "ImportCounts": {
@@ -3312,6 +3826,228 @@
         "title": "MentionOut",
         "type": "object"
       },
+      "MentorFeedbackIn": {
+        "properties": {
+          "feedback": {
+            "$ref": "#/components/schemas/RequestFeedback"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedback"
+        ],
+        "title": "MentorFeedbackIn",
+        "type": "object"
+      },
+      "MentorPersonOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "photo_url"
+        ],
+        "title": "MentorPersonOut",
+        "type": "object"
+      },
+      "MentorRequestIn": {
+        "properties": {
+          "body": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "mentor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mentor Id"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "topic": {
+            "$ref": "#/components/schemas/RequestTopic"
+          }
+        },
+        "required": [
+          "subject_id",
+          "topic",
+          "body"
+        ],
+        "title": "MentorRequestIn",
+        "type": "object"
+      },
+      "MentorRequestListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MentorRequestOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "MentorRequestListOut",
+        "type": "object"
+      },
+      "MentorRequestOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "can_accept": {
+            "title": "Can Accept",
+            "type": "boolean"
+          },
+          "can_decline": {
+            "title": "Can Decline",
+            "type": "boolean"
+          },
+          "can_give_feedback": {
+            "title": "Can Give Feedback",
+            "type": "boolean"
+          },
+          "can_resolve": {
+            "title": "Can Resolve",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dm_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Channel Id"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestFeedback"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mentor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MentorPersonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requester": {
+            "$ref": "#/components/schemas/MentorPersonOut"
+          },
+          "role": {
+            "enum": [
+              "requester",
+              "mentor",
+              "candidate"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          },
+          "topic": {
+            "$ref": "#/components/schemas/RequestTopic"
+          }
+        },
+        "required": [
+          "id",
+          "subject_id",
+          "subject_name",
+          "requester",
+          "mentor",
+          "topic",
+          "body",
+          "status",
+          "dm_channel_id",
+          "feedback",
+          "created_at",
+          "expires_at",
+          "role",
+          "can_accept",
+          "can_decline",
+          "can_resolve",
+          "can_give_feedback"
+        ],
+        "title": "MentorRequestOut",
+        "type": "object"
+      },
       "MessageOut": {
         "properties": {
           "attachments": {
@@ -3592,6 +4328,61 @@
         "title": "MyConsentsOut",
         "type": "object"
       },
+      "MyGuideProfileOut": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "bio": {
+            "title": "Bio",
+            "type": "string"
+          },
+          "grade_visibility": {
+            "$ref": "#/components/schemas/GradeVisibility"
+          },
+          "max_open_requests": {
+            "title": "Max Open Requests",
+            "type": "integer"
+          },
+          "semester": {
+            "title": "Semester",
+            "type": "string"
+          },
+          "show_teacher": {
+            "title": "Show Teacher",
+            "type": "boolean"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/GuideStatsOut"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_id",
+          "subject_name",
+          "semester",
+          "grade_visibility",
+          "show_teacher",
+          "bio",
+          "availability",
+          "max_open_requests",
+          "active",
+          "stats"
+        ],
+        "title": "MyGuideProfileOut",
+        "type": "object"
+      },
       "MyRegistrationOut": {
         "properties": {
           "checked_in_at": {
@@ -3668,7 +4459,8 @@
           "announcements",
           "events",
           "schedule",
-          "chat"
+          "chat",
+          "mentorship"
         ],
         "title": "NotificationCategory",
         "type": "string"
@@ -3683,7 +4475,13 @@
           "chat.mention",
           "chat.reply",
           "chat.attachment_rejected",
-          "material.version_rejected"
+          "material.version_rejected",
+          "mentorship.invitation",
+          "mentorship.request_received",
+          "mentorship.request_accepted",
+          "mentorship.request_declined",
+          "mentorship.request_expired",
+          "mentorship.advice_post"
         ],
         "title": "NotificationKind",
         "type": "string"
@@ -3772,7 +4570,7 @@
             "items": {
               "$ref": "#/components/schemas/CategoryChannels"
             },
-            "maxItems": 4,
+            "maxItems": 5,
             "title": "Categories",
             "type": "array"
           },
@@ -4633,6 +5431,37 @@
         ],
         "title": "ReportedMessageOut",
         "type": "object"
+      },
+      "RequestFeedback": {
+        "enum": [
+          "helpful",
+          "not_helpful"
+        ],
+        "title": "RequestFeedback",
+        "type": "string"
+      },
+      "RequestStatus": {
+        "enum": [
+          "open",
+          "accepted",
+          "resolved",
+          "declined",
+          "expired"
+        ],
+        "title": "RequestStatus",
+        "type": "string"
+      },
+      "RequestTopic": {
+        "enum": [
+          "exam",
+          "workload",
+          "materials",
+          "teacher_expectations",
+          "project",
+          "other"
+        ],
+        "title": "RequestTopic",
+        "type": "string"
       },
       "RoleAssignment": {
         "additionalProperties": false,
@@ -10035,6 +10864,166 @@
         ]
       }
     },
+    "/api/v1/guides/eligible": {
+      "get": {
+        "operationId": "listGuideEligibility",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EligibleSubjectOut"
+                  },
+                  "title": "Response Listguideeligibility",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subjects I may guide (past, passed, not retaking)",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/guides/me": {
+      "get": {
+        "operationId": "listMyGuideProfiles",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MyGuideProfileOut"
+                  },
+                  "title": "Response Listmyguideprofiles",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My active guide profiles with their stats",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
     "/api/v1/materials": {
       "post": {
         "operationId": "createMaterial",
@@ -12512,6 +13501,547 @@
         ]
       }
     },
+    "/api/v1/mentor-requests": {
+      "get": {
+        "operationId": "listMentorRequests",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "channel_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My advice requests, as requester or guide; or those of one DM",
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "post": {
+        "operationId": "createMentorRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorRequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask a guide, or any guide of the subject, for advice",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/mentor-requests/{request_id}/accept": {
+      "post": {
+        "operationId": "acceptMentorRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept a request and open the DM with the requester",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/mentor-requests/{request_id}/decline": {
+      "post": {
+        "operationId": "declineMentorRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decline a request addressed to me",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/mentor-requests/{request_id}/feedback": {
+      "post": {
+        "operationId": "giveMentorFeedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorFeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rate a resolved request once (requester only)",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/mentor-requests/{request_id}/resolve": {
+      "post": {
+        "operationId": "resolveMentorRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mark an accepted request as resolved",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
     "/api/v1/moderation/material-reports": {
       "get": {
         "operationId": "listMaterialReports",
@@ -12717,6 +14247,107 @@
         "summary": "Mark a material report as actioned or dismissed (or open it again)",
         "tags": [
           "materials"
+        ]
+      }
+    },
+    "/api/v1/moderation/mentor-feedback": {
+      "get": {
+        "operationId": "listMentorFeedbackNotes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackNotePageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Private feedback notes on guides, newest first",
+        "tags": [
+          "mentorship"
         ]
       }
     },
@@ -13028,6 +14659,425 @@
         "summary": "Report a message or a person (once per target)",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/api/v1/subjects/{subject_id}/guides": {
+      "get": {
+        "operationId": "listSubjectGuides",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "specialty",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Specialty"
+            }
+          },
+          {
+            "in": "query",
+            "name": "semester",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Semester"
+            }
+          },
+          {
+            "in": "query",
+            "name": "teacher",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Teacher"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuideDirectoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Available guides of a subject, ranked (§5.2)",
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/api/v1/subjects/{subject_id}/guides/me": {
+      "get": {
+        "operationId": "getMyGuideProfile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGuideProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My guide profile for a subject",
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "patch": {
+        "operationId": "updateMyGuideProfile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuideProfilePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGuideProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change my guide profile",
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "post": {
+        "operationId": "optInAsGuide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuideProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyGuideProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Become a guide for a subject (eligibility and consent checked)",
+        "tags": [
+          "mentorship"
         ]
       }
     },

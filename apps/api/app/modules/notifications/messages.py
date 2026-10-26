@@ -14,6 +14,12 @@ KIND_LABELS: dict[NotificationKind, str] = {
     NotificationKind.CHAT_REPLY: "Mesajınıza cavab yazdılar",
     NotificationKind.CHAT_ATTACHMENT_REJECTED: "Fayl göstərilmir",
     NotificationKind.MATERIAL_VERSION_REJECTED: "Material versiyası qəbul olunmadı",
+    NotificationKind.MENTORSHIP_INVITATION: "Bələdçi olmağa dəvət",
+    NotificationKind.MENTORSHIP_REQUEST_RECEIVED: "Yeni məsləhət sorğusu",
+    NotificationKind.MENTORSHIP_REQUEST_ACCEPTED: "Məsləhət sorğunuz qəbul edildi",
+    NotificationKind.MENTORSHIP_REQUEST_DECLINED: "Məsləhət sorğunuz qəbul edilmədi",
+    NotificationKind.MENTORSHIP_REQUEST_EXPIRED: "Məsləhət sorğunuzun vaxtı bitdi",
+    NotificationKind.MENTORSHIP_ADVICE_POST: "#məsləhət bölməsində yeni sual",
 }
 
 
