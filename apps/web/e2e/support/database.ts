@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { createClient } from "redis";
 
 /*
  * Direct access to the stack's database, for test hygiene only: removing what a test imported and checking that a
@@ -90,6 +91,7 @@ export class TestRecords {
   private readonly published = { events: [] as string[], announcements: [] as string[] };
   private readonly chat = { markers: [] as string[], people: [] as string[] };
   private readonly mailboxes: string[] = [];
+  private readonly limited: { emails: string[]; rule: string }[] = [];
 
   /** A faculty, specialty and group (one of each, all coded `code`) the test is about to import. */
   structureCodes(code: string): string {
@@ -125,6 +127,14 @@ export class TestRecords {
     return marker;
   }
 
+  /**
+   * Seeded people who use an hourly limit in this test (uploads `chat_attachment`, reports `report_create`):
+   * their counter is reset afterwards, so repeated runs within an hour are not refused by the limit.
+   */
+  rateLimit(rule: string, emails: string[]): void {
+    this.limited.push({ rule, emails });
+  }
+
   event(id: string): void {
     this.published.events.push(id);
   }
@@ -133,8 +143,20 @@ export class TestRecords {
     this.published.announcements.push(id);
   }
 
+  private async resetLimit(rule: string, emails: string[]): Promise<void> {
+    const { rows } = await database().query<{ id: string }>(
+      "SELECT id FROM users WHERE email = ANY($1)",
+      [emails],
+    );
+    await resetRateLimit(
+      rule,
+      rows.map((row) => row.id),
+    );
+  }
+
   async removeAll(): Promise<void> {
     await removeMail(this.mailboxes.splice(0));
+    for (const { rule, emails } of this.limited.splice(0)) await this.resetLimit(rule, emails);
     const client = await database().connect();
     try {
       await client.query("BEGIN");
@@ -269,4 +291,22 @@ async function removeMail(addresses: string[]): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ IDs: ids }),
   });
+}
+
+/** Rate limits live in Redis B (D-053), keyed `ratelimit:<rule>:<user>:<window>`; `make e2e` exports its URL. */
+async function resetRateLimit(rule: string, userIds: string[]): Promise<void> {
+  if (!userIds.length) return;
+  const client = createClient({ url: process.env.REDIS_URL ?? "redis://127.0.0.1:6380/0" });
+  await client.connect();
+  try {
+    for (const userId of userIds) {
+      for await (const keys of client.scanIterator({
+        MATCH: `ratelimit:${rule}:${userId}:*`,
+      })) {
+        if (keys.length) await client.del(keys);
+      }
+    }
+  } finally {
+    await client.quit();
+  }
 }

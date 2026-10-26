@@ -53,6 +53,11 @@ export type ChatState = {
   threads: Record<string, ThreadWindow>;
   /** Replies already counted on their root, so a reply delivered live and again in a backfill counts once. */
   countedReplies: Record<string, true>;
+  /**
+   * Live messages of channels whose first page has not loaded yet. That page may have been read just before
+   * they were stored; they are merged into it so they do not vanish (a message sent right after opening).
+   */
+  early: Record<string, Record<string, ChatMessage>>;
   pending: Record<string, PendingMessage>;
   typing: Record<string, Record<string, Typist>>;
   presence: Record<string, "online" | "offline">;
@@ -103,6 +108,8 @@ export type ChatActions = {
 
 export type ChatStore = ReturnType<typeof createChatStore>;
 
+const EARLY_LIMIT = 20;
+
 const EMPTY_WINDOW: ChannelWindow = {
   messages: {},
   hasOlder: false,
@@ -116,6 +123,7 @@ export function createChatStore() {
     windows: {},
     threads: {},
     countedReplies: {},
+    early: {},
     pending: {},
     typing: {},
     presence: {},
@@ -129,8 +137,21 @@ export function createChatStore() {
       set((state) => {
         const current = state.windows[channelId] ?? EMPTY_WINDOW;
         const fresh = direction === "latest" || direction === "unread";
-        const messages = fresh ? {} : { ...current.messages };
+        const messages: Record<string, ChatMessage> = fresh ? {} : { ...current.messages };
         for (const message of page.messages) messages[message.id] = message;
+        if (direction === "latest") {
+          // Messages that arrived live after the page was read are newer than all of it: keep them.
+          const pageNewest = newestId(page.messages.map((message) => message.id));
+          const live = [
+            ...Object.values(current.messages),
+            ...Object.values(state.early[channelId] ?? {}),
+          ];
+          for (const message of live) {
+            if (pageNewest === null || compareIds(message.id, pageNewest) > 0) {
+              messages[message.id] = message;
+            }
+          }
+        }
         const window: ChannelWindow = {
           messages,
           hasOlder:
@@ -143,8 +164,12 @@ export function createChatStore() {
                 : current.hasNewer,
           truncated: direction === "unread" ? false : current.truncated,
         };
+        const early = Object.fromEntries(
+          Object.entries(state.early).filter(([id]) => id !== channelId),
+        );
         return {
           windows: { ...state.windows, [channelId]: window },
+          early,
           pending: withoutConfirmed(state.pending, page.messages),
           lastSeenId: newestId([
             ...(state.lastSeenId ? [state.lastSeenId] : []),
@@ -192,16 +217,28 @@ export function createChatStore() {
           };
         }
         const current = state.windows[message.channel_id];
-        const windows =
-          current && !current.hasNewer
-            ? {
-                ...state.windows,
-                [message.channel_id]: {
-                  ...current,
-                  messages: { ...current.messages, [message.id]: message },
-                },
-              }
-            : state.windows;
+        if (!current) {
+          // Every channel of the sidebar sends events; only the last few per channel are worth keeping.
+          const kept = Object.values(state.early[message.channel_id] ?? {})
+            .sort((a, b) => compareIds(a.id, b.id))
+            .slice(-(EARLY_LIMIT - 1));
+          const early = {
+            ...state.early,
+            [message.channel_id]: Object.fromEntries(
+              [...kept, message].map((item) => [item.id, item]),
+            ),
+          };
+          return { early, lastSeenId, pending };
+        }
+        const windows = !current.hasNewer
+          ? {
+              ...state.windows,
+              [message.channel_id]: {
+                ...current,
+                messages: { ...current.messages, [message.id]: message },
+              },
+            }
+          : state.windows;
         return { windows, lastSeenId, pending };
       }),
 

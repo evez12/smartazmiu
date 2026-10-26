@@ -1222,8 +1222,47 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     encoded / `data:` / `vbscript:` links, Markdown images, KaTeX `\href` / `\url` / `\htmlClass` /
     `\htmlStyle`, a macro bomb, 2,000 nested quotes and 1,500 nested list items; each asserts no executable
     element or attribute survives.
-  - **Fix found on the way:** the first message of a new DM could miss the recipient's unread badge when it
-    arrived between the channel-list refetch and the socket subscription; the list is now refetched once the
-    subscription is acknowledged (one E2E failure, explained by the order of the two events).
+  - The DM badge E2E failure first blamed on the client here was a test bug; see D-070, which also reverts the
+    refetch added for it.
 - **Consequences:** `$` pairs in prose render as math (prices use ₼ here, so this is rare). Code blocks have no
   syntax highlighting (not in the spec).
+
+## D-070 · 2026-10-26 · Reports and their staff list; E2E fixes
+
+- **Context:** Sprint 6 group A (`feat/chat-reports`): `POST /reports` for a message or a person with the §5.4
+  reasons, one report per reporter and target counted once, rate limited and audited; an admin list with the
+  statuses open / actioned / dismissed for staff and admins. No moderator console, auto-hide or SLA (Sprint 10).
+  §5.7's `reports` also names `tip` targets, which do not exist before Sprint 8.
+- **Decision:**
+  - Migration 0016 adds `reports` (`target_type` message | user only; `tip` joins with tips), `UNIQUE (reporter,
+    target_type, target_id)`, the message's `channel_id` for scoping moderators later, and the permissions
+    `admin.reports.read` and `admin.reports.handle` for `staff` and `admin` (the catalogue grows with features,
+    D-017).
+  - `POST /reports`: the target must exist and be visible to the reporter (a message in a channel they are in, or
+    an existing account); anything else, also an out-of-range id, is `404 reports.target_not_found`, so reports
+    cannot probe channels or accounts. Own messages and oneself: `422 reports.own_content`. A repeated report
+    returns the first one with `200` and `duplicate: true` and spends no rate-limit unit; a concurrent double
+    submit resolves through the unique key. Ten new reports per hour per person (§14). Each report writes
+    `report.created` to the audit log with target type and reason, without the note (the reporter's words, D-034).
+  - `GET /moderation/reports?status=` (newest first, default view: open) and `PATCH /moderation/reports/{id}`
+    (open / actioned / dismissed, setting or clearing `handled_by` and `handled_at`, audited as
+    `report.handled`). Staff need the text to judge a report, so the list shows the reported message's channel,
+    author and up to 1,000 characters of its text, also when the author deleted it afterwards, as plain text (not
+    rendered). It shows names and photos only, never e-mail, phone or grades, and how many people reported the
+    same target.
+  - Web: "Şikayət edin" in the message's "more" menu (others' messages) and on a member's card; a dialog with the
+    six reasons (`exam_leak` explained) and an optional note of up to 500 characters; `/admin/reports` in the admin
+    navigation with a status filter, stacked rows on phones, and "Tədbir görülüb" / "Rədd edin" / "Yenidən açın"
+    for holders of `admin.reports.handle`.
+- **E2E fixes found while running the chat suite repeatedly:**
+  - The DM step waited for a heading "Ramin Əliyev", which the profile dialog's own title also is, so the test
+    sometimes typed into the course channel before navigation finished; it now waits for the dialog to close and
+    the URL to change. The client refetches added for this in D-069 are removed again: a refetch started just
+    before a message was stored could overwrite the live increment.
+  - A message sent right after opening a channel could vanish when its live event arrived before the first page
+    of history, which had been read just before the message was stored. Live messages for channels without a
+    loaded window are now kept (at most 20 per channel) and merged into the first page if they are newer than it.
+  - The seeded students hit the hourly upload (20) and report (10) limits after a few runs; the records fixture
+    now resets those counters in Redis B for the people a test names (`records.rateLimit(rule, emails)`), and
+    cleanup removes reports of the test's messages. The data check also counts `reports`.
+- **Consequences:** reports of tips, moderator actions and auto-hiding remain for Sprints 8 and 10.

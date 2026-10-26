@@ -219,6 +219,7 @@ test("students mention, reply in a thread, react, edit and delete", async ({
 test("attachments are scanned before others see them", async ({ browser, records }) => {
   test.setTimeout(240_000);
   const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  records.rateLimit("chat_attachment", [AYSEL.email]);
   const aysel = await openChat(browser, AYSEL.username);
   const ramin = await openChat(browser, RAMIN.username);
   await online(aysel);
@@ -276,6 +277,7 @@ test("a reported message reaches the staff report list", async ({
 }) => {
   test.setTimeout(180_000);
   const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  records.rateLimit("report_create", [AYSEL.email]);
   const aysel = await openChat(browser, AYSEL.username);
   const ramin = await openChat(browser, RAMIN.username);
   await online(aysel);

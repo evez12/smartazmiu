@@ -206,3 +206,31 @@ describe("threads, edits and reactions", () => {
     expect(current.my_reactions).toEqual([]);
   });
 });
+
+describe("messages that arrive before the first page", () => {
+  it("keeps a live message the page read just before it was stored", () => {
+    const store = createChatStore();
+    // Sent right after opening the channel: the event arrives before the history response.
+    store.getState().receive(message("30", "local-1"));
+    store
+      .getState()
+      .loadPage("c-1", { messages: [message("10"), message("20")], has_more: false }, "latest");
+    expect(Object.keys(store.getState().windows["c-1"]!.messages).sort()).toEqual([
+      "10",
+      "20",
+      "30",
+    ]);
+    expect(store.getState().early).toEqual({});
+    // Already in the page: nothing is duplicated, and older live copies never replace history.
+    store.getState().receive(message("40"));
+    store.getState().loadPage("c-1", { messages: [message("40")], has_more: true }, "latest");
+    expect(Object.keys(store.getState().windows["c-1"]!.messages)).toEqual(["40"]);
+  });
+
+  it("keeps only the last few early messages per channel", () => {
+    const store = createChatStore();
+    for (let n = 1; n <= 30; n += 1)
+      store.getState().receive(message(String(100 + n), `c${n}`, "c-9"));
+    expect(Object.keys(store.getState().early["c-9"]!)).toHaveLength(20);
+  });
+});
