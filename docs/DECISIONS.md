@@ -141,7 +141,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
-  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073). |
+  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -1565,3 +1565,38 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     by storage (D-068).
 - **Consequences:** the onboarding export check that D-076 listed stays open (onboarding, not materials). Infected
   uploads also feed the `InfectedUpload` alert (D-080).
+
+## D-080 · 2026-10-27 · Metrics, dashboard and alerts for the pilot
+
+- **Context:** Sprint 6 asks for Prometheus metrics (WebSocket connections, messages per second, send errors, queue
+  lag, scan queue depth, scan failures), a basic Grafana dashboard in `infra/grafana/`, and alert rules documented
+  in the runbook, with no personal data in labels (§7, §14). The API runs two uvicorn workers; scans and other jobs
+  run in a separate ARQ worker process.
+- **Options:** an exporter in each process (the worker would need its own HTTP port and scrape target), or process
+  metrics in the API plus figures read from Redis and Postgres when Prometheus scrapes; Prometheus and Grafana always
+  on, or opt-in.
+- **Decision:**
+  - `prometheus-client` 0.26.0 (newest release older than ten days) in multiprocess mode: compose gives the API
+    container a tmpfs at `PROMETHEUS_MULTIPROC_DIR`, so counts from both workers add up and start clean with each
+    container; a worker marks itself dead on shutdown. Natively (`make dev-api`) the default registry is used.
+  - Counted in the API: `smartazmiu_ws_connections` (gauge, live sum), `smartazmiu_chat_messages_sent_total`
+    (new messages only, retried client ids excluded) and `smartazmiu_chat_send_errors_total`, labelled by
+    `transport` (`ws`, `rest`) and the error-catalogue `code` (`internal` for an unexpected failure).
+  - Read at scrape time: `smartazmiu_job_queue_depth` and `smartazmiu_job_queue_lag_seconds` (age of the oldest due
+    job in ARQ's queue in Redis A; both left out, not zero, while Redis A is unreachable),
+    `smartazmiu_scan_queue_depth{kind}`, `smartazmiu_scan_deferred{kind}` (postponed because the scanner or storage
+    was unavailable) and `smartazmiu_scan_rejected{kind,status}` (failed type check / infected, a running total
+    because rejected rows are kept). `kind` is `attachment` or `material`. The worker needs no exporter.
+  - Labels are only transports, catalogue codes, job kinds and scan statuses; a test checks that a scrape contains
+    no user id or name.
+  - `/metrics` is internal: nginx does not route it and the web proxy forwards `/api/v1` only. Prometheus v3.15.0
+    and Grafana 13.2.4 run under the compose profile `monitoring` (`make monitoring`), bound to 127.0.0.1, with
+    the datasource and the dashboard "SmartAzMİU pilot" provisioned read-only from `infra/grafana/`. Grafana's
+    admin password is `GRAFANA_ADMIN_PASSWORD`, generated into `.env` when missing. `make up` is unchanged.
+  - Seven alert rules in `infra/prometheus/alerts.yml` (`promtool check` passes): API down, server-side send
+    failures above 1 %, WebSocket connections halved in five minutes, job queue lag above two minutes, job queue
+    unreadable, scan backlog, infected upload. Each links to its section in `docs/runbooks/pilot.md`.
+- **Consequences:** no alert is delivered anywhere yet: Alertmanager and the receiving channel (e-mail or the
+  university's chat) need the contacts the runbook still lacks, so on-call checks the Prometheus alert page as part
+  of the checklist. Delivery latency is measured by k6 (D-073, D-082), not by the server. Thresholds are revisited
+  after the first pilot week.

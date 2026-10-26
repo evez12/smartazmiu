@@ -43,6 +43,7 @@ from app.modules.chat.schemas import (
     ThreadOut,
     TicketOut,
 )
+from app.modules.health.metrics import MESSAGES_SENT, counting_send
 
 # A broken client retrying in a loop cannot fill Redis A with tickets (ADR 0003).
 TICKET_ISSUES = RateLimit("ws_ticket", limit=30, window_seconds=60)
@@ -149,16 +150,19 @@ async def send_channel_message(
     body: SendMessageIn,
     response: Response,
 ) -> SendResultOut:
-    outcome = await messages.send(
-        user,
-        channel_id,
-        body.body,
-        body.client_msg_id,
-        body.topic_id,
-        parse_message_id(body.parent_id) if body.parent_id else None,
-        body.attachment_ids,
-    )
-    if not outcome.created:
+    with counting_send("rest"):
+        outcome = await messages.send(
+            user,
+            channel_id,
+            body.body,
+            body.client_msg_id,
+            body.topic_id,
+            parse_message_id(body.parent_id) if body.parent_id else None,
+            body.attachment_ids,
+        )
+    if outcome.created:
+        MESSAGES_SENT.labels("rest").inc()
+    else:
         response.status_code = 200
     return SendResultOut(
         message=outcome.message, duplicate=not outcome.created, notices=outcome.notices

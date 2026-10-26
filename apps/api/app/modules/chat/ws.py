@@ -37,6 +37,7 @@ from app.modules.chat.presence import OFFLINE_GRACE_SECONDS, Presence
 from app.modules.chat.reactions import ReactionService
 from app.modules.chat.schemas import MESSAGE_ID_PATTERN
 from app.modules.chat.snowflake import Snowflake
+from app.modules.health.metrics import MESSAGES_SENT, WS_CONNECTIONS, counting_send
 from app.modules.users.models import User, UserStatus
 from app.modules.users.service import UserService
 
@@ -148,6 +149,7 @@ async def chat_socket(websocket: WebSocket, ticket: str = "") -> None:
 
     connection = Connection(websocket, user, redeemed.token_expires_at)
     gateway.hub.register(connection)
+    WS_CONNECTIONS.inc()
     await gateway.presence.connected(user.id, connection.id)
     structlog.contextvars.bind_contextvars(user_id=str(user.id), socket_id=connection.id)
     logger.info("socket_opened")
@@ -166,6 +168,7 @@ async def chat_socket(websocket: WebSocket, ticket: str = "") -> None:
             with contextlib.suppress(asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
                 await task
         gateway.hub.unregister(connection)
+        WS_CONNECTIONS.dec()
         await gateway.presence.disconnected(user.id, connection.id)
         settle = asyncio.create_task(_settle_later(gateway.presence, user.id, connection.id))
         _background.add(settle)
@@ -323,21 +326,24 @@ class SocketSession:
         return set(rows)
 
     async def on_send(self, event_id: str | None, data: dict[str, Any]) -> None:
-        request = SendIn.model_validate(data)
-        if not self.gateway.hub.healthy:
-            # Nobody would hear it in real time; the client resends through REST (§13.5).
-            raise AppError("chat.realtime_unavailable", 503)
-        async with self.gateway.database.sessionmaker() as session:
-            _, messages = self._services(session)
-            outcome = await messages.send(
-                self.connection.user,
-                request.channel_id,
-                request.body,
-                request.client_msg_id,
-                request.topic_id,
-                parse_message_id(request.parent_id) if request.parent_id else None,
-                request.attachment_ids,
-            )
+        with counting_send("ws"):
+            request = SendIn.model_validate(data)
+            if not self.gateway.hub.healthy:
+                # Nobody would hear it in real time; the client resends through REST (§13.5).
+                raise AppError("chat.realtime_unavailable", 503)
+            async with self.gateway.database.sessionmaker() as session:
+                _, messages = self._services(session)
+                outcome = await messages.send(
+                    self.connection.user,
+                    request.channel_id,
+                    request.body,
+                    request.client_msg_id,
+                    request.topic_id,
+                    parse_message_id(request.parent_id) if request.parent_id else None,
+                    request.attachment_ids,
+                )
+        if outcome.created:
+            MESSAGES_SENT.labels("ws").inc()
         self.connection.send(
             "ack",
             {

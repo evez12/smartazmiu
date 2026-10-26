@@ -31,6 +31,8 @@ from app.modules.chat.ws import Gateway
 from app.modules.chat.ws import router as chat_socket_router
 from app.modules.events.router import router as events_router
 from app.modules.feedback.router import router as feedback_router
+from app.modules.health.metrics import mark_process_dead
+from app.modules.health.metrics import router as metrics_router
 from app.modules.health.router import router as health_router
 from app.modules.materials.router import router as materials_router
 from app.modules.notifications.router import router as notifications_router
@@ -107,6 +109,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await app.state.jobs.close()
             await app.state.redis.aclose()
             await app.state.database.dispose()
+            mark_process_dead()
 
     show_docs = not settings.is_production
     app = FastAPI(
@@ -121,6 +124,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_error_handlers(app)
 
     app.include_router(health_router)
+    app.include_router(metrics_router)
     app.include_router(users_router, prefix=API_PREFIX)
     app.include_router(academics_router, prefix=API_PREFIX)
     app.include_router(imports_router, prefix=API_PREFIX)
