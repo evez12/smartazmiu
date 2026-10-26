@@ -28,6 +28,9 @@
   --color-transparent: transparent;
   --color-current: currentColor;
 
+  /* Tailwind's rem-based scale would shrink with the 14 px root font size; §12 fixes spacing to a 4 px grid. */
+  --spacing: 4px;
+
   --radius-*: initial;
   --radius-control: 4px;
   --radius-panel: 6px;
@@ -124,6 +127,9 @@
   }
 
   /* Long Azerbaijani compound words must wrap instead of overflowing narrow layouts (§13.6). */
+  h1,
+  h2,
+  h3,
   p,
   li,
   td,

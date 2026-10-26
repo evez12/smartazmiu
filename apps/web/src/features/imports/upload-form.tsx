@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FileInput, Select } from "@/components/ui/field";
 import { Icon } from "@/components/ui/icon";
 import { textLinkClasses } from "@/components/ui/text-link";
+import { touchTarget } from "@/components/ui/touch-target";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import { cn } from "@/lib/cn";
@@ -82,7 +83,11 @@ export function UploadForm({ initialKind }: { initialKind: ImportKind }) {
         <a
           href={`/api/v1/admin/imports/templates/${kind}`}
           download
-          className={cn(textLinkClasses, "inline-flex items-center gap-1 self-start text-sm")}
+          className={cn(
+            textLinkClasses,
+            touchTarget,
+            "inline-flex items-center gap-1 self-start text-sm",
+          )}
         >
           <Icon icon={Download} />
           {t("new.template")}

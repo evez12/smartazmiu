@@ -95,7 +95,11 @@ function useControlProps(props: {
 
 export function Input({ className, ...rest }: ComponentProps<"input">) {
   return (
-    <input className={cn(controlClasses, "h-9", className)} {...rest} {...useControlProps(rest)} />
+    <input
+      className={cn(controlClasses, "h-9 pointer-coarse:h-11", className)}
+      {...rest}
+      {...useControlProps(rest)}
+    />
   );
 }
 
@@ -115,7 +119,7 @@ export function Select({ className, children, ...rest }: ComponentProps<"select"
   return (
     <div className="relative">
       <select
-        className={cn(controlClasses, "h-9 appearance-none pr-9", className)}
+        className={cn(controlClasses, "h-9 appearance-none pr-9 pointer-coarse:h-11", className)}
         {...rest}
         {...useControlProps(rest)}
       >

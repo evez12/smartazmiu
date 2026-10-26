@@ -31,7 +31,7 @@ type MapPageProps = {
 };
 
 const tabClasses =
-  "-mb-px flex h-10 items-center border-b-2 border-transparent font-medium whitespace-nowrap text-muted transition-colors hover:text-text aria-[current=page]:border-primary aria-[current=page]:text-text";
+  "-mb-px flex h-10 items-center pointer-coarse:h-11 border-b-2 border-transparent font-medium whitespace-nowrap text-muted transition-colors hover:text-text aria-[current=page]:border-primary aria-[current=page]:text-text";
 
 export default async function MapPage({ searchParams }: MapPageProps) {
   const t = await getTranslations("map");
@@ -176,7 +176,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
                     href={floorHref(building.code, item.level)}
                     aria-current={item.level === floor.level ? "page" : undefined}
                     className={cn(
-                      "inline-flex h-8 items-center rounded-control border border-border-control px-3 text-sm",
+                      "inline-flex h-8 items-center rounded-control border border-border-control px-3 text-sm pointer-coarse:h-11",
                       "text-text transition-colors hover:bg-bg-subtle",
                       "aria-[current=page]:border-primary aria-[current=page]:bg-bg-subtle aria-[current=page]:font-medium",
                     )}

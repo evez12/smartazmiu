@@ -27,15 +27,8 @@ import { cn } from "@/lib/cn";
 import { ChatSpecimen } from "@/features/chat/specimen";
 
 import { GroupTable } from "./group-table";
-
-export function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-text">{title}</h2>
-      {children}
-    </section>
-  );
-}
+import { Section } from "./section";
+import { Sprint6Specimens } from "./sprint6-specimens";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -406,6 +399,7 @@ export function StaticSpecimens() {
       <Section title={t("sections.chat")}>
         <ChatSpecimen />
       </Section>
+      <Sprint6Specimens />
     </div>
   );
 }

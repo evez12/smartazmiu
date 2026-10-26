@@ -68,7 +68,7 @@ export function ChannelSidebar({ activeId }: { activeId?: string }) {
                 </ul>
                 {group.archived.length ? (
                   <details className="mt-1" open={group.archived.some((c) => c.id === activeId)}>
-                    <summary className="flex h-9 cursor-pointer items-center gap-2 rounded-control px-2 text-sm text-muted hover:bg-bg-subtle">
+                    <summary className="flex h-9 cursor-pointer items-center gap-2 rounded-control px-2 text-sm text-muted hover:bg-bg-subtle pointer-coarse:h-11">
                       <Icon icon={Archive} />
                       {t("archived", { count: group.archived.length })}
                     </summary>

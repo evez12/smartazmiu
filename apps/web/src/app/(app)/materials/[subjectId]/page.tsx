@@ -92,7 +92,7 @@ export default async function SubjectMaterialsPage({ params, searchParams }: Cat
                   }
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "-mb-px flex h-10 items-center border-b-2 font-medium whitespace-nowrap",
+                    "-mb-px flex h-10 items-center border-b-2 font-medium whitespace-nowrap pointer-coarse:h-11",
                     active
                       ? "border-primary text-text"
                       : "border-transparent text-muted hover:text-text",

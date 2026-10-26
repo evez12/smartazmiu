@@ -29,7 +29,7 @@ export default async function DesignSystemPage() {
       <main className="mx-auto flex max-w-[1200px] flex-col gap-12 px-4 py-8">
         <PageHeader title={t("title")} description={t("description")} className="pb-0" />
         <InteractiveSpecimens />
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="2xl:grid-cols-2 grid gap-6">
           {(["light", "dark"] as const).map((theme) => (
             <div
               key={theme}

@@ -112,7 +112,9 @@ export default async function ProfilePage() {
                       date: formatDate(consents.data.notice_acknowledged_at),
                     })
                   : t("data.noticePending", { version: consents.data.notice_version })}{" "}
-                <TextLink href="/privacy">{t("data.noticeLink")}</TextLink>
+                <TextLink inline href="/privacy">
+                  {t("data.noticeLink")}
+                </TextLink>
               </p>
             </div>
             <div className="flex flex-col gap-2">
