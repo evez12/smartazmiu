@@ -5,11 +5,13 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ChatRuntimeProvider } from "@/features/chat/runtime";
 import { AppShell } from "@/features/shell/app-shell";
 import { ApiProvider } from "@/lib/api/provider";
 import { NAV_COOKIE } from "@/features/shell/nav";
 import { StatusPage } from "@/features/shell/status-page";
 import { getCurrentUser } from "@/lib/api/server";
+import { env } from "@/lib/env";
 import { PATHNAME_HEADER } from "@/lib/request-headers";
 
 /** Every page in this group requires a signed-in, active user. */
@@ -51,18 +53,20 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const { user, session } = result;
   return (
     <ApiProvider csrfToken={session.csrfToken}>
-      <AppShell
-        user={{
-          displayName: user.display_name,
-          roles: user.roles,
-          permissions: user.permissions,
-          photoUrl: user.photo_url,
-        }}
-        csrfToken={session.csrfToken}
-        initiallyCollapsed={collapsed}
-      >
-        {children}
-      </AppShell>
+      <ChatRuntimeProvider socketUrl={env.socketUrl} currentUserId={user.id}>
+        <AppShell
+          user={{
+            displayName: user.display_name,
+            roles: user.roles,
+            permissions: user.permissions,
+            photoUrl: user.photo_url,
+          }}
+          csrfToken={session.csrfToken}
+          initiallyCollapsed={collapsed}
+        >
+          {children}
+        </AppShell>
+      </ChatRuntimeProvider>
     </ApiProvider>
   );
 }

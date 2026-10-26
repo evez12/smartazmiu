@@ -44,7 +44,8 @@
       "tabs": "Tablar",
       "overlays": "Dialoqlar, menyular və ipucları",
       "navigation": "Naviqasiya və avatar",
-      "states": "Yüklənmə, boş, xəta və giriş qadağası vəziyyətləri"
+      "states": "Yüklənmə, boş, xəta və giriş qadağası vəziyyətləri",
+      "chat": "Çat"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -249,7 +250,8 @@
       "map": "Kampus xəritəsi",
       "notifications": "Bildirişlər",
       "announcements": "Elanlar",
-      "events": "Tədbirlər"
+      "events": "Tədbirlər",
+      "chat": "Çat"
     }
   },
   "roles": {
@@ -270,8 +272,9 @@
     "announcementsTitle": "Elanlar",
     "announcementsEmpty": "Hazırda sizə aid aktiv elan yoxdur. Dekanlığın və universitetin elanları burada görünəcək.",
     "chatTitle": "Oxunmamış mesajlar",
-    "chatPlaceholder": "Çat bölməsi hələ istifadəyə verilməyib. Fənn və qrup kanallarınız açıldıqdan sonra oxunmamış mesajların sayı burada görünəcək.",
-    "allAnnouncements": "Bütün elanlar"
+    "chatPlaceholder": "Oxunmamış mesajınız yoxdur. Fənn və qrup kanallarınızdakı yeni mesajlar burada görünəcək.",
+    "allAnnouncements": "Bütün elanlar",
+    "chatOpen": "Çata keçin"
   },
   "status": {
     "loading": "Yüklənir",
@@ -1020,6 +1023,94 @@
       "manual": "Qeydə alın",
       "byHand": "siyahıdan",
       "noGroup": "—"
+    }
+  },
+  "chat": {
+    "title": "Çat",
+    "description": "Fənn, qrup və şəxsi yazışmalarınız.",
+    "channelsLabel": "Kanallar",
+    "groups": {
+      "courses": "Fənlər",
+      "communities": "Fənn icmaları",
+      "groups": "Qrup",
+      "direct": "Şəxsi"
+    },
+    "archived": "Arxiv ({count})",
+    "archivedTag": "Arxiv",
+    "noChannels": "Hələ heç bir kanalınız yoxdur. Fənn və qrup kanallarınız akademik məlumatlarınız idxal olunduqdan sonra avtomatik görünəcək.",
+    "channelsFailed": "Kanalları yükləmək mümkün olmadı.",
+    "retry": "Yenidən cəhd edin",
+    "chooseChannel": "Sol tərəfdən kanal seçin.",
+    "back": "Kanallara qayıdın",
+    "members": "Üzvlər",
+    "membersTitle": "Kanalın üzvləri",
+    "membersFailed": "Üzvləri yükləmək mümkün olmadı.",
+    "presence": {
+      "online": "onlayn",
+      "offline": "oflayn"
+    },
+    "badges": {
+      "teacher": "Müəllim",
+      "curator": "Kurator"
+    },
+    "deletedUser": "Silinmiş istifadəçi",
+    "you": "Siz",
+    "messagesLabel": "{channel} kanalının mesajları",
+    "loadOlder": "Əvvəlki mesajları yükləyin",
+    "loadNewer": "Sonrakı mesajları yükləyin",
+    "historyFailed": "Mesajları yükləmək mümkün olmadı.",
+    "emptyChannel": "Bu kanalda hələ mesaj yoxdur. İlk mesajı siz yazın.",
+    "newMessages": "Yeni mesajlar",
+    "jumpToUnread": "Oxunmamış mesajlara keçin",
+    "gapTooLarge": "Bağlantı kəsildiyi müddətdə çox mesaj gəlib. Ən son mesajlar göstərilir.",
+    "jumpToLatest": "Son mesajlara keçin",
+    "typing": "{names} yazır…",
+    "typingMany": "Bir neçə nəfər yazır…",
+    "blockedMessage": "Blokladığınız istifadəçinin mesajı.",
+    "showMessage": "Göstərin",
+    "hideMessage": "Gizlədin",
+    "composerLabel": "Mesaj",
+    "composerPlaceholder": "{channel} kanalına yazın",
+    "composerHint": "Göndərmək üçün Enter, yeni sətir üçün Shift+Enter basın.",
+    "send": "Göndərin",
+    "counter": "{count} / {max} simvol",
+    "tooLong": "Mesaj ən çox {max} simvol ola bilər. Mətni qısaldın.",
+    "sending": "Göndərilir…",
+    "queued": "Bağlantı bərpa olunanda göndəriləcək",
+    "failed": "Göndərilmədi",
+    "resend": "Yenidən göndərin",
+    "connection": {
+      "connecting": "Bağlantı qurulur…",
+      "offline": "Bağlantı yoxdur. Mesajlar bağlantı bərpa olunanda göndəriləcək.",
+      "fallback": "Canlı bağlantı müvəqqəti əlçatan deyil. Mesajlar adi yolla göndərilir və hər bir neçə saniyədən bir yenilənir."
+    },
+    "revoked": "Bu kanala artıq daxil ola bilmirsiniz.",
+    "revokedAction": "Kanallara qayıdın",
+    "notFound": "Kanal tapılmadı və ya ona daxil olmaq imkanınız yoxdur.",
+    "reasons": {
+      "notMember": "Bu kanalın üzvü deyilsiniz.",
+      "accountInactive": "Hesabınız aktiv olmadığı üçün mesaj yaza bilməzsiniz.",
+      "archived": "Semestr bitib, kanal arxivdədir. Mesajları oxuya bilərsiniz, yazmaq mümkün deyil.",
+      "examMode": "İmtahan gedir. Kanal {until} qədər yalnız oxumaq üçündür.",
+      "readonly": "Bu kanal yalnız oxumaq üçündür.",
+      "userBlocked": "Bu istifadəçini bloklamısınız. Yazmaq üçün bloku götürün.",
+      "dmUnavailable": "Bu istifadəçiyə hazırda şəxsi mesaj yazmaq mümkün deyil.",
+      "muted": "Moderator {until} qədər bu kanalda yazmağınızı məhdudlaşdırıb.",
+      "slowMode": "Yavaş rejim aktivdir. {seconds} saniyədən sonra yenidən yaza bilərsiniz.",
+      "slowModeShort": "Yavaş rejim aktivdir. Bir az gözləyib yenidən yazın.",
+      "rateLimited": "Qısa müddətdə çox mesaj göndərdiniz. {seconds} saniyə gözləyin.",
+      "rateLimitedShort": "Qısa müddətdə çox mesaj göndərdiniz. Bir az gözləyib yenidən göndərin.",
+      "channelMention": "Bütün kanalı yalnız müəllimlər və moderatorlar qeyd edə bilər.",
+      "queueExpired": "Mesaj çox köhnədir və avtomatik göndərilmədi. Lazımdırsa, yenidən göndərin.",
+      "generic": "Mesaj göndərilmədi. Yenidən cəhd edin."
+    },
+    "user": {
+      "message": "Mesaj yazın",
+      "block": "Bloklayın",
+      "unblock": "Bloku götürün",
+      "blocked": "İstifadəçi bloklandı.",
+      "unblocked": "Blok götürüldü.",
+      "blockedNote": "Bu istifadəçini bloklamısınız: sizə şəxsi mesaj yaza bilmir, kanallardakı mesajları sizin üçün gizlədilir."
     }
   }
 }

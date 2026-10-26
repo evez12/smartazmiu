@@ -34,6 +34,8 @@ OIDC_JWKS_URL ?= $(OIDC_INTERNAL_URL)/protocol/openid-connect/certs
 APP_URL ?= $(WEB_DEV_URL)
 # The native web dev server runs on another origin than APP_PUBLIC_URL; it may open chat sockets (ADR 0003).
 WS_ALLOWED_ORIGINS ?= ["$(WEB_DEV_URL)"]
+# Natively the browser reaches the API's WebSocket directly; behind nginx it is /ws on the app's origin.
+WS_PUBLIC_URL ?= ws://localhost:8000/ws
 API_INTERNAL_URL ?= http://127.0.0.1:8000
 
 .PHONY: help

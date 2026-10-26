@@ -6,11 +6,15 @@ export function contentSecurityPolicy({
   nonce,
   isDev,
   isHttps,
+  socketUrl = "",
 }: {
   nonce: string;
   isDev: boolean;
   isHttps: boolean;
+  /** The chat WebSocket (§5.9); listed explicitly because not every browser counts ws: as 'self'. */
+  socketUrl?: string;
 }): string {
+  const socketOrigin = socketUrl ? new URL(socketUrl).origin.replace(/^http/, "ws") : "";
   const directives = [
     "default-src 'self'",
     // React needs eval for dev-only debugging features; production never does.
@@ -21,7 +25,7 @@ export function contentSecurityPolicy({
     "font-src 'self'",
     // The push service worker (`public/sw.js`); without this it would fall back to the nonce-only script-src.
     "worker-src 'self'",
-    `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+    `connect-src 'self'${socketOrigin ? ` ${socketOrigin}` : ""}${isDev ? " ws: wss:" : ""}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

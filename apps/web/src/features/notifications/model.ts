@@ -21,7 +21,7 @@ export const notificationKeys = {
   latest: ["notifications", "latest"] as const,
 };
 
-/** How often the bell checks for new notifications until the WebSocket gateway exists (Sprint 5). */
+/** How often the bell checks for new notifications while the chat socket is not connected. */
 export const UNREAD_POLL_MS = 60_000;
 
 /** Notifications per page on the notifications page. */

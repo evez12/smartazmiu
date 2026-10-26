@@ -38,8 +38,22 @@ export const env = {
   get sessionRedisUrl() {
     return required("SESSION_REDIS_URL");
   },
+  /**
+   * The chat WebSocket the browser opens (ADR 0003): `/ws` on the app's own origin behind nginx, or the API
+   * directly during native development (`WS_PUBLIC_URL=ws://localhost:8000/ws`).
+   */
+  get socketUrl() {
+    return process.env.WS_PUBLIC_URL || socketUrlFor(process.env.APP_URL ?? "");
+  },
   /** Optional on purpose: the proxy asks on every request, including where auth is not configured. */
   get isHttps() {
     return (process.env.APP_URL ?? "").startsWith("https://");
   },
 };
+
+export function socketUrlFor(appUrl: string): string {
+  if (!appUrl) return "";
+  const url = new URL("/ws", appUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url.toString();
+}
