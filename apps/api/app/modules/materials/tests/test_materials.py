@@ -1,5 +1,6 @@
 """Materials v1: catalogue access, versioned uploads with consent, scan, download, reports (§6.1, §13.2, D-071)."""
 
+import asyncio
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
@@ -12,12 +13,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.db import Database
+from app.core.ratelimit import RateLimit
 from app.core.time import utc_now
 from app.modules.audit.models import AuditLog
 from app.modules.chat.tests.conftest import Person
 from app.modules.chat.tests.test_attachments import EICAR, PDF, FakeScanner
+from app.modules.materials import service as material_service
 from app.modules.materials.models import MaterialVersion
 from app.modules.materials.service import MaterialScanner
+from app.modules.notifications.models import Notification, NotificationKind
+from app.modules.privacy.models import ConsentPurpose, ConsentRecord
 from app.workers import main as worker
 from tests.support import FakeJobs, MemoryStorage, TokenFactory
 
@@ -458,6 +463,7 @@ async def test_reports_and_hiding(
 
     actions = [entry.action for entry in await db.scalars(select(AuditLog).order_by(AuditLog.id))]
     assert [a for a in actions if a.startswith("material.")] == [
+        "material.created",
         "material.reported",
         "material.report_handled",
         "material.report_handled",
@@ -521,3 +527,147 @@ async def test_worker_jobs_include_materials(
         assert await worker.purge_attachments(ctx) == 1
     finally:
         await database.dispose()
+
+
+async def test_consent_audit_rejection_notice_and_current_version(
+    client: AsyncClient,
+    db: AsyncSession,
+    people: dict[str, Person],
+    statistika: Statistika,
+    storage: MemoryStorage,
+) -> None:
+    leyla, aysel, rauf = people["leyla"], people["aysel"], people["rauf"]
+    material = (
+        await create(client, leyla, await upload(client, storage, leyla, statistika))
+    ).json()
+    url = f"{API}/materials/{material['id']}/versions"
+    infected = await client.post(
+        url,
+        headers=leyla.headers,
+        json={
+            "upload_id": await upload(client, storage, leyla, statistika, PDF + EICAR),
+            "copyright_confirmed": True,
+        },
+    )
+    assert infected.status_code == 201, infected.text
+    await scan(db, storage)
+
+    # Each version is a consent in the uploader's history, with the wording that was shown (§6.1).
+    consents = list(
+        await db.scalars(
+            select(ConsentRecord).where(
+                ConsentRecord.user_id == leyla.id,
+                ConsentRecord.purpose == ConsentPurpose.MATERIAL_COPYRIGHT,
+            )
+        )
+    )
+    assert [(c.granted, c.policy_version) for c in consents] == [(True, "2026-10-26")] * 2
+    actions = list(
+        await db.scalars(
+            select(AuditLog.action)
+            .where(AuditLog.target_id == material["id"])
+            .order_by(AuditLog.id)
+        )
+    )
+    assert actions == ["material.created", "material.version_added"]
+
+    notices = list(
+        await db.scalars(
+            select(Notification).where(
+                Notification.kind == NotificationKind.MATERIAL_VERSION_REJECTED
+            )
+        )
+    )
+    assert [(n.user_id, n.link) for n in notices] == [
+        (leyla.id, f"/materials/{statistika.subject_id}/{material['id']}")
+    ]
+    assert notices[0].title == "Mühazirə 1 - Təsviri statistika.pdf"
+
+    # A clean third version replaces the first as current for students; the infected one stays out of sight.
+    third = await client.post(
+        url,
+        headers=leyla.headers,
+        json={
+            "upload_id": await upload(client, storage, leyla, statistika),
+            "copyright_confirmed": True,
+        },
+    )
+    assert third.status_code == 201, third.text
+    await scan(db, storage)
+    student = (await client.get(f"{API}/materials/{material['id']}", headers=aysel.headers)).json()
+    assert student["current"]["version"] == 3
+    assert [v["version"] for v in student["versions"]] == [3, 1]
+
+    # Outsiders and guessed ids get the same 404, never a hint that the file exists (§14).
+    current_id = student["current"]["id"]
+    for person, version_id in ((rauf, current_id), (aysel, str(uuid.uuid4()))):
+        guessed = await client.get(
+            f"{API}/materials/versions/{version_id}/download", headers=person.headers
+        )
+        assert guessed.status_code == 404, guessed.text
+    rejected_id = infected.json()["versions"][0]["id"]
+    hidden = await client.get(
+        f"{API}/materials/versions/{rejected_id}/download", headers=aysel.headers
+    )
+    assert hidden.status_code in {404, 409}
+    assert (
+        await client.get(f"{API}/materials/{material['id']}", headers=rauf.headers)
+    ).status_code == 404
+
+
+async def test_uploads_and_reports_are_rate_limited(
+    client: AsyncClient,
+    db: AsyncSession,
+    people: dict[str, Person],
+    statistika: Statistika,
+    storage: MemoryStorage,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    leyla, aysel = people["leyla"], people["aysel"]
+    first = await create(client, leyla, await upload(client, storage, leyla, statistika))
+    second = await create(client, leyla, await upload(client, storage, leyla, statistika))
+    await scan(db, storage)
+
+    monkeypatch.setattr(material_service, "UPLOAD_LIMIT", RateLimit(f"t{uuid.uuid4()}", 1, 60))
+    assert (await presign(client, leyla, statistika)).status_code == 200
+    limited = await presign(client, leyla, statistika)
+    assert (limited.status_code, limited.json()["error"]["code"]) == (429, "request.rate_limited")
+
+    monkeypatch.setattr(material_service, "REPORT_LIMIT", RateLimit(f"t{uuid.uuid4()}", 1, 60))
+    statuses = [
+        (
+            await client.post(
+                f"{API}/materials/{material.json()['id']}/reports",
+                headers=aysel.headers,
+                json={"reason": "wrong_content"},
+            )
+        ).status_code
+        for material in (first, second)
+    ]
+    assert statuses == [201, 429]
+
+
+async def test_concurrent_versions_get_distinct_numbers(
+    client: AsyncClient,
+    people: dict[str, Person],
+    statistika: Statistika,
+    storage: MemoryStorage,
+) -> None:
+    leyla = people["leyla"]
+    material = (
+        await create(client, leyla, await upload(client, storage, leyla, statistika))
+    ).json()
+    uploads = [await upload(client, storage, leyla, statistika) for _ in range(3)]
+    responses = await asyncio.gather(
+        *(
+            client.post(
+                f"{API}/materials/{material['id']}/versions",
+                headers=leyla.headers,
+                json={"upload_id": upload_id, "copyright_confirmed": True},
+            )
+            for upload_id in uploads
+        )
+    )
+    assert [r.status_code for r in responses] == [201] * 3
+    detail = (await client.get(f"{API}/materials/{material['id']}", headers=leyla.headers)).json()
+    assert [v["version"] for v in detail["versions"]] == [4, 3, 2, 1]

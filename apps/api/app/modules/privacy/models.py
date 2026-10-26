@@ -18,6 +18,8 @@ class ConsentPurpose(StrEnum):
     """E-mail visible to other users."""
     PROFILE_PHOTO = "profile_photo"
     """Photo shown to other users."""
+    MATERIAL_COPYRIGHT = "material_copyright"
+    """Confirmed the right to share an uploaded course material (§6.1); one record per version."""
 
 
 class ConsentRecord(Base):

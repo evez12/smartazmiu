@@ -28,6 +28,8 @@ class AuditAction(StrEnum):
     EVENT_MANUAL_CHECK_IN = "event.manual_check_in"
     REPORT_CREATED = "report.created"
     REPORT_HANDLED = "report.handled"
+    MATERIAL_CREATED = "material.created"
+    MATERIAL_VERSION_ADDED = "material.version_added"
     MATERIAL_REPORTED = "material.reported"
     MATERIAL_REPORT_HANDLED = "material.report_handled"
     MATERIAL_HIDDEN = "material.hidden"

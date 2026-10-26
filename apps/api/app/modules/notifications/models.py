@@ -45,6 +45,7 @@ class NotificationKind(StrEnum):
     CHAT_MENTION = "chat.mention"
     CHAT_REPLY = "chat.reply"
     CHAT_ATTACHMENT_REJECTED = "chat.attachment_rejected"
+    MATERIAL_VERSION_REJECTED = "material.version_rejected"
 
 
 class DeliveryChannel(StrEnum):

@@ -13,6 +13,7 @@ KIND_LABELS: dict[NotificationKind, str] = {
     NotificationKind.CHAT_MENTION: "Sizi çatda qeyd etdilər",
     NotificationKind.CHAT_REPLY: "Mesajınıza cavab yazdılar",
     NotificationKind.CHAT_ATTACHMENT_REJECTED: "Fayl göstərilmir",
+    NotificationKind.MATERIAL_VERSION_REJECTED: "Material versiyası qəbul olunmadı",
 }
 
 

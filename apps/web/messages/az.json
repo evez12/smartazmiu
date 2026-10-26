@@ -545,7 +545,8 @@
       "purposes": {
         "privacy_notice": "Məxfilik bildirişi ilə tanışlıq",
         "contact_sharing": "E-poçtun digər istifadəçilərə göstərilməsi",
-        "profile_photo": "Profil şəklinin göstərilməsi"
+        "profile_photo": "Profil şəklinin göstərilməsi",
+        "material_copyright": "Yüklənən materialı paylaşmaq hüququnun təsdiqi"
       },
       "granted": "Razılıq verilib",
       "withdrawn": "Geri alınıb"
@@ -650,6 +651,8 @@
         "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı",
         "report_created": "Şikayət göndərildi",
         "report_handled": "Şikayətin vəziyyəti dəyişdi",
+        "material_created": "Material yükləndi",
+        "material_version_added": "Materialın yeni versiyası yükləndi",
         "material_reported": "Materialdan şikayət edildi",
         "material_report_handled": "Material şikayətinin vəziyyəti dəyişdi",
         "material_hidden": "Material gizlədildi",
@@ -800,7 +803,8 @@
       "scheduleChanged": "Dərs cədvəlində dəyişiklik",
       "chatMention": "Sizi çatda qeyd etdilər",
       "chatReply": "Mesajınıza cavab yazdılar",
-      "chatAttachmentRejected": "Fayl göstərilmir"
+      "chatAttachmentRejected": "Fayl göstərilmir",
+      "materialVersionRejected": "Material versiyası qəbul olunmadı"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",

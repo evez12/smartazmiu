@@ -667,6 +667,8 @@
           "event.manual_check_in",
           "report.created",
           "report.handled",
+          "material.created",
+          "material.version_added",
           "material.reported",
           "material.report_handled",
           "material.hidden",
@@ -1377,7 +1379,8 @@
         "enum": [
           "privacy_notice",
           "contact_sharing",
-          "profile_photo"
+          "profile_photo",
+          "material_copyright"
         ],
         "title": "ConsentPurpose",
         "type": "string"
@@ -3679,7 +3682,8 @@
           "schedule.changed",
           "chat.mention",
           "chat.reply",
-          "chat.attachment_rejected"
+          "chat.attachment_rejected",
+          "material.version_rejected"
         ],
         "title": "NotificationKind",
         "type": "string"
