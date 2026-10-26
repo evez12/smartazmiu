@@ -1495,3 +1495,28 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     two rows (the rate limit bounds it); the support channel's size at university scale (D-074 consequence).
 - **Consequences:** the open items are test gaps, not known defects, and are not scheduled in the roadmap; they can
   be closed in the Sprint 7 hardening time or left to the pilot review. Nothing here changes behaviour.
+
+## D-077 · 2026-10-27 · How the chat load test reaches the stack, and why it did not run on 2026-10-26
+
+- **Context:** the Sprint 6 audit could not reproduce D-073: `make load` stopped in setup with `no login form for
+  load-0001 (status 0)`. PILOT.md also asks for `make load` against the pilot server, but the Makefile fixed the
+  socket address to `ws://localhost:8000/ws`.
+- **Findings:** the repository's model is k6 in Docker with `--network host`, talking to the native dev servers on
+  `localhost:3000` (web) and `localhost:8000` (API) and to Keycloak on `localhost:8080`, which is also the issuer the
+  sign-in redirects to. On the audit machine (Docker Desktop 4.73.1) the settings file has no host-networking
+  entry, and a `--network host` container got "connection refused" for all three ports while the same URLs answered
+  200 from the host. So the container could not see the host's `localhost`: an environment setting, not an
+  application fault, and not a certificate or authentication problem. The cleanup path was checked separately
+  (500 accounts and 20 channels created, then removed; none left in the database or Keycloak).
+- **Options:** switch host networking on in Docker Desktop (a machine setting, changed by its owner); run k6 natively
+  instead of in Docker (a new tool on the machine, and the pinned image no longer used); add a bridge network with
+  `host.docker.internal` (the sign-in redirect to `localhost:8080` and the WebSocket Origin check would break, so it
+  needs app and realm changes: an authentication change, not done).
+- **Decision:** no change to the networking model, authentication or the realm. `WS_URL` becomes a Makefile variable
+  (default unchanged) so a run can point at another server, and the README names the host-networking prerequisite
+  with a one-line check and the steps for a remote server. The result of D-073 stays the only measurement; it is
+  not reproduced and not claimed as reproduced.
+- **Consequences:** the load check on the pilot server is still open (PILOT.md section 2, item 8). The docstring of
+  `prepare.py` says "only for local and staging stacks" while the runbook sends it to the pilot server; running it
+  there creates 500 synthetic accounts in the real Keycloak and database for the length of the run, so the product
+  owner has to agree to it, or the check has to run on a staging copy of the pilot server.

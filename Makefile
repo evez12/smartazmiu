@@ -191,6 +191,8 @@ visual-update: ## Re-record screenshot baselines after an intended UI change (Do
 # Chat load test (D-073): throwaway accounts and channels, then k6 against the running stack (sign-in through
 # the web app, sockets to the API). LOAD_USERS accounts with two sockets each; see README "Load test".
 K6_IMAGE := grafana/k6:1.3.0
+# Overridable so a run can target another server (wss://host/ws); locally the API listens on :8000.
+WS_URL ?= ws://localhost:8000/ws
 LOAD_USERS ?= 500
 LOAD_CHANNELS ?= 20
 LOAD_SOCKETS ?= 1000
@@ -205,7 +207,7 @@ load-up: ## Create the load-test accounts and channels
 .PHONY: load
 load: ## Run the k6 chat scenario (1 000 sockets, 50 msg/s by default) against the running stack
 	MSYS_NO_PATHCONV=1 docker run --rm --network host --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/infra/load:/scripts" -w /scripts \
-		-e APP_URL=$(APP_URL) -e WS_URL=ws://localhost:8000/ws -e SOCKETS=$(LOAD_SOCKETS) -e RATE=$(LOAD_RATE) \
+		-e APP_URL=$(APP_URL) -e WS_URL=$(WS_URL) -e SOCKETS=$(LOAD_SOCKETS) -e RATE=$(LOAD_RATE) \
 		-e RAMP=$(LOAD_RAMP) -e HOLD=$(LOAD_HOLD) \
 		$(K6_IMAGE) run --summary-export /scripts/summary.json chat.js
 
