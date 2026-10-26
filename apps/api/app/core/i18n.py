@@ -187,6 +187,74 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Məxfilik bildirişi yenilənib. Səhifəni yeniləyib yeni mətnlə tanış olun.",
         "en": "The privacy notice has been updated. Reload the page and read the new version.",
     },
+    "chat.channel_not_found": {
+        "az": "Kanal tapılmadı və ya ona daxil olmaq imkanınız yoxdur.",
+        "en": "The channel was not found or you do not have access to it.",
+    },
+    "chat.account_inactive": {
+        "az": "Hesabınız aktiv olmadığı üçün mesaj göndərə bilməzsiniz. Dekanlığa müraciət edin.",
+        "en": "Your account is not active, so you cannot send messages. Contact the dean's office.",
+    },
+    "chat.channel_archived": {
+        "az": "Semestr bitib və kanal arxivə köçürülüb. Mesajları oxuya bilərsiniz, yazmaq mümkün deyil.",
+        "en": "The semester has ended and the channel is archived. You can read messages but not post.",
+    },
+    "chat.exam_mode": {
+        "az": "İmtahan gedir, kanal müvəqqəti yalnız oxumaq üçündür. İmtahandan sonra yenidən yaza bilərsiniz.",
+        "en": "An exam is in progress, so the channel is read-only for now. You can post again after the exam.",
+    },
+    "chat.channel_readonly": {
+        "az": "Bu kanal yalnız oxumaq üçündür.",
+        "en": "This channel is read-only.",
+    },
+    "chat.user_blocked": {
+        "az": "Bu istifadəçini bloklamısınız. Mesaj yazmaq üçün əvvəlcə bloku götürün.",
+        "en": "You have blocked this person. Unblock them to send a message.",
+    },
+    "chat.dm_unavailable": {
+        "az": "Bu istifadəçiyə hazırda şəxsi mesaj göndərmək mümkün deyil.",
+        "en": "You cannot send this person a direct message at the moment.",
+    },
+    "chat.muted": {
+        "az": "Moderator bu kanalda yazmağınızı müvəqqəti məhdudlaşdırıb.",
+        "en": "A moderator has temporarily stopped you from posting in this channel.",
+    },
+    "chat.slow_mode": {
+        "az": "Kanalda yavaş rejim aktivdir. Bir az gözləyib yenidən göndərin.",
+        "en": "Slow mode is on in this channel. Wait a little and send again.",
+    },
+    "chat.rate_limited": {
+        "az": "Qısa müddətdə çox mesaj göndərdiniz. Bir neçə saniyə gözləyin.",
+        "en": "You sent too many messages in a short time. Wait a few seconds.",
+    },
+    "chat.channel_mention_not_allowed": {
+        "az": "Bütün kanalı yalnız müəllimlər və moderatorlar qeyd edə bilər.",
+        "en": "Only teachers and moderators can mention the whole channel.",
+    },
+    "chat.message_empty": {
+        "az": "Mesaj boşdur. Mətn yazıb yenidən göndərin.",
+        "en": "The message is empty. Write some text and send again.",
+    },
+    "chat.message_too_long": {
+        "az": "Mesaj çox uzundur. Ən çox 4000 simvol yaza bilərsiniz.",
+        "en": "The message is too long. You can write at most 4,000 characters.",
+    },
+    "chat.topic_not_found": {
+        "az": "Seçilmiş mövzu bu kanalda yoxdur. Mövzunu yenidən seçin.",
+        "en": "The selected topic does not exist in this channel. Choose the topic again.",
+    },
+    "chat.duplicate_client_id": {
+        "az": "Mesaj göndərilmədi. Səhifəni yeniləyib yenidən göndərin.",
+        "en": "The message was not sent. Reload the page and send it again.",
+    },
+    "chat.unavailable": {
+        "az": "Mesaj xidməti müvəqqəti əlçatan deyil. Bir az sonra yenidən göndərin.",
+        "en": "Messaging is temporarily unavailable. Try sending again shortly.",
+    },
+    "chat.realtime_unavailable": {
+        "az": "Canlı bağlantı müvəqqəti əlçatan deyil. Mesajlar adi yolla göndərilir.",
+        "en": "The live connection is temporarily unavailable. Messages are sent the regular way.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

@@ -40,8 +40,10 @@ class Settings(BaseSettings):
 
     sentry_dsn: str | None = None
 
-    # Browser-facing base URL, for links in e-mails and push messages.
+    # Browser-facing base URL, for links in e-mails and push messages. Its origin may open chat sockets.
     app_public_url: str = "http://localhost"
+    # Further origins allowed to open chat sockets, e.g. the native dev server on :3000 (ADR 0003).
+    ws_allowed_origins: list[str] = Field(default=[])
 
     # Notification e-mail through SMTP (Mailpit locally).
     smtp_host: str = "127.0.0.1"

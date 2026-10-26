@@ -32,6 +32,8 @@ OIDC_ISSUER ?= $(OIDC_PUBLIC_URL)/realms/$(KEYCLOAK_REALM)
 OIDC_INTERNAL_URL ?= $(OIDC_ISSUER)
 OIDC_JWKS_URL ?= $(OIDC_INTERNAL_URL)/protocol/openid-connect/certs
 APP_URL ?= $(WEB_DEV_URL)
+# The native web dev server runs on another origin than APP_PUBLIC_URL; it may open chat sockets (ADR 0003).
+WS_ALLOWED_ORIGINS ?= ["$(WEB_DEV_URL)"]
 API_INTERNAL_URL ?= http://127.0.0.1:8000
 
 .PHONY: help

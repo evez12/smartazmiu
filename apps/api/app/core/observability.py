@@ -13,7 +13,11 @@ def scrub_event(event: Event, _hint: Hint) -> Event | None:
     request: dict[str, Any] = event.get("request") or {}
     request.pop("cookies", None)
     request.pop("data", None)
+    # WebSocket tickets travel in the query string (ADR 0003); no URL leaves with one.
     request.pop("query_string", None)
+    url = request.get("url")
+    if isinstance(url, str):
+        request["url"] = url.split("?", 1)[0]
     headers = request.get("headers")
     if isinstance(headers, dict):
         request["headers"] = {

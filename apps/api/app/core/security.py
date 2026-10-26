@@ -28,6 +28,8 @@ class TokenClaims:
     roles: frozenset[str]
     issued_at: int
     """Unix seconds (``iat``)."""
+    expires_at: int
+    """Unix seconds (``exp``); bounds how long a WebSocket ticket's connection stays authorised (ADR 0003)."""
 
 
 class SigningKeySource(Protocol):
@@ -126,4 +128,5 @@ def _claims_from_payload(payload: dict[str, Any]) -> TokenClaims:
         display_name=display_name or str(payload.get("preferred_username") or ""),
         roles=frozenset(role for role in raw_roles if isinstance(role, str)),
         issued_at=int(payload["iat"]),
+        expires_at=int(payload["exp"]),
     )
