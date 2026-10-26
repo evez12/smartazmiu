@@ -26,7 +26,14 @@ import {
   type PendingMessage,
 } from "./model";
 import { ChatConnection, SocketError, TicketError, type ServerEvent } from "./socket";
-import { createChatStore, type ChatActions, type ChatState, type ChatStore } from "./store";
+import {
+  createChatStore,
+  type ChatActions,
+  type ChatState,
+  type ChatStore,
+  type DeletedEvent,
+  type ReactionEvent,
+} from "./store";
 
 /** How often the open channel is polled while the socket is down (REST fallback, §13.5). */
 export const FALLBACK_POLL_MS = 5_000;
@@ -37,7 +44,11 @@ const READ_DEBOUNCE_MS = 800;
 export type ChatRuntime = {
   store: ChatStore;
   currentUserId: string;
-  send: (channelId: string, body: string) => void;
+  send: (channelId: string, body: string, parentId?: string) => void;
+  /** Resolve with notices the author should see (an ignored @channel); reject with `ApiRequestError`. */
+  edit: (messageId: string, body: string) => Promise<string[]>;
+  remove: (messageId: string) => Promise<void>;
+  react: (messageId: string, emoji: string, add: boolean) => Promise<void>;
   retry: (clientMsgId: string) => void;
   markRead: (channelId: string, messageId: string) => void;
   typing: (channelId: string) => void;
@@ -51,6 +62,11 @@ export function useChatRuntime(): ChatRuntime {
   const runtime = useContext(RuntimeContext);
   if (!runtime) throw new Error("useChatRuntime must be used inside <ChatRuntimeProvider>");
   return runtime;
+}
+
+/** For parts also shown without a signed-in app (the design-system specimen): no runtime, no actions. */
+export function useOptionalChatRuntime(): ChatRuntime | null {
+  return useContext(RuntimeContext);
 }
 
 export function useChatState<T>(selector: (state: ChatState & ChatActions) => T): T {
@@ -76,6 +92,21 @@ export function useChannels() {
     queryFn: () => fetchChannels(api),
     // Live updates arrive over the socket; without it the list refreshes itself.
     refetchInterval: status === "online" ? false : 30_000,
+  });
+}
+
+/** The channel's members, for "@" suggestions, the member sheet and the thread panel (D-063). */
+export function useMembers(channelId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: chatKeys.members(channelId),
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/chat/channels/{channel_id}/members", {
+          params: { path: { channel_id: channelId } },
+        }),
+      ).members,
+    staleTime: 60_000,
   });
 }
 
@@ -131,13 +162,18 @@ export function ChatRuntimeProvider({
         return;
       }
       state().setPending(pending.clientMsgId, "sending");
-      const payload = { body: pending.body, client_msg_id: pending.clientMsgId };
+      const payload = {
+        body: pending.body,
+        client_msg_id: pending.clientMsgId,
+        ...(pending.parentId ? { parent_id: pending.parentId } : {}),
+      };
       try {
         if (connection.current?.isOpen) {
-          await connection.current.request("message.send", {
+          const ack = await connection.current.request("message.send", {
             channel_id: pending.channelId,
             ...payload,
           });
+          state().setNotices(pending.channelId, (ack.notices as string[] | undefined) ?? []);
           return;
         }
         if (state().status === "fallback" || state().status === "offline") {
@@ -148,6 +184,7 @@ export function ChatRuntimeProvider({
             }),
           );
           state().receive(result.message);
+          state().setNotices(pending.channelId, result.notices ?? []);
           return;
         }
         state().setPending(pending.clientMsgId, "queued");
@@ -176,16 +213,65 @@ export function ChatRuntimeProvider({
     const runtime: ChatRuntime = {
       store,
       currentUserId,
-      send: (channelId, body) => {
+      send: (channelId, body, parentId) => {
         const pending: PendingMessage = {
           clientMsgId: crypto.randomUUID(),
           channelId,
+          ...(parentId ? { parentId } : {}),
           body,
           state: "queued",
           createdAt: Date.now(),
         };
         state().queue(pending);
         void deliver(pending);
+      },
+      // Edits, deletes and reactions go through REST: the server runs the same service as for socket events
+      // and publishes the change to every tab, this one included.
+      edit: async (messageId, body) => {
+        const result = unwrap(
+          await api.PATCH("/api/v1/chat/messages/{message_id}", {
+            params: { path: { message_id: messageId } },
+            body: { body },
+          }),
+        );
+        state().update(result.message);
+        return result.notices ?? [];
+      },
+      remove: async (messageId) => {
+        const message = unwrap(
+          await api.DELETE("/api/v1/chat/messages/{message_id}", {
+            params: { path: { message_id: messageId } },
+          }),
+        );
+        state().markDeleted({
+          id: message.id,
+          channel_id: message.channel_id,
+          parent_id: message.parent_id,
+          deleted_at: message.deleted_at,
+        });
+      },
+      react: async (messageId, emoji, add) => {
+        const result = unwrap(
+          add
+            ? await api.POST("/api/v1/chat/messages/{message_id}/reactions", {
+                params: { path: { message_id: messageId } },
+                body: { emoji },
+              })
+            : await api.DELETE("/api/v1/chat/messages/{message_id}/reactions/{emoji}", {
+                params: { path: { message_id: messageId, emoji } },
+              }),
+        );
+        state().applyReaction(
+          {
+            message_id: result.message_id,
+            channel_id: "",
+            emoji: result.emoji,
+            count: result.count,
+            user_id: currentUserId,
+            added: result.reacted,
+          },
+          currentUserId,
+        );
       },
       retry: (clientMsgId) => {
         const pending = state().pending[clientMsgId];
@@ -196,10 +282,17 @@ export function ChatRuntimeProvider({
           .getQueryData<ChannelsData>(chatKeys.channels)
           ?.channels.find((item) => item.id === channelId);
         const marker = channel?.last_read_message_id;
-        if (marker && compareIds(marker, messageId) >= 0 && channel.unread_count === 0) return;
+        if (
+          marker &&
+          compareIds(marker, messageId) >= 0 &&
+          channel.unread_count === 0 &&
+          channel.mention_count === 0
+        )
+          return;
         updateChannel(queryClient, channelId, (item) => ({
           ...item,
           unread_count: 0,
+          mention_count: 0,
           last_read_message_id: messageId,
         }));
         clearTimeout(readTimers.current.get(channelId));
@@ -262,13 +355,30 @@ export function ChatRuntimeProvider({
           state().receive(message);
           const mine = message.author?.id === currentUserId;
           if (!mine && message.channel_id !== active.current) {
+            // Replies are announced to the people concerned, not counted in the badge (D-067).
+            const unread = message.parent_id ? 0 : 1;
+            const mentioned =
+              message.mentions_channel ||
+              message.mentions.some((mention) => mention.id === currentUserId)
+                ? 1
+                : 0;
             updateChannel(queryClient, message.channel_id, (channel) => ({
               ...channel,
-              unread_count: Math.min(channel.unread_count + 1, 100),
+              unread_count: Math.min(channel.unread_count + unread, 100),
+              mention_count: Math.min(channel.mention_count + mentioned, 100),
             }));
           }
           break;
         }
+        case "message.updated":
+          state().update(data as unknown as ChatMessage);
+          break;
+        case "message.deleted":
+          state().markDeleted(data as unknown as DeletedEvent);
+          break;
+        case "reaction.updated":
+          state().applyReaction(data as unknown as ReactionEvent, currentUserId);
+          break;
         case "typing": {
           if (data.user_id === currentUserId) break;
           state().setTyping(

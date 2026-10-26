@@ -338,11 +338,11 @@ async def test_the_session_ends_with_the_token_unless_refreshed(
     assert await socket.closed() == CloseCode.UNAUTHORIZED
 
 
-async def test_unknown_later_and_malformed_events_get_typed_errors(
+async def test_unknown_and_malformed_events_get_typed_errors(
     open_socket: Open, person: MakePerson
 ) -> None:
     socket = await open_socket(await person())
-    assert (await socket.reply("message.edit", {}))["data"]["code"] == "request.not_supported"
+    assert (await socket.reply("message.edit", {}))["data"]["code"] == "request.validation_failed"
     assert (await socket.reply("presence.watch", {}))["data"]["code"] == "request.unknown_event"
     invalid = await socket.reply("message.send", {"channel_id": "not-a-uuid"})
     assert invalid["data"]["code"] == "request.validation_failed"

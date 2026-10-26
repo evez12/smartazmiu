@@ -3,9 +3,11 @@ import { createStore } from "zustand/vanilla";
 import {
   compareIds,
   newestId,
+  REACTIONS,
   type ChatMessage,
   type PendingMessage,
   type PendingState,
+  type Thread,
 } from "./model";
 
 export type ConnectionStatus = "connecting" | "online" | "offline" | "fallback";
@@ -22,9 +24,35 @@ export type ChannelWindow = {
 
 export type Typist = { name: string; until: number };
 
+/** An open thread: its root and the replies loaded so far, oldest first (§5.3). */
+export type ThreadWindow = {
+  root: ChatMessage;
+  replies: Record<string, ChatMessage>;
+  hasMore: boolean;
+};
+
+export type DeletedEvent = {
+  id: string;
+  channel_id: string;
+  parent_id: string | null;
+  deleted_at: string | null;
+};
+
+export type ReactionEvent = {
+  message_id: string;
+  channel_id: string;
+  emoji: string;
+  count: number;
+  user_id: string;
+  added: boolean;
+};
+
 export type ChatState = {
   status: ConnectionStatus;
   windows: Record<string, ChannelWindow>;
+  threads: Record<string, ThreadWindow>;
+  /** Replies already counted on their root, so a reply delivered live and again in a backfill counts once. */
+  countedReplies: Record<string, true>;
   pending: Record<string, PendingMessage>;
   typing: Record<string, Record<string, Typist>>;
   presence: Record<string, "online" | "offline">;
@@ -32,6 +60,8 @@ export type ChatState = {
   lastSeenId: string | null;
   /** A channel the user lost access to while it was open; the pane shows a neutral notice (§13.2). */
   revoked: string | null;
+  /** Notices from the last send per channel, e.g. an @channel that was not allowed (§13.2). */
+  notices: Record<string, string[]>;
 };
 
 /**
@@ -49,6 +79,11 @@ export type ChatActions = {
   ) => void;
   /** A live or replayed message; it replaces the local copy written with the same client id. */
   receive: (message: ChatMessage) => void;
+  /** An edited message, or one the server re-sent (reply count); the reader's own reactions are kept. */
+  update: (message: ChatMessage) => void;
+  markDeleted: (event: DeletedEvent) => void;
+  applyReaction: (event: ReactionEvent, currentUserId: string) => void;
+  loadThread: (rootId: string, thread: Thread, mode: "replace" | "append") => void;
   truncate: (channelId: string) => void;
   queue: (pending: PendingMessage) => void;
   setPending: (
@@ -63,6 +98,7 @@ export type ChatActions = {
   setPresence: (userId: string, status: "online" | "offline") => void;
   revoke: (channelId: string) => void;
   clearRevoked: () => void;
+  setNotices: (channelId: string, notices: string[]) => void;
 };
 
 export type ChatStore = ReturnType<typeof createChatStore>;
@@ -78,11 +114,14 @@ export function createChatStore() {
   return createStore<ChatState & ChatActions>()((set) => ({
     status: "connecting",
     windows: {},
+    threads: {},
+    countedReplies: {},
     pending: {},
     typing: {},
     presence: {},
     lastSeenId: null,
     revoked: null,
+    notices: {},
 
     setStatus: (status) => set({ status }),
 
@@ -116,6 +155,42 @@ export function createChatStore() {
 
     receive: (message) =>
       set((state) => {
+        const lastSeenId =
+          state.lastSeenId && compareIds(state.lastSeenId, message.id) >= 0
+            ? state.lastSeenId
+            : message.id;
+        const pending = withoutConfirmed(state.pending, [message]);
+        if (message.parent_id) {
+          const rootId = message.parent_id;
+          const known =
+            message.id in state.countedReplies ||
+            message.id in (state.threads[rootId]?.replies ?? {});
+          let next = patch(state, rootId, (root) =>
+            known
+              ? root
+              : {
+                  ...root,
+                  reply_count: root.reply_count + 1,
+                  last_reply_at: message.created_at,
+                },
+          );
+          const thread = next.threads[rootId];
+          if (thread && !known) {
+            next = {
+              ...next,
+              threads: {
+                ...next.threads,
+                [rootId]: { ...thread, replies: { ...thread.replies, [message.id]: message } },
+              },
+            };
+          }
+          return {
+            ...next,
+            lastSeenId,
+            pending,
+            countedReplies: { ...state.countedReplies, [message.id]: true as const },
+          };
+        }
         const current = state.windows[message.channel_id];
         const windows =
           current && !current.hasNewer
@@ -127,11 +202,75 @@ export function createChatStore() {
                 },
               }
             : state.windows;
-        const lastSeenId =
-          state.lastSeenId && compareIds(state.lastSeenId, message.id) >= 0
-            ? state.lastSeenId
-            : message.id;
-        return { windows, lastSeenId, pending: withoutConfirmed(state.pending, [message]) };
+        return { windows, lastSeenId, pending };
+      }),
+
+    update: (message) =>
+      set((state) =>
+        patch(state, message.id, (current) => ({
+          ...message,
+          my_reactions: message.my_reactions ?? current.my_reactions,
+        })),
+      ),
+
+    markDeleted: (event) =>
+      set((state) => {
+        let next = patch(state, event.id, (current) =>
+          current.deleted_at
+            ? current
+            : {
+                ...current,
+                body: "",
+                deleted_at: event.deleted_at ?? new Date().toISOString(),
+                reactions: [],
+                my_reactions: [],
+                mentions: [],
+                mentions_channel: false,
+                is_verified_answer: false,
+              },
+        );
+        if (event.parent_id) {
+          next = patch(next, event.parent_id, (root) => ({
+            ...root,
+            reply_count: Math.max(0, root.reply_count - 1),
+          }));
+        }
+        return next;
+      }),
+
+    applyReaction: (event, currentUserId) =>
+      set((state) =>
+        patch(state, event.message_id, (current) => {
+          const counts = new Map(current.reactions.map((item) => [item.emoji, item.count]));
+          if (event.count > 0) counts.set(event.emoji, event.count);
+          else counts.delete(event.emoji);
+          const reactions = REACTIONS.filter((emoji) => counts.has(emoji)).map((emoji) => ({
+            emoji,
+            count: counts.get(emoji)!,
+          }));
+          let mine = current.my_reactions;
+          if (event.user_id === currentUserId && mine) {
+            const others = mine.filter((emoji) => emoji !== event.emoji);
+            mine = event.added
+              ? REACTIONS.filter((emoji) => emoji === event.emoji || others.includes(emoji))
+              : others;
+          }
+          return { ...current, reactions, my_reactions: mine };
+        }),
+      ),
+
+    loadThread: (rootId, thread, mode) =>
+      set((state) => {
+        const current = state.threads[rootId];
+        const replies = mode === "append" && current ? { ...current.replies } : {};
+        for (const reply of thread.replies) replies[reply.id] = reply;
+        return {
+          threads: {
+            ...state.threads,
+            [rootId]: { root: thread.root, replies, hasMore: thread.has_more },
+          },
+          pending: withoutConfirmed(state.pending, thread.replies),
+        };
       }),
 
     truncate: (channelId) =>
@@ -189,14 +328,56 @@ export function createChatStore() {
         const windows = Object.fromEntries(
           Object.entries(state.windows).filter(([id]) => id !== channelId),
         );
+        const threads = Object.fromEntries(
+          Object.entries(state.threads).filter(
+            ([, thread]) => thread.root.channel_id !== channelId,
+          ),
+        );
         const pending = Object.fromEntries(
           Object.entries(state.pending).filter(([, item]) => item.channelId !== channelId),
         );
-        return { windows, pending, revoked: channelId };
+        return { windows, threads, pending, revoked: channelId };
       }),
 
     clearRevoked: () => set({ revoked: null }),
+
+    setNotices: (channelId, notices) =>
+      set((state) =>
+        !notices.length && !state.notices[channelId]
+          ? {}
+          : { notices: { ...state.notices, [channelId]: notices } },
+      ),
   }));
+}
+
+/** Applies `change` to every loaded copy of a message: the channel window, a thread root or a reply. */
+function patch(
+  state: Pick<ChatState, "windows" | "threads">,
+  messageId: string,
+  change: (message: ChatMessage) => ChatMessage,
+): Pick<ChatState, "windows" | "threads"> {
+  let windows = state.windows;
+  for (const [channelId, window] of Object.entries(state.windows)) {
+    const found = window.messages[messageId];
+    if (!found) continue;
+    windows = {
+      ...windows,
+      [channelId]: { ...window, messages: { ...window.messages, [messageId]: change(found) } },
+    };
+  }
+  let threads = state.threads;
+  for (const [rootId, thread] of Object.entries(state.threads)) {
+    if (thread.root.id === messageId) {
+      threads = { ...threads, [rootId]: { ...thread, root: change(thread.root) } };
+    } else if (thread.replies[messageId]) {
+      const reply = thread.replies[messageId];
+      threads = {
+        ...threads,
+        [rootId]: { ...thread, replies: { ...thread.replies, [messageId]: change(reply) } },
+      };
+    }
+  }
+  return { windows, threads };
 }
 
 function withoutConfirmed(

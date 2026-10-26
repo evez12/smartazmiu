@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { TimelineRow } from "./message-row";
+import { TimelineRow, type RowContext } from "./message-row";
 import type { TimelineItem } from "./model";
 
 type MessageListProps = {
@@ -18,7 +18,7 @@ type MessageListProps = {
   onLoadOlder: () => void;
   onLoadNewer: () => void;
   onBottomChange: (atBottom: boolean) => void;
-  currentUser: { id: string; name: string };
+  context: RowContext;
   blockedIds: ReadonlySet<string>;
   onRetry: (clientMsgId: string) => void;
 };
@@ -38,7 +38,7 @@ export function MessageList({
   onLoadOlder,
   onLoadNewer,
   onBottomChange,
-  currentUser,
+  context,
   blockedIds,
   onRetry,
 }: MessageListProps) {
@@ -117,7 +117,7 @@ export function MessageList({
           >
             <TimelineRow
               item={items[row.index]!}
-              currentUser={currentUser}
+              context={context}
               blockedIds={blockedIds}
               onRetry={onRetry}
             />

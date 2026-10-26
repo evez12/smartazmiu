@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  badgeCounts,
   buildTimeline,
+  canChange,
   compareIds,
+  decodeMentions,
+  encodeMentions,
   newestId,
   sidebarGroups,
+  splitMentions,
   type Channel,
   type ChatMessage,
   type PendingMessage,
@@ -25,6 +30,13 @@ function message(id: string, at: string, author = AYSEL, body = "Salam"): ChatMe
     created_at: at,
     edited_at: null,
     deleted_at: null,
+    is_verified_answer: false,
+    reply_count: 0,
+    last_reply_at: null,
+    reactions: [],
+    my_reactions: [],
+    mentions: [],
+    mentions_channel: false,
   };
 }
 
@@ -40,6 +52,7 @@ function channel(overrides: Partial<Channel>): Channel {
     notify_level: "all",
     muted_until: null,
     unread_count: 0,
+    mention_count: 0,
     last_read_message_id: null,
     posting: { allowed: true, reason: null, until: null, retry_after_seconds: null },
     ...overrides,
@@ -187,5 +200,67 @@ describe("buildTimeline", () => {
       true,
       true,
     ]);
+  });
+});
+
+describe("mentions", () => {
+  const ramin = "0a6f3c1e-5b7d-4e2a-9c11-2f3e4d5a6b7c";
+  const stranger = "1b2c3d4e-5f60-4718-9a0b-c1d2e3f40516";
+
+  it("names members only and keeps other tokens nameless (§13.2)", () => {
+    const parts = splitMentions(`Salam <@${ramin}> və <@${stranger}>!`, [
+      { id: ramin, display_name: "Ramin Əliyev" },
+    ]);
+    expect(parts).toEqual([
+      { kind: "text", text: "Salam " },
+      { kind: "mention", id: ramin, name: "Ramin Əliyev" },
+      { kind: "text", text: " və " },
+      { kind: "mention", id: stranger, name: null },
+      { kind: "text", text: "!" },
+    ]);
+  });
+
+  it("encodes picked names as tokens and decodes them for editing", () => {
+    const picked = new Map([
+      ["Aysel", "a-1"],
+      ["Aysel Məmmədova", "a-2"],
+    ]);
+    // The longer name wins; a name followed by more letters is not a mention.
+    expect(encodeMentions("@Aysel Məmmədova və @Aysel, @Ayselə yox", picked)).toBe(
+      "<@a-2> və <@a-1>, @Ayselə yox",
+    );
+    const { text, picked: back } = decodeMentions(`<@${ramin}> bax, <@${stranger}>`, [
+      { id: ramin, display_name: "Ramin Əliyev" },
+    ]);
+    expect(text).toBe(`@Ramin Əliyev bax, <@${stranger}>`);
+    expect(back.get("Ramin Əliyev")).toBe(ramin);
+  });
+});
+
+describe("badges and the change window", () => {
+  const now = Date.parse("2026-10-26T10:00:00Z");
+
+  it("follows the notification level and the snooze", () => {
+    const base = channel({ unread_count: 7, mention_count: 2 });
+    expect(badgeCounts(base, now)).toEqual({ unread: 7, mentions: 2 });
+    expect(badgeCounts({ ...base, notify_level: "mentions" }, now)).toEqual({
+      unread: 0,
+      mentions: 2,
+    });
+    expect(badgeCounts({ ...base, notify_level: "none" }, now)).toEqual({ unread: 0, mentions: 0 });
+    expect(badgeCounts({ ...base, muted_until: "2026-10-26T11:00:00Z" }, now)).toEqual({
+      unread: 0,
+      mentions: 0,
+    });
+    // A snooze that has ended no longer hides anything.
+    expect(badgeCounts({ ...base, muted_until: "2026-10-26T09:00:00Z" }, now).unread).toBe(7);
+  });
+
+  it("offers edits to the author for 15 minutes only", () => {
+    const fresh = message("1", "2026-10-26T09:50:00Z");
+    expect(canChange(fresh, AYSEL.id, now)).toBe(true);
+    expect(canChange(fresh, RAMIN.id, now)).toBe(false);
+    expect(canChange(message("2", "2026-10-26T09:44:00Z"), AYSEL.id, now)).toBe(false);
+    expect(canChange({ ...fresh, deleted_at: "x" }, AYSEL.id, now)).toBe(false);
   });
 });

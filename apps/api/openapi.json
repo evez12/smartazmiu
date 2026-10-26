@@ -911,6 +911,10 @@
             ],
             "title": "Last Read Message Id"
           },
+          "mention_count": {
+            "title": "Mention Count",
+            "type": "integer"
+          },
           "muted_until": {
             "anyOf": [
               {
@@ -969,6 +973,7 @@
           "notify_level",
           "muted_until",
           "unread_count",
+          "mention_count",
           "last_read_message_id",
           "posting",
           "topics"
@@ -1036,6 +1041,10 @@
             ],
             "title": "Last Read Message Id"
           },
+          "mention_count": {
+            "title": "Mention Count",
+            "type": "integer"
+          },
           "muted_until": {
             "anyOf": [
               {
@@ -1087,6 +1096,7 @@
           "notify_level",
           "muted_until",
           "unread_count",
+          "mention_count",
           "last_read_message_id",
           "posting"
         ],
@@ -1400,6 +1410,41 @@
         ],
         "title": "DmPolicy",
         "type": "string"
+      },
+      "EditMessageIn": {
+        "properties": {
+          "body": {
+            "maxLength": 100000,
+            "title": "Body",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "EditMessageIn",
+        "type": "object"
+      },
+      "EditResultOut": {
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/MessageOut"
+          },
+          "notices": {
+            "items": {
+              "const": "chat.channel_mention_not_allowed",
+              "type": "string"
+            },
+            "title": "Notices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "message",
+          "notices"
+        ],
+        "title": "EditResultOut",
+        "type": "object"
       },
       "ErrorBody": {
         "properties": {
@@ -2397,6 +2442,25 @@
         "title": "MembershipUpdateIn",
         "type": "object"
       },
+      "MentionOut": {
+        "description": "A channel member named in the message; anyone else stays plain text (§13.2).",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "MentionOut",
+        "type": "object"
+      },
       "MessageOut": {
         "properties": {
           "author": {
@@ -2454,6 +2518,49 @@
             "title": "Id",
             "type": "string"
           },
+          "is_verified_answer": {
+            "default": false,
+            "title": "Is Verified Answer",
+            "type": "boolean"
+          },
+          "last_reply_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reply At"
+          },
+          "mentions": {
+            "items": {
+              "$ref": "#/components/schemas/MentionOut"
+            },
+            "title": "Mentions",
+            "type": "array"
+          },
+          "mentions_channel": {
+            "default": false,
+            "title": "Mentions Channel",
+            "type": "boolean"
+          },
+          "my_reactions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Reactions"
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -2464,6 +2571,18 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "reactions": {
+            "items": {
+              "$ref": "#/components/schemas/ReactionOut"
+            },
+            "title": "Reactions",
+            "type": "array"
+          },
+          "reply_count": {
+            "default": 0,
+            "title": "Reply Count",
+            "type": "integer"
           },
           "topic_id": {
             "anyOf": [
@@ -2487,7 +2606,14 @@
           "client_msg_id",
           "created_at",
           "edited_at",
-          "deleted_at"
+          "deleted_at",
+          "is_verified_answer",
+          "reply_count",
+          "last_reply_at",
+          "reactions",
+          "my_reactions",
+          "mentions",
+          "mentions_channel"
         ],
         "title": "MessageOut",
         "type": "object"
@@ -2682,7 +2808,8 @@
         "enum": [
           "announcements",
           "events",
-          "schedule"
+          "schedule",
+          "chat"
         ],
         "title": "NotificationCategory",
         "type": "string"
@@ -2693,7 +2820,9 @@
           "event.published",
           "event.changed",
           "event.cancelled",
-          "schedule.changed"
+          "schedule.changed",
+          "chat.mention",
+          "chat.reply"
         ],
         "title": "NotificationKind",
         "type": "string"
@@ -2782,7 +2911,7 @@
             "items": {
               "$ref": "#/components/schemas/CategoryChannels"
             },
-            "maxItems": 3,
+            "maxItems": 4,
             "title": "Categories",
             "type": "array"
           },
@@ -3163,6 +3292,66 @@
         "title": "QuietHoursIn",
         "type": "object"
       },
+      "ReactionIn": {
+        "properties": {
+          "emoji": {
+            "maxLength": 32,
+            "title": "Emoji",
+            "type": "string"
+          }
+        },
+        "required": [
+          "emoji"
+        ],
+        "title": "ReactionIn",
+        "type": "object"
+      },
+      "ReactionOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "emoji": {
+            "title": "Emoji",
+            "type": "string"
+          }
+        },
+        "required": [
+          "emoji",
+          "count"
+        ],
+        "title": "ReactionOut",
+        "type": "object"
+      },
+      "ReactionResultOut": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "emoji": {
+            "title": "Emoji",
+            "type": "string"
+          },
+          "message_id": {
+            "title": "Message Id",
+            "type": "string"
+          },
+          "reacted": {
+            "title": "Reacted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id",
+          "emoji",
+          "count",
+          "reacted"
+        ],
+        "title": "ReactionResultOut",
+        "type": "object"
+      },
       "ReadMarkerIn": {
         "properties": {
           "last_read_message_id": {
@@ -3503,6 +3692,18 @@
             "title": "Client Msg Id",
             "type": "string"
           },
+          "parent_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{1,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
           "topic_id": {
             "anyOf": [
               {
@@ -3531,11 +3732,20 @@
           },
           "message": {
             "$ref": "#/components/schemas/MessageOut"
+          },
+          "notices": {
+            "items": {
+              "const": "chat.channel_mention_not_allowed",
+              "type": "string"
+            },
+            "title": "Notices",
+            "type": "array"
           }
         },
         "required": [
           "message",
-          "duplicate"
+          "duplicate",
+          "notices"
         ],
         "title": "SendResultOut",
         "type": "object"
@@ -3608,6 +3818,31 @@
           "student_count"
         ],
         "title": "TeachingCourseOut",
+        "type": "object"
+      },
+      "ThreadOut": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "title": "Replies",
+            "type": "array"
+          },
+          "root": {
+            "$ref": "#/components/schemas/MessageOut"
+          }
+        },
+        "required": [
+          "root",
+          "replies",
+          "has_more"
+        ],
+        "title": "ThreadOut",
         "type": "object"
       },
       "TicketOut": {
@@ -6530,6 +6765,503 @@
           }
         ],
         "summary": "Open (or create) a direct message, subject to dm_policy and blocks",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/messages/{message_id}": {
+      "delete": {
+        "operationId": "deleteMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete my message within 15 minutes (soft delete; replies stay)",
+        "tags": [
+          "chat"
+        ]
+      },
+      "patch": {
+        "operationId": "editMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit my message within 15 minutes",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/messages/{message_id}/reactions": {
+      "post": {
+        "operationId": "addReaction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "React to a message with one of the eight reactions (idempotent)",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/messages/{message_id}/reactions/{emoji}": {
+      "delete": {
+        "operationId": "removeReaction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "emoji",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "title": "Emoji",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionResultOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove my reaction (idempotent)",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/messages/{message_id}/thread": {
+      "get": {
+        "operationId": "readThread",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "title": "Message Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-9]{1,19}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A message's thread: the root and its replies, oldest first",
         "tags": [
           "chat"
         ]

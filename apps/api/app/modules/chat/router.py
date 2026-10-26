@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Path, Query, Request, Response
 from redis.exceptions import RedisError
 
 from app.core.deps import RedisDep
@@ -11,20 +11,27 @@ from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep
 from app.core.security import TokenClaims
 from app.modules.chat import tickets
-from app.modules.chat.deps import ChannelsDep, DurableRedisDep, MessagesDep
+from app.modules.chat.deps import ChannelsDep, DurableRedisDep, MessagesDep, ReactionsDep
+from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MAX_PAGE_SIZE, PAGE_SIZE
 from app.modules.chat.schemas import (
     ChannelDetailOut,
     ChannelListOut,
     ChannelOut,
+    EditMessageIn,
+    EditResultOut,
     MembershipUpdateIn,
     MembersOut,
+    MessageOut,
     MessagePageOut,
     OpenDmIn,
+    ReactionIn,
+    ReactionResultOut,
     ReadMarkerIn,
     ReadMarkerOut,
     SendMessageIn,
     SendResultOut,
+    ThreadOut,
     TicketOut,
 )
 
@@ -110,8 +117,8 @@ async def list_channel_messages(
     page = await messages.history(
         user,
         channel_id,
-        before=int(before) if before else None,
-        after=int(after) if after else None,
+        before=parse_message_id(before) if before else None,
+        after=parse_message_id(after) if after else None,
         topic_id=topic,
         limit=limit,
     )
@@ -133,10 +140,107 @@ async def send_channel_message(
     body: SendMessageIn,
     response: Response,
 ) -> SendResultOut:
-    outcome = await messages.send(user, channel_id, body.body, body.client_msg_id, body.topic_id)
+    outcome = await messages.send(
+        user,
+        channel_id,
+        body.body,
+        body.client_msg_id,
+        body.topic_id,
+        parse_message_id(body.parent_id) if body.parent_id else None,
+    )
     if not outcome.created:
         response.status_code = 200
-    return SendResultOut(message=outcome.message, duplicate=not outcome.created)
+    return SendResultOut(
+        message=outcome.message, duplicate=not outcome.created, notices=outcome.notices
+    )
+
+
+@router.patch(
+    "/chat/messages/{message_id}",
+    response_model=EditResultOut,
+    operation_id="editMessage",
+    summary="Edit my message within 15 minutes",
+)
+async def edit_message(
+    user: CurrentUserDep,
+    messages: MessagesDep,
+    message_id: Annotated[str, Path(pattern=MESSAGE_ID)],
+    body: EditMessageIn,
+) -> EditResultOut:
+    outcome = await messages.edit(user, parse_message_id(message_id), body.body)
+    return EditResultOut(message=outcome.message, notices=outcome.notices)
+
+
+@router.delete(
+    "/chat/messages/{message_id}",
+    response_model=MessageOut,
+    operation_id="deleteMessage",
+    summary="Delete my message within 15 minutes (soft delete; replies stay)",
+)
+async def delete_message(
+    user: CurrentUserDep,
+    messages: MessagesDep,
+    message_id: Annotated[str, Path(pattern=MESSAGE_ID)],
+) -> MessageOut:
+    return await messages.delete(user, parse_message_id(message_id))
+
+
+@router.get(
+    "/chat/messages/{message_id}/thread",
+    response_model=ThreadOut,
+    operation_id="readThread",
+    summary="A message's thread: the root and its replies, oldest first",
+)
+async def read_thread(
+    user: CurrentUserDep,
+    messages: MessagesDep,
+    message_id: Annotated[str, Path(pattern=MESSAGE_ID)],
+    after: Annotated[str | None, Query(pattern=MESSAGE_ID)] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = PAGE_SIZE,
+) -> ThreadOut:
+    thread = await messages.thread(
+        user,
+        parse_message_id(message_id),
+        after=parse_message_id(after) if after else None,
+        limit=limit,
+    )
+    return ThreadOut(root=thread.root, replies=thread.replies, has_more=thread.has_more)
+
+
+@router.post(
+    "/chat/messages/{message_id}/reactions",
+    response_model=ReactionResultOut,
+    operation_id="addReaction",
+    summary="React to a message with one of the eight reactions (idempotent)",
+)
+async def add_reaction(
+    user: CurrentUserDep,
+    reactions: ReactionsDep,
+    message_id: Annotated[str, Path(pattern=MESSAGE_ID)],
+    body: ReactionIn,
+) -> ReactionResultOut:
+    result = await reactions.add(user, parse_message_id(message_id), body.emoji)
+    return ReactionResultOut(
+        message_id=str(result.message_id), emoji=result.emoji, count=result.count, reacted=True
+    )
+
+
+@router.delete(
+    "/chat/messages/{message_id}/reactions/{emoji}",
+    response_model=ReactionResultOut,
+    operation_id="removeReaction",
+    summary="Remove my reaction (idempotent)",
+)
+async def remove_reaction(
+    user: CurrentUserDep,
+    reactions: ReactionsDep,
+    message_id: Annotated[str, Path(pattern=MESSAGE_ID)],
+    emoji: Annotated[str, Path(max_length=32)],
+) -> ReactionResultOut:
+    result = await reactions.remove(user, parse_message_id(message_id), emoji)
+    return ReactionResultOut(
+        message_id=str(result.message_id), emoji=result.emoji, count=result.count, reacted=False
+    )
 
 
 @router.post(

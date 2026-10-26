@@ -1045,3 +1045,76 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   provider stub tested); account deletion (no deletion feature yet; messages already keep a NULL author).
 - **Consequences:** `make up` could not be run from scratch in the Sprint 5 build container (its network allows no
   image builds); CI's E2E job runs the suite through `make up` and nginx on every push.
+
+## D-066 · 2026-10-26 · CLAUDE.md for Sprint 6
+
+- **Context:** CLAUDE.md still said "Sprint 1 only" and did not mention the chat rules agreed since (ADRs 0002–0004,
+  D-056–D-065), so they would not survive a context reset.
+- **Decision:** CLAUDE.md states the current sprint, the product owner's ask-first list for Sprint 6 (auth, hard
+  deletes, grade exposure, CSP relaxations) and a short "Chat rules" section; it stays under 120 lines. Merged
+  before any Sprint 6 code (`docs/claude-md-refresh`).
+- **Consequences:** CLAUDE.md is updated whenever a sprint starts or a rule is added.
+
+## D-067 · 2026-10-26 · Edit, delete, threads, reactions, mentions and notification levels
+
+- **Context:** Sprint 6 group A (`feat/chat-messages-v2`). §5.3 and §13.2 fix the 15-minute window, the soft delete,
+  the "silinmiş mesaja cavab" placeholder, a fixed set of eight reactions and `@channel` for privileged members; they
+  leave open the reaction set, how a mention names a person, where replies appear, what counts in badges, and how
+  chat notifications are categorised.
+- **Decision:**
+  - **Edit and delete** go through `MessageService.edit/delete`, used by `PATCH`/`DELETE /chat/messages/{id}` and the
+    `message.edit`/`message.delete` socket events. Order of checks: the message exists and is not deleted, then
+    the policy (`Action.EDIT`/`DELETE`, so archived, exam-mode and read-only channels refuse edits as before),
+    then authorship (`chat.not_author`, 403), then the window (`chat.change_window_expired`, 403, also for
+    deletes, §13.2). Non-members get `chat.message_not_found` (404). An edit clears `is_verified_answer` and
+    `verified_by`, keeps reactions, re-indexes `body_tsv` and replaces the recorded mentions. A delete sets
+    `deleted_at`, clears `body_tsv` and keeps the text in the database for moderation (Sprint 10); payloads of a
+    deleted message have an empty body and no reactions or mentions. Events: `message.updated` (the full payload)
+    and `message.deleted` (`id`, `channel_id`, `parent_id`, `deleted_at`).
+  - **Threads** are one level deep: a reply to a reply is stored under the root, and a reply inherits the root's
+    topic. A reply to a deleted root or to a message of another channel is refused (`chat.parent_not_found`).
+    Replies are not part of the channel history (`parent_id IS NULL` in `GET …/messages`) and do not raise the
+    unread badge; the root carries `reply_count` and `last_reply_at`, and the parent's author is notified.
+    `GET /chat/messages/{id}/thread` returns the root (also when deleted) and the replies oldest first, paged with
+    `after`. The reconnect backfill still replays replies, so open thread panels stay current. The panel opens
+    with `?thread=<id>` in the third pane from 1280 px and as a sheet below.
+  - **Reactions:** 👍 ❤️ 😂 😮 😢 🙏 🎉 ✅ (thumbs up, heart, laughter, surprise, sadness, thanks, celebration,
+    done), stored as the emoji itself, so `DELETE …/reactions/{emoji}` takes it URL-encoded. Adding and removing
+    are idempotent (`ON CONFLICT DO NOTHING` / delete by key) and publish `reaction.updated` only when something
+    changed. They need `Action.REACT` and are limited to 60 changes per minute per person. Payloads list counts in
+    the set's order; `my_reactions` is filled for the reader in REST responses and left `null` in broadcasts,
+    where the client keeps its own. The web code writes the emoji as escapes, because the source check allows
+    emoji only in user content.
+  - **Mentions** are written as `<@user-id>` tokens; the composer shows "@Name", suggests channel members after
+    "@" and encodes the picked people when sending (and decodes them for editing). The server records only
+    channel members other than the author (at most 50, code spans ignored); other tokens stay plain text, are
+    rendered as "@istifadəçi" without a name and trigger nothing (§13.2). `@channel` is honoured for the
+    offering's teachers, channel owners and moderators, and the global teacher and staff roles; from anyone else
+    it is ignored and the send result carries the notice `chat.channel_mention_not_allowed`, which the composer
+    shows. A used `@channel` sets `messages.mentions_channel` (migration 0014), which stays set after edits.
+  - **Notifications:** new category `chat` (§5.6 lists push for mentions and replies, so a category is needed for
+    the push switch), kinds `chat.mention` and `chat.reply`. One notification per message and person
+    (`dedupe_key = chat.message:<id>`), mention first, so a reply that also mentions someone notifies once and a
+    re-edit never notifies again. Recipients are members with level `all` or `mentions` who have not blocked the
+    author. The notification's subject id is the message id as a UUID (`UUID(int=id)`), so the delivery check
+    can find the message and re-check membership, level, snooze, blocks and deletion when push is sent (§5.6).
+    Title: "author · channel", link `/chat/<channel>` (with `?thread=` for replies), no message text. Chat e-mail
+    is a digest in §5.6 (Phase 3): until then e-mail cannot be switched on for `chat` and the settings page shows
+    push only.
+  - **Notification level and snooze:** the channel payload adds `mention_count` (unread messages by others that
+    mention the reader or use `@channel`, capped at 100). Badges: level `all` shows unread and mention counts,
+    `mentions` only the mention count, `none` or an active `muted_until` nothing but a muted icon. A snooze also
+    suppresses push at delivery; history and the bell are unchanged. The header menu sets the level and snoozes
+    for 1 h, 8 h, 24 h or 7 days.
+  - **Consistency job** (§5.7; Sprint 5 had only the schema, D-060): `remove_chat_orphans`, weekly on Monday
+    03:40 Baku time, deletes reactions, mentions and attachments whose message no longer exists, in batches of
+    5,000, logs the counts and is idempotent.
+  - **E2E:** the chat test now covers a picked mention, a thread reply, a reaction, an edit and a delete between
+    two seeded students; cleanup removes replies with their root, reactions, mentions and chat notifications of
+    marked messages, and the data check also counts `message_reactions`, `message_mentions` and chat
+    notifications, which must be unchanged after a run.
+- **§13.2 in this group:** tested: edit/delete after 15 minutes and by non-authors, editing a verified message with
+  reactions, deleting a parent with replies, mention of a non-member, `@channel` by a non-privileged user, blocked
+  users and mute levels at delivery. Moderator deletes wait for Sprint 10.
+- **Consequences:** composing a mention to someone outside the suggestion list (typing the token by hand) works
+  but shows the token while editing. Unread counts no longer include replies.

@@ -41,6 +41,7 @@ function channel(overrides: Partial<Channel>): Channel {
     notify_level: "all",
     muted_until: null,
     unread_count: 0,
+    mention_count: 0,
     last_read_message_id: null,
     posting: { allowed: true, reason: null, until: null, retry_after_seconds: null },
     ...overrides,
@@ -61,9 +62,15 @@ describe("Composer", () => {
   it("sends with Enter, keeps Shift+Enter for new lines and refuses empty text", async () => {
     const onSend = vi.fn();
     renderWithIntl(
-      <Composer channelName="Statistika" disabled={false} onSend={onSend} onTyping={vi.fn()} />,
+      <Composer
+        label="Mesaj"
+        placeholder="Statistika kanalına yazın"
+        disabled={false}
+        onSend={onSend}
+        onTyping={vi.fn()}
+      />,
     );
-    const field = screen.getByRole("textbox", { name: "Mesaj" });
+    const field = screen.getByRole("combobox", { name: "Mesaj" });
     expect(field).toHaveAttribute("placeholder", "Statistika kanalına yazın");
     await userEvent.type(field, "   {Enter}");
     expect(onSend).not.toHaveBeenCalled();
@@ -76,9 +83,15 @@ describe("Composer", () => {
   it("counts characters near the limit and blocks sending beyond it", async () => {
     const onSend = vi.fn();
     renderWithIntl(
-      <Composer channelName="Statistika" disabled={false} onSend={onSend} onTyping={vi.fn()} />,
+      <Composer
+        label="Mesaj"
+        placeholder="Statistika kanalına yazın"
+        disabled={false}
+        onSend={onSend}
+        onTyping={vi.fn()}
+      />,
     );
-    const field = screen.getByRole("textbox", { name: "Mesaj" });
+    const field = screen.getByRole("combobox", { name: "Mesaj" });
     await userEvent.click(field);
     await userEvent.paste("ə".repeat(3600));
     expect(screen.getByText("3600 / 4000 simvol")).toBeInTheDocument();
@@ -90,11 +103,35 @@ describe("Composer", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
-  it("is disabled when the channel does not accept posts", () => {
+  it("suggests channel members after @ and sends the pick as a mention token", async () => {
+    const onSend = vi.fn();
+    const ramin = { id: "r-1", display_name: "Ramin Əliyev", photo_url: null, badge: null };
+    const rauf = { id: "r-2", display_name: "Rauf Səfərov", photo_url: null, badge: null };
     renderWithIntl(
-      <Composer channelName="Statistika" disabled onSend={vi.fn()} onTyping={vi.fn()} />,
+      <Composer
+        label="Mesaj"
+        disabled={false}
+        onSend={onSend}
+        members={[ramin, rauf, { ...ramin, id: "me", display_name: "Aysel Məmmədova" }]}
+        currentUserId="me"
+      />,
     );
-    expect(screen.getByRole("textbox", { name: "Mesaj" })).toBeDisabled();
+    const field = screen.getByRole("combobox", { name: "Mesaj" });
+    await userEvent.type(field, "Salam @ra");
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(2);
+    expect(options[0]).toHaveTextContent("Ramin Əliyev");
+    expect(options[1]).toHaveTextContent("Rauf Səfərov");
+    expect(field).toHaveAttribute("aria-expanded", "true");
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    expect(field).toHaveValue("Salam @Rauf Səfərov ");
+    await userEvent.type(field, "baxın{Enter}");
+    expect(onSend).toHaveBeenCalledWith("Salam <@r-2> baxın");
+  });
+
+  it("is disabled when the channel does not accept posts", () => {
+    renderWithIntl(<Composer label="Mesaj" disabled onSend={vi.fn()} onTyping={vi.fn()} />);
+    expect(screen.getByRole("combobox", { name: "Mesaj" })).toBeDisabled();
   });
 });
 

@@ -552,7 +552,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** two browsers, two students of 765a2 → real-time messages in course channel and DM; reconnect after network drop loses nothing; teacher appears in course channel but not in subject community.
 
 #### Sprint 6 (02-08 → 02-19) — Chat UX + Materials v1 + Pilot hardening
-- [ ] Threads (side panel), replies, reactions, @mentions (+ notifications), edit (15 min) / soft delete.
+- [x] Threads (side panel), replies, reactions, @mentions (+ notifications), edit (15 min) / soft delete.
 - [ ] Attachments: presigned upload, ClamAV scan, image & PDF preview, size/type limits.
 - [ ] Markdown (sanitized) + KaTeX + code blocks; mute / notification level per channel.
 - [ ] Report message (basic) + admin list.

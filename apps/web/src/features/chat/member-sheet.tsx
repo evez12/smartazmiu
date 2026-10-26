@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -18,7 +18,7 @@ import { useApi, useErrorMessage } from "@/lib/api/provider";
 
 import { chatKeys, type Author } from "./model";
 import { PresenceDot } from "./presence-dot";
-import { useChannels, useChatRuntime } from "./runtime";
+import { useChannels, useChatRuntime, useMembers } from "./runtime";
 
 /** The channel's members (§5.8 addition, D-063); a member opens a card to start a DM or block (§5.4). */
 export function MemberSheet({
@@ -31,24 +31,14 @@ export function MemberSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations("chat");
-  const api = useApi();
   const runtime = useChatRuntime();
   const [selected, setSelected] = useState<Author | null>(null);
-  const members = useQuery({
-    queryKey: chatKeys.members(channelId),
-    queryFn: async () =>
-      unwrap(
-        await api.GET("/api/v1/chat/channels/{channel_id}/members", {
-          params: { path: { channel_id: channelId } },
-        }),
-      ).members,
-    enabled: open,
-  });
+  const members = useMembers(channelId);
 
   const shown = members.data;
   useEffect(() => {
-    if (shown) runtime.watchPresence(shown.map((member) => member.id));
-  }, [runtime, shown]);
+    if (open && shown) runtime.watchPresence(shown.map((member) => member.id));
+  }, [open, runtime, shown]);
 
   return (
     <>

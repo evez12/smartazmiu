@@ -11,6 +11,7 @@ from sqlalchemy import and_, case, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from app.core.errors import AppError
 from app.core.ratelimit import RateLimit, consume
 from app.core.time import utc_now
 from app.modules.academics.models import CourseOfferingTeacher
@@ -20,6 +21,7 @@ from app.modules.chat.policy import (
     ChannelState,
     Decision,
     ExamWindowProvider,
+    Reason,
     authorize,
 )
 from app.modules.users.models import DmPolicy, RoleCode, User, UserStatus
@@ -31,6 +33,24 @@ logger = structlog.get_logger(__name__)
 SEND_LIMIT = RateLimit("chat_send", limit=10, window_seconds=10)
 # Teachers and staff can always write to someone, even when that person accepts no messages (§5.4).
 ALWAYS_REACHES = frozenset({RoleCode.TEACHER.value, RoleCode.STAFF.value})
+# Besides the offering's teachers and channel moderators, these global roles may use @channel (§5.3, D-067).
+MENTION_CHANNEL_ROLES = frozenset({RoleCode.TEACHER.value, RoleCode.STAFF.value})
+
+
+def deny(decision: Decision, *, missing: str = "chat.channel_not_found") -> AppError:
+    """The REST form of a refusal; non-members get the same 404 as something that does not exist (§14)."""
+    reason = decision.reason
+    if reason is Reason.NOT_MEMBER or reason is None:
+        return AppError(missing, 404)
+    details: dict[str, object] = {}
+    headers = None
+    if decision.until is not None:
+        details["until"] = decision.until.isoformat()
+    if decision.retry_after is not None:
+        details["retry_after_seconds"] = decision.retry_after
+        headers = {"Retry-After": str(decision.retry_after)}
+    status = 429 if reason in (Reason.RATE_LIMITED, Reason.SLOW_MODE) else 403
+    return AppError(reason.value, status, details=details, headers=headers)
 
 
 def slow_mode_key(channel_id: uuid.UUID, user_id: uuid.UUID) -> str:
@@ -91,6 +111,7 @@ class ChannelAccess:
                     window.ends_at, exam_until.get(window.channel_id, window.ends_at)
                 )
         reaches_everyone = bool(user.roles & ALWAYS_REACHES)
+        announces = bool(user.roles & MENTION_CHANNEL_ROLES)
         states: dict[uuid.UUID, ChannelState] = {}
         for (
             channel_id,
@@ -121,7 +142,7 @@ class ChannelAccess:
                 posting_muted_until=muted_until,
                 slow_mode_seconds=slow_seconds,
                 slow_mode_exempt=privileged,
-                can_mention_channel=privileged,
+                can_mention_channel=privileged or announces,
             )
         return states
 

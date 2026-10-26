@@ -775,14 +775,16 @@
   },
   "notifications": {
     "title": "Bildirişlər",
-    "description": "Elanlar, tədbirlər və dərs cədvəlindəki dəyişikliklər haqqında bildirişləriniz.",
+    "description": "Elanlar, tədbirlər, dərs cədvəlindəki dəyişikliklər və çatda sizə yazılanlar haqqında bildirişləriniz.",
     "bell": "{count, plural, =0 {Bildirişlər} other {Bildirişlər, # oxunmamış}}",
     "kinds": {
       "announcementPublished": "Yeni elan",
       "eventPublished": "Yeni tədbir",
       "eventChanged": "Tədbirdə dəyişiklik",
       "eventCancelled": "Tədbir ləğv edildi",
-      "scheduleChanged": "Dərs cədvəlində dəyişiklik"
+      "scheduleChanged": "Dərs cədvəlində dəyişiklik",
+      "chatMention": "Sizi çatda qeyd etdilər",
+      "chatReply": "Mesajınıza cavab yazdılar"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
@@ -802,7 +804,8 @@
       "categories": {
         "announcements": "Elanlar",
         "events": "Tədbirlər",
-        "schedule": "Dərs cədvəlində dəyişikliklər"
+        "schedule": "Dərs cədvəlində dəyişikliklər",
+        "chat": "Çatda qeyd olunmalar və cavablar"
       },
       "quietTitle": "Sakit saatlar",
       "quietHint": "Bu saatlarda brauzer bildirişləri göndərilmir. Saytdakı bildirişlər və e-poçt dəyişmir. Vaxt Bakı vaxtı ilə göstərilir.",
@@ -1100,9 +1103,14 @@
       "slowModeShort": "Yavaş rejim aktivdir. Bir az gözləyib yenidən yazın.",
       "rateLimited": "Qısa müddətdə çox mesaj göndərdiniz. {seconds} saniyə gözləyin.",
       "rateLimitedShort": "Qısa müddətdə çox mesaj göndərdiniz. Bir az gözləyib yenidən göndərin.",
-      "channelMention": "Bütün kanalı yalnız müəllimlər və moderatorlar qeyd edə bilər.",
+      "channelMention": "Bütün kanalı yalnız müəllimlər, moderatorlar və əməkdaşlar qeyd edə bilər.",
       "queueExpired": "Mesaj çox köhnədir və avtomatik göndərilmədi. Lazımdırsa, yenidən göndərin.",
-      "generic": "Mesaj göndərilmədi. Yenidən cəhd edin."
+      "generic": "Mesaj göndərilmədi. Yenidən cəhd edin.",
+      "notAuthor": "Yalnız öz mesajınızı dəyişə bilərsiniz.",
+      "changeWindowExpired": "Mesajı yalnız göndərildikdən sonra 15 dəqiqə ərzində dəyişmək və ya silmək olar.",
+      "messageNotFound": "Mesaj tapılmadı. Ola bilsin ki, silinib.",
+      "parentNotFound": "Cavab yazdığınız mesaj silinib.",
+      "reactionNotAllowed": "Bu reaksiya mövcud deyil."
     },
     "user": {
       "message": "Mesaj yazın",
@@ -1111,6 +1119,56 @@
       "blocked": "İstifadəçi bloklandı.",
       "unblocked": "Blok götürüldü.",
       "blockedNote": "Bu istifadəçini bloklamısınız: sizə şəxsi mesaj yaza bilmir, kanallardakı mesajları sizin üçün gizlədilir."
+    },
+    "edited": "redaktə olunub",
+    "editedAt": "Redaktə olunub: {time}",
+    "deletedMessage": "Bu mesaj silinib.",
+    "deletedParent": "silinmiş mesaja cavab",
+    "verified": "Təsdiqlənmiş cavab",
+    "toolbarLabel": "Mesaj əməliyyatları",
+    "react": "Reaksiya bildirin",
+    "reactWith": "{emoji} reaksiyası",
+    "reactionCount": "{emoji} {count, plural, one {# nəfər} other {# nəfər}}{mine, select, true {, siz də daxil} other {}}",
+    "reply": "Cavab yazın",
+    "more": "Digər əməliyyatlar",
+    "edit": "Redaktə edin",
+    "delete": "Silin",
+    "deleteTitle": "Mesaj silinsin?",
+    "deleteConsequence": "Mesajın mətni kanal üzvlərindən gizlədiləcək. Cavablar qalacaq və “silinmiş mesaja cavab” kimi göstəriləcək.",
+    "deleted": "Mesaj silindi.",
+    "changeFailed": "Əməliyyat alınmadı. Yenidən cəhd edin.",
+    "editHint": "Mesajı göndərildikdən sonra 15 dəqiqə ərzində redaktə edə və ya silə bilərsiniz.",
+    "save": "Yadda saxlayın",
+    "cancel": "Ləğv edin",
+    "editLabel": "Mesajın mətni",
+    "replies": "{count, plural, one {# cavab} other {# cavab}}",
+    "threadTitle": "Cavablar",
+    "closeThread": "Mövzunu bağlayın",
+    "threadFailed": "Cavabları yükləmək mümkün olmadı.",
+    "threadEmpty": "Hələ cavab yoxdur. İlk cavabı siz yazın.",
+    "threadNotFound": "Mesaj tapılmadı və ya ona daxil olmaq imkanınız yoxdur.",
+    "replyPlaceholder": "Cavab yazın",
+    "loadMoreReplies": "Növbəti cavabları yükləyin",
+    "mentionSuggestions": "Qeyd etmək üçün üzv seçin",
+    "mentionUnknown": "@istifadəçi",
+    "notices": {
+      "channelMention": "Mesaj göndərildi, amma @channel bildiriş göndərmədi: bütün kanalı yalnız müəllimlər, moderatorlar və əməkdaşlar qeyd edə bilər."
+    },
+    "notify": {
+      "levelTitle": "Bildirişlər",
+      "all": "Bütün mesajlar",
+      "mentions": "Yalnız qeyd olunanda",
+      "none": "Heç biri",
+      "muteTitle": "Müvəqqəti susdurun",
+      "mute1h": "1 saat",
+      "mute8h": "8 saat",
+      "mute24h": "24 saat",
+      "mute7d": "7 gün",
+      "unmute": "Susdurmanı götürün",
+      "mutedUntil": "{until} qədər susdurulub",
+      "muted": "Susdurulub",
+      "saved": "Bildiriş ayarı yadda saxlanıldı.",
+      "failed": "Ayar yadda saxlanılmadı. Yenidən cəhd edin."
     }
   }
 }

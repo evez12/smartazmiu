@@ -47,6 +47,11 @@ const SEED_TABLES: Record<string, string> = {
   channel_topics: "SELECT count(*) FROM channel_topics",
   "channel_members (registry)":
     "SELECT count(*) FROM channel_members m JOIN channels c ON c.id = m.channel_id WHERE c.type <> 'dm'",
+  // Not seed data, but rows that hang off test messages without a foreign key (ADR 0002): a run that leaves
+  // any behind has a cleanup gap (D-067).
+  message_reactions: "SELECT count(*) FROM message_reactions",
+  message_mentions: "SELECT count(*) FROM message_mentions",
+  "notifications (chat)": "SELECT count(*) FROM notifications WHERE category = 'chat'",
 };
 
 export type RowCounts = Record<string, number>;
@@ -132,11 +137,18 @@ export class TestRecords {
     try {
       await client.query("BEGIN");
       const markers = this.chat.markers.map((marker) => `%${marker}%`);
-      const written = "SELECT id FROM messages WHERE body LIKE ANY($1)";
-      await client.query(`DELETE FROM message_client_ids WHERE message_id IN (${written})`, [
-        markers,
-      ]);
-      await client.query("DELETE FROM messages WHERE body LIKE ANY($1)", [markers]);
+      // Replies are removed with their thread root, whatever their own text.
+      const written =
+        "SELECT id FROM messages WHERE body LIKE ANY($1) OR parent_id IN (SELECT id FROM messages WHERE body LIKE ANY($1))";
+      for (const table of ["message_client_ids", "message_reactions", "message_mentions"]) {
+        await client.query(`DELETE FROM ${table} WHERE message_id IN (${written})`, [markers]);
+      }
+      // Chat notifications carry the message id as a UUID (D-067).
+      await client.query(
+        `DELETE FROM notifications WHERE category = 'chat' AND subject_id IN (SELECT lpad(to_hex(id), 32, '0')::uuid FROM (${written}) AS m)`,
+        [markers],
+      );
+      await client.query(`DELETE FROM messages WHERE id IN (${written})`, [markers]);
       const people = "SELECT id FROM users WHERE email = ANY($1)";
       // Topics, members, read markers and the rest of their messages cascade from the channel.
       await client.query(

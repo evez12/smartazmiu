@@ -217,6 +217,8 @@ class Message(Base):
     body: Mapped[str] = mapped_column(Text)
     # Both normalize_az forms of the body (§5.7.1), written with the message; searched from Sprint 10.
     body_tsv: Mapped[str | None] = mapped_column(TSVECTOR)
+    # The author used @channel and was allowed to (§5.3); explicit @user mentions live in message_mentions.
+    mentions_channel: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     is_verified_answer: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     verified_by: Mapped[uuid.UUID | None] = mapped_column(

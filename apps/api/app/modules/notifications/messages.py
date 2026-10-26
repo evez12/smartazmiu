@@ -10,6 +10,8 @@ KIND_LABELS: dict[NotificationKind, str] = {
     NotificationKind.EVENT_CHANGED: "Tədbirdə dəyişiklik",
     NotificationKind.EVENT_CANCELLED: "Tədbir ləğv edildi",
     NotificationKind.SCHEDULE_CHANGED: "Dərs cədvəlində dəyişiklik",
+    NotificationKind.CHAT_MENTION: "Sizi çatda qeyd etdilər",
+    NotificationKind.CHAT_REPLY: "Mesajınıza cavab yazdılar",
 }
 
 

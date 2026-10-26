@@ -19,7 +19,7 @@ from app.modules.notifications.models import (
     QuietHours,
 )
 from app.modules.notifications.push import allowed_endpoint
-from app.modules.notifications.service import DEFAULT_CHANNELS
+from app.modules.notifications.service import DEFAULT_CHANNELS, WITHOUT_EMAIL
 
 DEFAULT_QUIET_START = time(23, 0)
 DEFAULT_QUIET_END = time(8, 0)
@@ -102,12 +102,13 @@ class Preferences:
         if quiet_hours.enabled and quiet_hours.starts_at == quiet_hours.ends_at:
             raise AppError("notifications.quiet_hours_empty", 422)
         for category, value in channels.items():
+            email = value.email and category not in WITHOUT_EMAIL
             await self.session.execute(
                 insert(NotificationPreference)
-                .values(user_id=self.user_id, category=category, push=value.push, email=value.email)
+                .values(user_id=self.user_id, category=category, push=value.push, email=email)
                 .on_conflict_do_update(
                     index_elements=["user_id", "category"],
-                    set_={"push": value.push, "email": value.email},
+                    set_={"push": value.push, "email": email},
                 )
             )
         values = {

@@ -39,13 +39,13 @@ async function online(page: Page) {
 }
 
 async function send(page: Page, text: string) {
-  const field = page.getByRole("textbox", { name: "Mesaj" });
+  const field = page.getByRole("combobox", { name: "Mesaj" });
   await field.fill(text);
   await field.press("Enter");
 }
 
 function messageLog(page: Page): Locator {
-  return page.getByRole("log");
+  return page.getByRole("log", { name: /kanalının mesajları$/ });
 }
 
 async function expectNoSeriousViolations(page: Page) {
@@ -115,6 +115,84 @@ test("two students talk in a course channel and a DM, and a network drop loses n
   await send(ramin, `Bəli, axşam göndərərəm. ${marker}-8`);
   await expect(messageLog(aysel).getByText(`${marker}-8`)).toBeVisible({ timeout: 5000 });
   await expectNoSeriousViolations(ramin);
+
+  await aysel.context().close();
+  await ramin.context().close();
+});
+
+/*
+ * Sprint 6: a mention picked from the suggestions, a reply in the thread panel, a reaction, an edit within the
+ * window and a soft delete that keeps the thread (§5.3, §13.2).
+ */
+test("students mention, reply in a thread, react, edit and delete", async ({
+  browser,
+  records,
+}) => {
+  test.setTimeout(180_000);
+  const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  const aysel = await openChat(browser, AYSEL.username);
+  const ramin = await openChat(browser, RAMIN.username);
+  await online(aysel);
+  await online(ramin);
+  const course = courses(aysel).first();
+  const courseName = (await course.locator("span.truncate").first().innerText()).trim();
+  await course.click();
+  await courses(ramin).filter({ hasText: courseName }).first().click();
+  await expect(ramin.getByRole("heading", { level: 2, name: courseName })).toBeVisible();
+
+  const field = aysel.getByRole("combobox", { name: "Mesaj" });
+  await field.fill("Kollokvium cümə günüdür, ");
+  await field.pressSequentially("@Rami");
+  await aysel.getByRole("option", { name: /Ramin Əliyev/ }).click();
+  await field.pressSequentially(`hazırsınız? ${marker}-root`);
+  await field.press("Enter");
+  const rootOnRamin = messageLog(ramin)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-root` });
+  await expect(rootOnRamin).toContainText("@Ramin Əliyev", { timeout: 5000 });
+
+  await rootOnRamin.hover();
+  await rootOnRamin.getByRole("button", { name: "Cavab yazın" }).click();
+  const thread = ramin.getByRole("region", { name: "Cavablar" });
+  await expect(thread.getByText(`${marker}-root`)).toBeVisible();
+  await thread
+    .getByRole("combobox", { name: "Cavab yazın" })
+    .fill(`Bəli, hazıram. ${marker}-reply`);
+  await thread.getByRole("combobox", { name: "Cavab yazın" }).press("Enter");
+  await expect(thread.getByText(`${marker}-reply`)).toBeVisible();
+  const rootOnAysel = messageLog(aysel)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-root` });
+  await expect(rootOnAysel.getByRole("button", { name: "1 cavab" })).toBeVisible({ timeout: 5000 });
+  // Replies stay in the thread, not in the channel.
+  await expect(messageLog(aysel).getByText(`${marker}-reply`)).toHaveCount(0);
+
+  await rootOnRamin.hover();
+  await rootOnRamin.getByRole("button", { name: "Reaksiya bildirin" }).click();
+  await ramin
+    .getByRole("button", { name: /reaksiyası$/ })
+    .first()
+    .click();
+  await expect(rootOnAysel.getByRole("button", { name: /1 nəfər/ })).toBeVisible({ timeout: 5000 });
+  await expectNoSeriousViolations(ramin);
+
+  await rootOnAysel.hover();
+  await rootOnAysel.getByRole("button", { name: "Digər əməliyyatlar" }).click();
+  await aysel.getByRole("menuitem", { name: "Redaktə edin" }).click();
+  const editor = rootOnAysel.getByRole("combobox", { name: "Mesajın mətni" });
+  await expect(editor).toHaveValue(/@Ramin Əliyev/);
+  await editor.fill(`Kollokvium şənbə günüdür. ${marker}-root`);
+  await editor.press("Enter");
+  await expect(rootOnRamin).toContainText("şənbə günüdür", { timeout: 5000 });
+  await expect(rootOnRamin).toContainText("redaktə olunub");
+
+  await rootOnAysel.hover();
+  await rootOnAysel.getByRole("button", { name: "Digər əməliyyatlar" }).click();
+  await aysel.getByRole("menuitem", { name: "Silin" }).click();
+  await aysel.getByRole("alertdialog").getByRole("button", { name: "Silin" }).click();
+  await expect(messageLog(ramin).getByText("Bu mesaj silinib.")).toBeVisible({ timeout: 5000 });
+  await expect(thread.getByText(`${marker}-reply`)).toBeVisible();
+  await expect(thread.getByText("silinmiş mesaja cavab")).toBeVisible();
 
   await aysel.context().close();
   await ramin.context().close();
@@ -202,7 +280,7 @@ test.describe("chat on a phone", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Çat" })).toBeVisible();
     await courses(page).first().click();
     await expect(sidebar(page)).toBeHidden();
-    await expect(page.getByRole("textbox", { name: "Mesaj" })).toBeEnabled();
+    await expect(page.getByRole("combobox", { name: "Mesaj" })).toBeEnabled();
     await send(page, `Telefondan yazıram. ${marker}`);
     await expect(messageLog(page).getByText(marker)).toBeVisible();
     const overflow = await page.evaluate(
@@ -220,6 +298,6 @@ test("chat screens pass the accessibility check in dark mode", async ({ page }) 
   await signIn(page, AYSEL.username, "/chat");
   await expectNoSeriousViolations(page);
   await courses(page).first().click();
-  await expect(page.getByRole("textbox", { name: "Mesaj" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Mesaj" })).toBeVisible();
   await expectNoSeriousViolations(page);
 });

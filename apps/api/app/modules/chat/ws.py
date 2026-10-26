@@ -28,10 +28,13 @@ from app.modules.chat import tickets
 from app.modules.chat.access import ChannelAccess
 from app.modules.chat.bus import ChatBus, channel_topic, encode
 from app.modules.chat.hub import Close, CloseCode, Connection, Hub
+from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MessageService
 from app.modules.chat.models import ChannelMember
 from app.modules.chat.policy import Action, ExamWindowProvider
 from app.modules.chat.presence import OFFLINE_GRACE_SECONDS, Presence
+from app.modules.chat.reactions import ReactionService
+from app.modules.chat.schemas import MESSAGE_ID_PATTERN
 from app.modules.chat.snowflake import Snowflake
 from app.modules.users.service import UserService
 
@@ -52,7 +55,7 @@ EVENT_WINDOW_SECONDS = 10.0
 
 class SubscribeIn(BaseModel):
     channel_ids: list[uuid.UUID] = Field(max_length=MAX_SUBSCRIBE)
-    after: str | None = Field(default=None, pattern=r"^[0-9]{1,19}$")
+    after: str | None = Field(default=None, pattern=MESSAGE_ID_PATTERN)
     """The newest message id the client has; missed messages are replayed before the ack."""
     presence: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_PRESENCE)
 
@@ -62,6 +65,21 @@ class SendIn(BaseModel):
     body: str = Field(max_length=100_000)
     client_msg_id: uuid.UUID
     topic_id: uuid.UUID | None = None
+    parent_id: str | None = Field(default=None, pattern=MESSAGE_ID_PATTERN)
+
+
+class EditIn(BaseModel):
+    message_id: str = Field(pattern=MESSAGE_ID_PATTERN)
+    body: str = Field(max_length=100_000)
+
+
+class MessageRefIn(BaseModel):
+    message_id: str = Field(pattern=MESSAGE_ID_PATTERN)
+
+
+class ReactionEventIn(BaseModel):
+    message_id: str = Field(pattern=MESSAGE_ID_PATTERN)
+    emoji: str = Field(max_length=32)
 
 
 class ChannelIn(BaseModel):
@@ -70,15 +88,11 @@ class ChannelIn(BaseModel):
 
 class ReadIn(BaseModel):
     channel_id: uuid.UUID
-    message_id: str = Field(pattern=r"^[0-9]{1,19}$")
+    message_id: str = Field(pattern=MESSAGE_ID_PATTERN)
 
 
 class RefreshIn(BaseModel):
     ticket: str = Field(max_length=64)
-
-
-# In the protocol (§5.9) but built in Sprint 6.
-LATER_EVENTS = frozenset({"message.edit", "message.delete", "reaction.add", "reaction.remove"})
 
 
 def allowed_origins(settings: Settings) -> set[str]:
@@ -218,13 +232,16 @@ class SocketSession:
             "message.send": self.on_send,
             "typing": self.on_typing,
             "read": self.on_read,
+            "message.edit": self.on_edit,
+            "message.delete": self.on_delete,
+            "reaction.add": self.on_reaction_add,
+            "reaction.remove": self.on_reaction_remove,
             "auth.refresh": self.on_refresh,
         }.get(event_type)
         if handler is None:
-            code = (
-                "request.not_supported" if event_type in LATER_EVENTS else "request.unknown_event"
+            self.connection.send(
+                "error", {"id": event_id, "code": "request.unknown_event", "detail": {}}
             )
-            self.connection.send("error", {"id": event_id, "code": code, "detail": {}})
             return
         try:
             await handler(event_id, data)
@@ -259,7 +276,7 @@ class SocketSession:
             truncated: list[str] = []
             if request.after is not None:
                 for channel_id in sorted(allowed):
-                    page = await messages.backfill(channel_id, int(request.after))
+                    page = await messages.backfill(channel_id, parse_message_id(request.after))
                     if page.has_more:
                         # Too much to replay: the client drops its window and loads the latest page (§13.2).
                         truncated.append(str(channel_id))
@@ -308,6 +325,7 @@ class SocketSession:
                 request.body,
                 request.client_msg_id,
                 request.topic_id,
+                parse_message_id(request.parent_id) if request.parent_id else None,
             )
         self.connection.send(
             "ack",
@@ -316,6 +334,53 @@ class SocketSession:
                 "message_id": outcome.message.id,
                 "client_msg_id": outcome.message.client_msg_id,
                 "duplicate": not outcome.created,
+                "notices": outcome.notices,
+            },
+        )
+
+    async def on_edit(self, event_id: str | None, data: dict[str, Any]) -> None:
+        request = EditIn.model_validate(data)
+        async with self.gateway.database.sessionmaker() as session:
+            _, messages = self._services(session)
+            outcome = await messages.edit(
+                self.connection.user, parse_message_id(request.message_id), request.body
+            )
+        self.connection.send(
+            "ack", {"id": event_id, "message_id": outcome.message.id, "notices": outcome.notices}
+        )
+
+    async def on_delete(self, event_id: str | None, data: dict[str, Any]) -> None:
+        request = MessageRefIn.model_validate(data)
+        async with self.gateway.database.sessionmaker() as session:
+            _, messages = self._services(session)
+            deleted = await messages.delete(
+                self.connection.user, parse_message_id(request.message_id)
+            )
+        self.connection.send("ack", {"id": event_id, "message_id": deleted.id})
+
+    async def on_reaction_add(self, event_id: str | None, data: dict[str, Any]) -> None:
+        await self._react(event_id, data, add=True)
+
+    async def on_reaction_remove(self, event_id: str | None, data: dict[str, Any]) -> None:
+        await self._react(event_id, data, add=False)
+
+    async def _react(self, event_id: str | None, data: dict[str, Any], *, add: bool) -> None:
+        request = ReactionEventIn.model_validate(data)
+        async with self.gateway.database.sessionmaker() as session:
+            access, _ = self._services(session)
+            reactions = ReactionService(session, access, ChatBus(self.gateway.hub.cache))
+            change = reactions.add if add else reactions.remove
+            result = await change(
+                self.connection.user, parse_message_id(request.message_id), request.emoji
+            )
+        self.connection.send(
+            "ack",
+            {
+                "id": event_id,
+                "message_id": str(result.message_id),
+                "emoji": result.emoji,
+                "count": result.count,
+                "reacted": result.reacted,
             },
         )
 
@@ -344,7 +409,7 @@ class SocketSession:
         async with self.gateway.database.sessionmaker() as session:
             _, messages = self._services(session)
             marker = await messages.mark_read(
-                self.connection.user, request.channel_id, int(request.message_id)
+                self.connection.user, request.channel_id, parse_message_id(request.message_id)
             )
         self.connection.send("ack", {"id": event_id, "last_read_message_id": str(marker)})
 
