@@ -542,7 +542,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 
 #### Sprint 5 (01-25 → 02-05) — Chat Core
 - [x] Chat models (channels, topics, members, reads, messages partitioned, attachments, reactions, mentions).
-- [ ] Auto-provisioning job: on enrollment import create/sync `course_offering`, `subject_community`, `academic_group`, `faculty` channels and memberships; default topics. Must be idempotent and handle membership removal (dropped enrollment, group transfer).
+- [x] Auto-provisioning job: on enrollment import create/sync `course_offering`, `subject_community`, `academic_group`, `faculty` channels and memberships; default topics. Must be idempotent and handle membership removal (dropped enrollment, group transfer).
 - [x] WebSocket gateway: ticket auth, subscribe, `message.send` (persist → publish), ack, error codes, heartbeat, reconnect + backfill, live membership revocation (§5.9).
 - [x] Redis pub/sub fan-out; presence; typing (throttled).
 - [x] REST: channel list with unread counts, paginated history, read marker.
