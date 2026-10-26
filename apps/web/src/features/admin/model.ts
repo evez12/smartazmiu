@@ -38,6 +38,7 @@ export const AUDIT_ACTIONS = [
   "material.report_handled",
   "material.hidden",
   "material.shown",
+  "feedback.handled",
 ] as const satisfies readonly AuditAction[];
 
 /** Message key of an action code: next-intl reads dots as nesting. */

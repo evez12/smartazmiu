@@ -51,10 +51,13 @@ from app.modules.chat.models import (
     MemberRole,
 )
 from app.modules.chat.topics import DEFAULT_TOPICS
-from app.modules.users.models import PersonType, User, UserStatus
+from app.modules.users.models import PersonType, Role, RoleCode, User, UserRole, UserStatus
 
 # Arbitrary but fixed: "chat" in ASCII.
 PROVISIONING_LOCK = 0x63686174
+SUPPORT_CHANNEL_NAME = "SmartAzMİU dəstəyi"
+# Staff answer in the support channel and moderate it (D-074).
+SUPPORT_STAFF_ROLES = (RoleCode.STAFF.value, RoleCode.ADMIN.value)
 
 Pair = tuple[uuid.UUID, uuid.UUID]
 
@@ -83,7 +86,8 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
 
     Course channel: students of the offering's groups with an enrollment that is not dropped, plus its teachers.
     Subject community: active enrollees of the subject in any group, no teachers. Academic group: its students and
-    its curator. Faculty: the students of its groups. Only active accounts are members (§13.1).
+    its curator. Faculty: the students of its groups. Support: everyone in the registry plus staff and admins
+    (D-074). Only active accounts are members (§13.1).
     """
     active = User.status == UserStatus.ACTIVE
     student = User.person_type == PersonType.STUDENT
@@ -146,6 +150,16 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
         .join(User, User.academic_group_id == AcademicGroup.id)
         .where(Channel.type == ChannelType.FACULTY, open_channel, student, active)
     )
+    support = (
+        select(Channel.id, User.id)
+        .join(User, true())
+        .where(
+            Channel.type == ChannelType.SUPPORT,
+            open_channel,
+            active,
+            User.person_type.is_not(None) | User.id.in_(_support_staff()),
+        )
+    )
     combined = union(
         course_students,
         course_teachers,
@@ -153,8 +167,17 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
         group_students,
         group_curators,
         faculty_students,
+        support,
     ).subquery()
     return select(combined.c[0].label("channel_id"), combined.c[1].label("user_id"))
+
+
+def _support_staff() -> Select[uuid.UUID]:
+    return (
+        select(UserRole.user_id)
+        .join(Role, Role.id == UserRole.role_id)
+        .where(Role.code.in_(SUPPORT_STAFF_ROLES))
+    )
 
 
 class ChannelProvisioner:
@@ -170,6 +193,7 @@ class ChannelProvisioner:
         # Members first: a channel created for a semester that has already ended gets its members once, then
         # it is archived and its membership stays as it was (D-061).
         result.added, result.removed = await self._sync_members()
+        await self._sync_support_moderators()
         result.state_changed = await self._sync_archive()
         await self.session.commit()
         return result
@@ -208,7 +232,7 @@ class ChannelProvisioner:
                 select(_type(faculty), Faculty.name_az, Faculty.id),
             ),
         ]
-        created = 0
+        created = await self._upsert_support()
         for kind, key, columns, rows in sources:
             insert_rows = insert(Channel).from_select(
                 ["type", "name", *columns], rows, include_defaults=False
@@ -224,6 +248,33 @@ class ChannelProvisioner:
             # xmax is 0 for a freshly inserted row; a renamed row carries the updating transaction.
             created += sum(1 for inserted in await self.session.scalars(upsert) if inserted)
         return created
+
+    async def _upsert_support(self) -> int:
+        inserted = await self.session.scalar(
+            insert(Channel)
+            .values(type=ChannelType.SUPPORT, name=SUPPORT_CHANNEL_NAME)
+            .on_conflict_do_nothing(index_elements=["type"], index_where=text("type = 'support'"))
+            .returning(Channel.id)
+        )
+        return 0 if inserted is None else 1
+
+    async def _sync_support_moderators(self) -> None:
+        """Staff and admins moderate the support channel; everyone else there is a plain member."""
+        support = select(Channel.id).where(Channel.type == ChannelType.SUPPORT)
+        staff = _support_staff()
+        for role, current, condition in (
+            (MemberRole.MODERATOR, MemberRole.MEMBER, ChannelMember.user_id.in_(staff)),
+            (MemberRole.MEMBER, MemberRole.MODERATOR, ChannelMember.user_id.not_in(staff)),
+        ):
+            await self.session.execute(
+                update(ChannelMember)
+                .where(
+                    ChannelMember.channel_id.in_(support),
+                    ChannelMember.role == current,
+                    condition,
+                )
+                .values(role=role)
+            )
 
     async def _ensure_topics(self) -> None:
         for kind, topics in DEFAULT_TOPICS.items():

@@ -253,7 +253,8 @@
       "events": "Tədbirlər",
       "chat": "Çat",
       "reports": "Şikayətlər",
-      "materials": "Materiallar"
+      "materials": "Materiallar",
+      "feedback": "Rəylər"
     }
   },
   "roles": {
@@ -647,7 +648,8 @@
         "material_reported": "Materialdan şikayət edildi",
         "material_report_handled": "Material şikayətinin vəziyyəti dəyişdi",
         "material_hidden": "Material gizlədildi",
-        "material_shown": "Material yenidən göstərildi"
+        "material_shown": "Material yenidən göstərildi",
+        "feedback_handled": "Rəyin vəziyyəti dəyişdi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -1444,6 +1446,59 @@
         "title": "Profil və məxfilik",
         "body": "Şəklinizi və qısa məlumatınızı əlavə edin, sizə kimin yaza biləcəyini seçin. Şəxsi məlumatlarınızı istənilən vaxt yükləyə bilərsiniz."
       }
+    }
+  },
+  "feedback": {
+    "action": "Rəy bildirin",
+    "title": "Rəy bildirin",
+    "description": "Rəyinizi yalnız platformanın əməkdaşları görür. Ümumi suallar üçün çatdakı “SmartAzMİU dəstəyi” kanalından da istifadə edə bilərsiniz.",
+    "categoryLegend": "Mövzu",
+    "categories": {
+      "problem": "Problem",
+      "suggestion": "Təklif",
+      "question": "Sual",
+      "other": "Digər"
+    },
+    "message": "Rəyiniz",
+    "messageHelper": "Nə baş verdiyini və ya nə təklif etdiyinizi yazın. Ən çox {max} simvol.",
+    "messageRequired": "Rəyinizi yazın.",
+    "contact": "Lazım olsa, mənimlə e-poçtla əlaqə saxlaya bilərsiniz.",
+    "contactHelper": "Əks halda e-poçt ünvanınız əməkdaşlara göstərilmir.",
+    "submit": "Göndərin",
+    "cancel": "Ləğv edin",
+    "sent": "Rəyiniz göndərildi. Təşəkkür edirik.",
+    "failed": "Rəy göndərilmədi",
+    "admin": {
+      "title": "Rəylər",
+      "description": "İstifadəçilərin rəy formu ilə göndərdiyi problem, təklif və suallar.",
+      "tableCaption": "Rəylər, ən yenisi əvvəldə",
+      "empty": "Bu siyahıda rəy yoxdur.",
+      "filters": {
+        "open": "Açıq",
+        "closed": "Bağlanıb",
+        "all": "Hamısı",
+        "apply": "Göstərin"
+      },
+      "status": {
+        "open": "Açıq",
+        "closed": "Bağlanıb"
+      },
+      "columns": {
+        "time": "Vaxt",
+        "category": "Mövzu",
+        "message": "Rəy",
+        "sender": "Göndərən",
+        "status": "Vəziyyət",
+        "actions": "Əməliyyat"
+      },
+      "page": "Səhifə: {page}",
+      "deletedAccount": "Silinmiş istifadəçi",
+      "contactOk": "Əlaqəyə razıdır",
+      "handledBy": "{name}, {time}",
+      "close": "Bağlayın",
+      "reopen": "Yenidən açın",
+      "updated": "Rəyin vəziyyəti dəyişdi.",
+      "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
     }
   }
 }

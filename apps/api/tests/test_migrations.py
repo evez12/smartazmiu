@@ -49,6 +49,7 @@ APP_TABLES = {
     "materials",
     "material_versions",
     "material_reports",
+    "feedback",
 }
 APP_ENUMS = (
     "user_status",
@@ -80,6 +81,8 @@ APP_ENUMS = (
     "material_type",
     "material_report_reason",
     "material_report_status",
+    "feedback_category",
+    "feedback_status",
 )
 
 
@@ -113,6 +116,8 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
             "admin.reports.read",
             "admin.reports.handle",
             "materials.manage",
+            "admin.feedback.read",
+            "admin.feedback.handle",
         ):
             holders = await connection.scalars(
                 text(

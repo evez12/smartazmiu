@@ -95,6 +95,12 @@ bell header menu sets each channel's notification level and snooze (D-067). File
 to 25 MB) upload straight to object storage and become visible to others only after the worker has checked their
 type and ClamAV has scanned them (D-068); ClamAV needs a minute or two and about 1.5 GB of memory to start.
 
+### Pilot support
+
+Everyone in the registry and every staff account is in the chat channel "SmartAzMİU dəstəyi", which staff
+moderate; "Rəy bildirin" in the profile menu sends feedback that only staff see on `/admin/feedback` (D-074). How
+the pilot is prepared and run is in [docs/PILOT.md](docs/PILOT.md).
+
 ### Materials
 
 **Materiallar** (`/materials`) holds a catalogue per subject with a semester filter (D-071). Students of a subject
@@ -113,9 +119,10 @@ A modular monolith: one FastAPI app and one Next.js app.
 | `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync, chat channel provisioning, message partitions, attachment scans and purges. |
 | `apps/api/app/modules/chat` | Chat: provisioning, the authorisation policy, messages, the WebSocket gateway (`ws.py`, `hub.py`). |
 | `apps/api/app/modules/materials` | Materials: catalogue access, versioned uploads, scanning, reports and hiding. |
+| `apps/api/app/modules/feedback` | The pilot feedback form and the staff list. |
 | `apps/web` | Next.js (App Router), TypeScript, Tailwind. Design tokens in `src/styles/tokens.css`. |
 | `infra/` | nginx, Keycloak realm and login theme, Postgres init scripts, object-storage entrypoint. |
-| `docs/` | Spec, decision log, ADRs. |
+| `docs/` | Spec, decision log, ADRs, pilot runbook. |
 
 Local services: Keycloak `http://localhost:8080`, Mailpit `http://localhost:8025`, S3 API `http://localhost:8333`,
 ClamAV `localhost:3310`,

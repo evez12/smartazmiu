@@ -1366,3 +1366,32 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   reference; the Sprint 14 target (3,000 sockets, 200 msg/s) will need horizontal API workers and likely payload
   caching. A long-lived `next dev` server can stall after many edits and break whole E2E runs: restart it before
   a full run.
+
+## D-074 · 2026-10-26 · Pilot runbook, support channel and feedback form
+
+- **Context:** Sprint 6 closes with "pilot runbook, support channel, feedback form" for the M2 pilot on
+  2027-02-22. Helpdesk tickets with a staff inbox and SLA are Sprint 18 (§8); the spec does not define the support
+  channel or the form.
+- **Options:** support by e-mail only, a per-person private support conversation, or one shared support channel;
+  feedback as a chat message, as an e-mail, or stored with a staff list.
+- **Decision:**
+  - **Support channel:** a new channel type `support` (migration 0019, enum value added outside the transaction,
+    a unique partial index keeps it single). The provisioning job creates "SmartAzMİU dəstəyi" and keeps in it every
+    active person of the registry (students, teachers) plus every account with the `staff` or `admin` role;
+    staff and admins are its moderators (slow-mode exempt, may use `@channel`), others plain members. People who
+    only signed in, without registry data or a staff role, are not members. Posting follows the one chat
+    policy (ADR 0004); nothing about it is special-cased. The E2E data check leaves its memberships out, because
+    they follow accounts (including the e2e ones a run signs in), not seed data.
+  - **Feedback form:** "Rəy bildirin" in the profile menu: category (problem, suggestion, question, other), up to
+    2,000 characters, optional permission to be contacted; the current app path is attached without query or
+    fragment. Ten per hour per person. Stored in `feedback`; staff with `admin.feedback.read` (staff, admin) list it
+    on `/admin/feedback` (open first) and holders of `admin.feedback.handle` close or reopen it (audited as
+    `feedback.handled`, without the text). The sender's e-mail is shown only when they allowed contact (§5.4).
+    A person's own feedback is part of their data export. No replies from the app: answers go by e-mail or in the
+    support channel until the helpdesk (Sprint 18).
+  - **Runbook:** `docs/PILOT.md`: contacts by role, the pre-launch checklist (infrastructure, secrets, Keycloak
+    2FA, import order, support channel, manual backup, smoke test, load check, communication, go/no-go), daily
+    operation, the support channel and feedback triage routines, incident severities and degraded modes (§13.5),
+    backups and rollback. The automated backup job and restore drill stay in their later sprint.
+- **Consequences:** the contacts table must be filled in before the pilot week. A pilot at university scale would
+  make one support channel too large; per-faculty support or the helpdesk replaces it then.

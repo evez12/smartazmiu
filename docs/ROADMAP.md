@@ -559,7 +559,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Materials v1: catalog per subject/semester, upload with copyright consent, preview, download.
 - [x] Onboarding tour, empty states, Azerbaijani copy review (tone rules in §12.8).
 - [x] Load test (k6): 1 000 sockets, 50 msg/s. E2E Playwright suite for chat happy paths.
-- [ ] Pilot runbook, support channel, feedback form.
+- [x] Pilot runbook, support channel, feedback form.
 **Acceptance:** M1. **Release:** M2 pilot on 2027-02-22.
 
 ---

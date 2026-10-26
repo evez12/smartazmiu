@@ -24,6 +24,7 @@ from app.modules.academics.models import (
 from app.modules.academics.service import AcademicsService
 from app.modules.audit.models import AuditAction, AuditLog
 from app.modules.audit.service import record_audit
+from app.modules.feedback.models import Feedback
 from app.modules.privacy.service import ConsentService
 from app.modules.users.models import Role, User, UserRole
 
@@ -70,6 +71,20 @@ class DataExportService:
                     "recorded_at": record.recorded_at.isoformat(),
                 }
                 for record in await ConsentService(self.session).history(user.id)
+            ],
+            "feedback": [
+                {
+                    "category": item.category,
+                    "message": item.message,
+                    "page": item.page,
+                    "status": item.status,
+                    "created_at": item.created_at.isoformat(),
+                }
+                for item in await self.session.scalars(
+                    select(Feedback)
+                    .where(Feedback.user_id == user.id)
+                    .order_by(Feedback.created_at)
+                )
             ],
             "audit": await self._audit(user.id),
         }

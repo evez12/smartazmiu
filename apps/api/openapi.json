@@ -670,7 +670,8 @@
           "material.reported",
           "material.report_handled",
           "material.hidden",
-          "material.shown"
+          "material.shown",
+          "feedback.handled"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -1179,7 +1180,8 @@
           "announcement",
           "club",
           "private_group",
-          "dm"
+          "dm",
+          "support"
         ],
         "title": "ChannelType",
         "type": "string"
@@ -1876,6 +1878,208 @@
           "version"
         ],
         "title": "EventUpdateIn",
+        "type": "object"
+      },
+      "FeedbackCategory": {
+        "enum": [
+          "problem",
+          "suggestion",
+          "question",
+          "other"
+        ],
+        "title": "FeedbackCategory",
+        "type": "string"
+      },
+      "FeedbackCreatedOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "FeedbackCreatedOut",
+        "type": "object"
+      },
+      "FeedbackIn": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/FeedbackCategory"
+          },
+          "contact_ok": {
+            "default": false,
+            "title": "Contact Ok",
+            "type": "boolean"
+          },
+          "message": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "message"
+        ],
+        "title": "FeedbackIn",
+        "type": "object"
+      },
+      "FeedbackOut": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/FeedbackCategory"
+          },
+          "contact_ok": {
+            "title": "Contact Ok",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handled At"
+          },
+          "handled_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handled By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "string"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackPerson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/FeedbackStatus"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "message",
+          "page",
+          "contact_ok",
+          "status",
+          "sender",
+          "handled_by",
+          "handled_at",
+          "created_at"
+        ],
+        "title": "FeedbackOut",
+        "type": "object"
+      },
+      "FeedbackPageOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "FeedbackPageOut",
+        "type": "object"
+      },
+      "FeedbackPerson": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "email"
+        ],
+        "title": "FeedbackPerson",
+        "type": "object"
+      },
+      "FeedbackStatus": {
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "title": "FeedbackStatus",
+        "type": "string"
+      },
+      "FeedbackStatusIn": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FeedbackStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "FeedbackStatusIn",
         "type": "object"
       },
       "FileEncoding": {
@@ -5331,6 +5535,221 @@
         "summary": "Audit log",
         "tags": [
           "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/feedback": {
+      "get": {
+        "operationId": "listFeedback",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FeedbackStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackPageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Feedback, newest first",
+        "tags": [
+          "feedback"
+        ]
+      }
+    },
+    "/api/v1/admin/feedback/{feedback_id}": {
+      "patch": {
+        "operationId": "setFeedbackStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "feedback_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Feedback Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackStatusIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Close feedback or open it again",
+        "tags": [
+          "feedback"
         ]
       }
     },
@@ -9523,6 +9942,92 @@
         "summary": "RSVP: register and receive a ticket (idempotent)",
         "tags": [
           "events"
+        ]
+      }
+    },
+    "/api/v1/feedback": {
+      "post": {
+        "operationId": "sendFeedback",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedbackCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send feedback to the platform team",
+        "tags": [
+          "feedback"
         ]
       }
     },

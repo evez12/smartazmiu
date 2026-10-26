@@ -387,6 +387,14 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Şikayət tapılmadı.",
         "en": "The report was not found.",
     },
+    "feedback.message_required": {
+        "az": "Rəyinizi yazın.",
+        "en": "Write your feedback.",
+    },
+    "feedback.not_found": {
+        "az": "Rəy tapılmadı.",
+        "en": "The feedback was not found.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

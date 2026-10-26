@@ -6,6 +6,7 @@ import {
   FileUp,
   House,
   Megaphone,
+  MessageSquareText,
   MessagesSquare,
   Map as MapIcon,
   Flag,
@@ -37,6 +38,7 @@ export type NavItem = {
     | "imports"
     | "users"
     | "reports"
+    | "feedback"
     | "audit";
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (§12.6: Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). */
@@ -88,6 +90,13 @@ export const NAVIGATION: NavSection[] = [
         icon: Flag,
         inTabBar: false,
         permission: "admin.reports.read",
+      },
+      {
+        href: "/admin/feedback",
+        labelKey: "feedback",
+        icon: MessageSquareText,
+        inTabBar: false,
+        permission: "admin.feedback.read",
       },
       {
         href: "/admin/audit",
