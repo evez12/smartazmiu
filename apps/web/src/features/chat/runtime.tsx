@@ -417,7 +417,13 @@ export function ChatRuntimeProvider({
           }
           void queryClient.invalidateQueries({ queryKey: chatKeys.channels });
           void queryClient.invalidateQueries({ queryKey: chatKeys.channel(channelId) });
-          if (data.added) void subscribe([channelId], null).catch(() => undefined);
+          if (data.added) {
+            // A message sent before the subscription is acknowledged reaches this tab neither live nor in the
+            // list fetched above; counting again afterwards closes that gap (a new DM's first message).
+            void subscribe([channelId], null)
+              .then(() => queryClient.invalidateQueries({ queryKey: chatKeys.channels }))
+              .catch(() => undefined);
+          }
           break;
         }
         case "notification":

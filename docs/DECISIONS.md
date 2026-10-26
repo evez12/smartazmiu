@@ -141,7 +141,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
-  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068). |
+  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -1180,3 +1180,50 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   content types and dispositions, object-key guessing (§14), storage outage.
 - **Consequences:** a file is not visible to others for the seconds the scan takes. The pilot needs ~1.5 GB extra
   memory for clamd. No new dependencies (Pillow, boto3 and httpx were already pinned).
+
+## D-069 · 2026-10-26 · Markdown, KaTeX and code in messages; the dev-mode CSP errors
+
+- **Context:** Sprint 6 group A (`feat/chat-render`): sanitized Markdown with an allowlist, KaTeX for `$…$` and
+  `$$…$$`, fenced code in IBM Plex Mono, raw text stored and rendered on the client, XSS vectors in Vitest,
+  KaTeX self-hosted, nonce-based CSP kept. The product owner asked to be consulted first if the sanitizer or the
+  KaTeX delivery needed a CSP relaxation, and to check the inline-style CSP errors seen in development.
+- **CSP check (done before writing the renderer):** a Playwright probe signed in as Aysel and opened
+  `/design-system`, `/login`, `/chat`, a channel, `/`, `/schedule`, `/notifications` and `/profile`, collecting
+  every console CSP report. Against `next dev`: 28 distinct "Applying inline style violates … style-src" reports;
+  they come from the dev server injecting `<style>` elements for hot reloading without the nonce. Against the
+  production build (`next build`, `next start`): none. After the renderer was added, the same probe on the
+  production build also posted a message with display math, bold and code: KaTeX rendered, its three fonts
+  loaded from the app's origin, zero reports. Nothing to fix; the dev noise is accepted (the dev CSP already
+  differs by `'unsafe-eval'`).
+- **Options:** sanitizing HTML (DOMPurify on a Markdown-to-HTML string, rendered with `dangerouslySetInnerHTML`);
+  a syntax tree rendered as React elements (`react-markdown`), sanitized with `rehype-sanitize`.
+- **Decision:**
+  - **Pipeline** (`features/chat/markdown.tsx`): `remark-parse` with GFM (autolinks, strikethrough) and
+    `remark-math`; raw HTML becomes literal text before anything else, so `<script>` is shown as typed and never
+    parsed; `rehype-sanitize` with an allowlist (`p br strong em del code pre blockquote ul ol li a hr`; `href`
+    with `http`, `https`, `mailto` only; code classes for languages and math; `script style svg math iframe
+    object embed template` removed with their content, anything else replaced by its text); then
+    `rehype-katex` with `trust: false` (no `\href`, `\url`, `\htmlClass`), `maxSize` 20, `maxExpand` 200,
+    `throwOnError: false`; then mention tokens become name chips (D-067). React renders the tree; nothing goes
+    through `innerHTML`, so no new CSP source is needed. Images in Markdown are dropped (no tracking pixels);
+    files go through attachments (D-068). A line that is only `$$…$$` is display math; elsewhere `$$x$$` stays
+    inline, as remark-math reads it.
+  - **Links:** external links (another host) open in a new tab with `rel="noopener noreferrer nofollow"`, an
+    external-link icon and the screen-reader text "(xarici keçid, yeni pəncərədə açılır)"; links within the app
+    stay in the tab.
+  - **Huge input:** a message nesting quotes or lists deeper than 40 levels is shown as plain text before
+    parsing (the parser and tree transforms recurse; 2,000 nested quotes overflowed the stack in a test). The
+    4,000-character limit bounds everything else.
+  - **KaTeX delivery:** the package's CSS is imported by the renderer and bundled by Next.js with its fonts, so
+    both are served from `/_next/static` under `style-src 'self'` and `font-src 'self'`. KaTeX's inline
+    `style` attributes fall under the existing `style-src-attr 'unsafe-inline'` (kept since Sprint 1 for Radix);
+    no relaxation was added. Its error colour uses the `--danger` token.
+  - **Vitest vectors:** script, event handlers, SVG, iframe, style, comment tricks, forms, `javascript:` /
+    encoded / `data:` / `vbscript:` links, Markdown images, KaTeX `\href` / `\url` / `\htmlClass` /
+    `\htmlStyle`, a macro bomb, 2,000 nested quotes and 1,500 nested list items; each asserts no executable
+    element or attribute survives.
+  - **Fix found on the way:** the first message of a new DM could miss the recipient's unread badge when it
+    arrived between the channel-list refetch and the socket subscription; the list is now refetched once the
+    subscription is acknowledged (one E2E failure, explained by the order of the two events).
+- **Consequences:** `$` pairs in prose render as math (prices use ₼ here, so this is rare). Code blocks have no
+  syntax highlighting (not in the spec).

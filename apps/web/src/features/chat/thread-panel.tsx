@@ -158,6 +158,7 @@ export function ThreadPanel({
                 pending={item}
                 showHeader
                 author={context.currentUser}
+                members={context.members}
                 onRetry={runtime.retry}
               />
             ))}
