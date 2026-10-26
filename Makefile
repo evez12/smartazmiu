@@ -78,13 +78,18 @@ up: .env ## Build and start the full stack in Docker (http://localhost)
 	$(COMPOSE) --profile app up -d --build --wait
 	@echo "Stack is running at $(APP_PUBLIC_URL)"
 
+.PHONY: monitoring
+monitoring: .env ## Start the stack with Prometheus (:9090) and Grafana (:3001, user admin)
+	@grep -q '^GRAFANA_ADMIN_PASSWORD=.' .env || echo "GRAFANA_ADMIN_PASSWORD=$$(openssl rand -hex 24)" >> .env
+	$(COMPOSE) --profile app --profile monitoring up -d --build --wait
+
 .PHONY: down
 down: ## Stop all containers
-	$(COMPOSE) --profile app down
+	$(COMPOSE) --profile app --profile monitoring down
 
 .PHONY: reset
 reset: ## Stop all containers and delete their volumes
-	$(COMPOSE) --profile app down --volumes
+	$(COMPOSE) --profile app --profile monitoring down --volumes
 
 .PHONY: logs
 logs: ## Follow container logs

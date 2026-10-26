@@ -1,0 +1,72 @@
+# Alert rules for the pilot (D-080). Each alert names its runbook section in docs/runbooks/pilot.md; the
+# thresholds come from the k6 profile (D-073) and §5.9, and are revisited after the first pilot week.
+groups:
+  - name: smartazmiu
+    rules:
+      - alert: ApiDown
+        expr: up{job="api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: The API does not answer the metrics scrape.
+          runbook: docs/runbooks/pilot.md#api-down
+
+      - alert: ChatSendFailures
+        # Server-side failures only; refusals such as "not a member" or "too long" are normal.
+        expr: >
+          sum(rate(smartazmiu_chat_send_errors_total{code=~"internal|chat\\.unavailable|chat\\.realtime_unavailable|chat\\.attachments_unavailable"}[5m]))
+          / clamp_min(sum(rate(smartazmiu_chat_messages_sent_total[5m])), 0.1) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: More than 1 % of chat sends fail on the server.
+          runbook: docs/runbooks/pilot.md#chat-send-failures
+
+      - alert: WebSocketConnectionsDropped
+        expr: >
+          sum(smartazmiu_ws_connections) < 0.5 * sum(smartazmiu_ws_connections offset 5m)
+          and sum(smartazmiu_ws_connections offset 5m) > 50
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Open chat connections fell by more than half within five minutes.
+          runbook: docs/runbooks/pilot.md#websocket-connections-dropped
+
+      - alert: JobQueueLagging
+        expr: smartazmiu_job_queue_lag_seconds > 120
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Background jobs (notifications, scans, audience sync) wait more than two minutes to start.
+          runbook: docs/runbooks/pilot.md#job-queue-lagging
+
+      - alert: JobQueueUnreadable
+        # The scrape leaves the queue figures out while Redis A is unreachable (§13.5).
+        expr: up{job="api"} == 1 unless on() smartazmiu_job_queue_depth
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: The API cannot read the job queue; Redis A is probably down.
+          runbook: docs/runbooks/pilot.md#job-queue-lagging
+
+      - alert: ScanBacklog
+        expr: sum(smartazmiu_scan_queue_depth) > 50 or sum(smartazmiu_scan_deferred) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Uploads are waiting for the virus scan; ClamAV or storage may be unavailable.
+          runbook: docs/runbooks/pilot.md#scan-backlog
+
+      - alert: InfectedUpload
+        expr: increase(smartazmiu_scan_rejected{status="infected"}[15m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: ClamAV rejected an uploaded file ({{ $labels.kind }}).
+          runbook: docs/runbooks/pilot.md#infected-upload
