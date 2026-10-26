@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -21,7 +23,12 @@ from app.modules.admin.router import router as admin_router
 from app.modules.announcements.router import router as announcements_router
 from app.modules.audiences.router import router as audiences_router
 from app.modules.campus.router import router as campus_router
+from app.modules.chat.hub import Hub
+from app.modules.chat.policy import NoExamWindows
+from app.modules.chat.router import router as chat_router
 from app.modules.chat.snowflake import Snowflake, WorkerLease
+from app.modules.chat.ws import Gateway
+from app.modules.chat.ws import router as chat_socket_router
 from app.modules.events.router import router as events_router
 from app.modules.health.router import router as health_router
 from app.modules.notifications.router import router as notifications_router
@@ -51,6 +58,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Leases in the background, so the API serves reads while Redis A is still unreachable (ADR 0002).
         lease.start()
         app.state.snowflake = Snowflake(lease)
+        # Exam slots arrive in Sprint 10; the provider is swapped then without touching callers (D-059).
+        app.state.exam_windows = NoExamWindows()
+        hub = Hub(app.state.redis, str(settings.database_url))
+        await hub.start()
+        with contextlib.suppress(TimeoutError):
+            # Gives the bus a moment, so the first sockets after start-up are not turned away.
+            async with asyncio.timeout(2):
+                await hub.ready()
+        app.state.chat_gateway = Gateway(
+            hub=hub,
+            database=app.state.database,
+            settings=settings,
+            snowflake=app.state.snowflake,
+            exams=app.state.exam_windows,
+        )
         app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(5.0))
         app.state.identity_admin = KeycloakAdmin(
             app.state.http,
@@ -74,6 +96,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await hub.stop()
             await lease.stop()
             await app.state.durable_redis.aclose()
             await app.state.http.aclose()
@@ -105,6 +128,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(announcements_router, prefix=API_PREFIX)
     app.include_router(audiences_router, prefix=API_PREFIX)
     app.include_router(events_router, prefix=API_PREFIX)
+    app.include_router(chat_router, prefix=API_PREFIX)
+    app.include_router(chat_socket_router)
     return app
 
 

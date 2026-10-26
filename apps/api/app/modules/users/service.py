@@ -117,6 +117,21 @@ class UserService:
             permissions=await self._permission_codes(user.id),
         )
 
+    async def current(self, user_id: uuid.UUID) -> CurrentUser | None:
+        """The account as stored now, for connections that outlive the request that authenticated them."""
+        user = await self.session.get(User, user_id, populate_existing=True)
+        if user is None:
+            return None
+        return CurrentUser(
+            id=user.id,
+            display_name=user.display_name,
+            given_name=user.given_name,
+            family_name=user.family_name,
+            status=user.status,
+            roles=frozenset(await self._role_codes(user.id)),
+            permissions=await self._permission_codes(user.id),
+        )
+
     async def _link_imported_person(self, claims: TokenClaims) -> User | None:
         """Attach a first sign-in to the person imported with the same verified e-mail (D-029).
 

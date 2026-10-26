@@ -19,6 +19,18 @@ class RateLimit:
 
 async def enforce_rate_limit(redis: Redis, rule: RateLimit, subject: str) -> None:
     """Fixed-window counter; exceeding it returns 429 with ``Retry-After`` (§4.2)."""
+    retry_after = await consume(redis, rule, subject)
+    if retry_after is not None:
+        raise AppError(
+            "request.rate_limited",
+            429,
+            details={"retry_after_seconds": retry_after},
+            headers={"Retry-After": str(retry_after)},
+        )
+
+
+async def consume(redis: Redis, rule: RateLimit, subject: str) -> int | None:
+    """Counts one use; returns the seconds until the window resets once the limit is exceeded, else None."""
     now = int(time.time())
     window = now // rule.window_seconds
     key = f"ratelimit:{rule.name}:{subject}:{window}"
@@ -30,12 +42,7 @@ async def enforce_rate_limit(redis: Redis, rule: RateLimit, subject: str) -> Non
     except RedisError as exc:
         # Uploads and exports keep working during a Redis outage; the limit is a safeguard, not a gate.
         logger.warning("rate_limit_unavailable", rule=rule.name, error=type(exc).__name__)
-        return
+        return None
     if count > rule.limit:
-        retry_after = (window + 1) * rule.window_seconds - now
-        raise AppError(
-            "request.rate_limited",
-            429,
-            details={"retry_after_seconds": retry_after},
-            headers={"Retry-After": str(retry_after)},
-        )
+        return (window + 1) * rule.window_seconds - now
+    return None

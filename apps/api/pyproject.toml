@@ -67,7 +67,7 @@ plugins = ["pydantic.mypy"]
 files = ["app", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["asgi_lifespan.*", "http_ece.*"]
+module = ["asgi_lifespan.*", "asyncpg", "asyncpg.*", "http_ece.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

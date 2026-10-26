@@ -30,6 +30,8 @@ async def get_current_user(
         logger.info("token_rejected", reason=str(exc))
         raise AppError("auth.unauthenticated", 401, headers=_UNAUTHENTICATED_HEADERS) from exc
 
+    # The WebSocket ticket endpoint needs the token's expiry (ADR 0003).
+    request.state.token_claims = claims
     user = await UserService(session).sync_from_claims(claims)
     structlog.contextvars.bind_contextvars(user_id=str(user.id))
     if not user.is_active:

@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 from collections.abc import MutableMapping
 from typing import Any
@@ -18,10 +19,23 @@ SENSITIVE_KEYS = frozenset(
         "refresh_token",
         "secret",
         "set-cookie",
+        "ticket",
         "token",
     }
 )
 REDACTED = "[redacted]"
+# uvicorn logs WebSocket handshakes with the query string, which carries the one-use ticket (ADR 0003).
+_TICKET_IN_URL = re.compile(r"(ticket=)[^&\s\"']+")
+
+
+class RedactTicketsFilter(logging.Filter):
+    """Removes ``ticket=…`` from any log line, whoever wrote it."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str) and "ticket=" in record.getMessage():
+            record.msg = _TICKET_IN_URL.sub(rf"\g<1>{REDACTED}", record.getMessage())
+            record.args = ()
+        return True
 
 
 def redact_sensitive(
@@ -57,6 +71,7 @@ def configure_logging(level: str) -> None:
     )
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
+    handler.addFilter(RedactTicketsFilter())
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
