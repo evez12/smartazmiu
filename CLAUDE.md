@@ -33,16 +33,36 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
   `make up` must still start the full stack (including api, web, nginx) in Docker.
 - Single `Makefile` (GNU make via winget `ezwinports.make`); no PowerShell task scripts. Package manager: pnpm.
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
-- Current scope: **Sprint 1 only**, then stop and summarize for review before Sprint 2.
+- Current scope: **Sprint 6** (chat UX, Materials v1, pilot hardening; Sprints 1–5 accepted). Stop and summarize
+  for review after each task group the product owner hands over; never pull Sprint 7+ scope forward.
+- Ask the product owner first for: auth changes, hard deletion of data, anything that could expose grades, and any
+  CSP relaxation (e.g. for the Markdown sanitizer or KaTeX delivery).
 
 ## Git
 
 - Commit after each finished task. Conventional Commits, English, imperative, scoped:
   `feat(chat): add exam-mode read-only enforcement`. No emoji.
 - **Never add `Co-Authored-By` or "Generated with" trailers to commits or PR text** (product owner's rule).
-- Remote: `github.com/evez12/smartazmiu` (`origin`). Work happens on scoped branches
-  (`feat/...`, `ci/...`), merged into `main` with `--no-ff` once green, then pushed. CI runs on GitHub.
+- Remote: `github.com/evez12/smartazmiu` (`origin`). One branch per task group (`feat/...`, `ci/...`, `docs/...`,
+  D-012), merged into `main` with `--no-ff` once `make lint test` is green, then branch and `main` pushed.
+- New decisions continue the numbering in `docs/DECISIONS.md`; new dependencies go into the D-014 table, exact pins.
 - Run `make` from Git Bash; on this box `make` lives in the winget package dir (not on PATH for agents).
+
+## Chat rules (Sprint 5 onwards; ADRs 0002–0004, D-056–D-065)
+
+- One authorisation function, `chat/policy.py::authorize` (pure, reason codes in fixed precedence), loaded through
+  `chat/access.py::ChannelAccess`; REST, every WS event and the composer banner go through it.
+  Non-members get 404 / dropped events, never a leak.
+- Exam mode blocks every writer, teachers included (D-057); windows come from `ExamWindowProvider`, computed at read
+  time (D-059). `muted_until` = member's own snooze; `posting_muted_until` = moderator mute (D-058).
+- `messages` is partitioned by month with snowflake ids; `created_at` derives from the id. Tables referring to
+  messages store `message_id` without FK: check existence in the service, clean orphans with the consistency job.
+- Persist before publish (Redis B `chat:*`); idempotent sends via `message_client_ids` (7-day retention).
+- Redis A (`noeviction`): sessions, ARQ queue, snowflake leases, WS tickets. Redis B (`allkeys-lru`): rate limits,
+  presence, typing, pub/sub (D-053). Object storage or Redis B outages must never stop text chat (§13.5).
+- No grade, e-mail or phone data in any chat REST or WS payload (§5.4). Blocks never become inferable (D-062).
+- E2E: wait for `data-hydrated` (D-044); seeded accounts are read-only, use throwaway `e2e-` accounts and clean up
+  what a test creates; the seed-count check must stay green (D-040, D-045, D-065).
 
 ## UI Design Standard (§12) — official, institutional, not template-looking
 
