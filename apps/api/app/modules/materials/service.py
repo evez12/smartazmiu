@@ -60,6 +60,10 @@ from app.modules.materials.schemas import (
     SubjectCatalogOut,
     VersionOut,
 )
+from app.modules.notifications.models import NotificationCategory, NotificationKind
+from app.modules.notifications.service import NotificationSpec, Notifier
+from app.modules.privacy.models import ConsentPurpose
+from app.modules.privacy.service import record_consent
 from app.modules.users.models import User
 from app.modules.users.service import CurrentUser
 
@@ -459,7 +463,15 @@ class MaterialService:
         )
         self.session.add(material)
         await self.session.flush()
-        self._attach(upload, material.id, 1)
+        self._attach(user, upload, material.id, 1)
+        record_audit(
+            self.session,
+            AuditAction.MATERIAL_CREATED,
+            actor_id=user.id,
+            target_type="material",
+            target_id=material.id,
+            details={"version_id": str(upload.id)},
+        )
         await self.session.commit()
         # Materials share the upload scan job with chat attachments (D-071).
         await self.jobs.scan_attachments()
@@ -491,13 +503,31 @@ class MaterialService:
             )
         )
         upload.note = note.strip()
-        self._attach(upload, material.id, (last or 0) + 1)
+        number = (last or 0) + 1
+        self._attach(user, upload, material.id, number)
+        record_audit(
+            self.session,
+            AuditAction.MATERIAL_VERSION_ADDED,
+            actor_id=user.id,
+            target_type="material",
+            target_id=material.id,
+            details={"version_id": str(upload.id), "version": number},
+        )
         await self.session.commit()
         await self.jobs.scan_attachments()
         return await self.detail(user, material.id)
 
-    @staticmethod
-    def _attach(upload: MaterialVersion, material_id: uuid.UUID, number: int) -> None:
+    def _attach(
+        self, user: CurrentUser, upload: MaterialVersion, material_id: uuid.UUID, number: int
+    ) -> None:
+        # The consent sits in the uploader's consent history too, so it is part of their data export.
+        record_consent(
+            self.session,
+            user.id,
+            ConsentPurpose.MATERIAL_COPYRIGHT,
+            granted=True,
+            policy_version=CONSENT_TEXT_VERSION,
+        )
         upload.material_id = material_id
         upload.version = number
         upload.copyright_confirmed_at = utc_now()
@@ -706,9 +736,9 @@ class MaterialScanner:
         except StorageUnavailableError:
             return self._defer(version, "storage_unavailable")
         if data is None or len(data) != version.size_bytes:
-            return self._finish(version, ScanStatus.FAILED)
+            return await self._reject(version, ScanStatus.FAILED)
         if not content_matches(version.mime, data):
-            return self._finish(version, ScanStatus.FAILED)
+            return await self._reject(version, ScanStatus.FAILED)
         try:
             result = await self.scanner.scan(data)
         except ScannerUnavailableError as exc:
@@ -717,8 +747,27 @@ class MaterialScanner:
             logger.warning(
                 "material_infected", version_id=str(version.id), signature=result.signature
             )
-            return self._finish(version, ScanStatus.INFECTED)
+            return await self._reject(version, ScanStatus.INFECTED)
         return self._finish(version, ScanStatus.CLEAN)
+
+    async def _reject(self, version: MaterialVersion, status: ScanStatus) -> ScanStatus:
+        self._finish(version, status)
+        if version.uploader_id is not None and version.material_id is not None:
+            # In-app only, like rejected chat attachments (D-068): the uploader learns the file is not shown.
+            await Notifier(self.session).notify(
+                select(User.id).where(User.id == version.uploader_id),
+                NotificationSpec(
+                    category=NotificationCategory.CHAT,
+                    kind=NotificationKind.MATERIAL_VERSION_REJECTED,
+                    subject_type="material_version",
+                    subject_id=version.id,
+                    dedupe_key=f"material.version:{version.id}",
+                    title=version.filename,
+                    link=f"/materials/{version.subject_id}/{version.material_id}",
+                ),
+                deliver=False,
+            )
+        return status
 
     @staticmethod
     def _finish(version: MaterialVersion, status: ScanStatus) -> ScanStatus:

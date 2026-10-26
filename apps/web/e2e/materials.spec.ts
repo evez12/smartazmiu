@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
-import { openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
-import { SMALL_PDF } from "./support/files";
+import { hydrated, openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
+import { EICAR, SMALL_PDF, storedZip } from "./support/files";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 test.describe.configure({ mode: "serial" });
@@ -98,6 +98,109 @@ test("a teacher's upload is scanned, then previewed and reported by a student", 
   const row = page.getByRole("row").filter({ hasText: marker });
   await expect(row).toContainText("Səhv və ya köhnəlmiş məzmun");
   await expect(row).toContainText("Aysel Məmmədova");
+  await expectNoSeriousViolations(page);
+});
+
+async function uploadFile(page: Page, file: { name: string; mimeType: string; buffer: Buffer }) {
+  await page.locator('input[type="file"]').setInputFiles(file);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Yükləyin" }).click();
+}
+
+async function waitForStatus(page: Page, row: Locator, status: string) {
+  await expect(async () => {
+    await page.reload();
+    await hydrated(page);
+    await expect(row.getByText(status)).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 120_000 });
+}
+
+/*
+ * M1 acceptance (§6.1, D-071): an infected new version is blocked and never replaces the clean one; a clean second
+ * version becomes current and a student of the course downloads it; a student outside the subject gets "not found".
+ */
+test("a second version becomes current, an infected one is blocked, outsiders see nothing", async ({
+  browser,
+  page,
+  records,
+  accounts,
+}) => {
+  test.setTimeout(420_000);
+  const marker = records.materials(randomBytes(6).toString("hex"));
+  records.rateLimit("material_upload", [LEYLA.email]);
+  const title = `Seminar tapşırıqları ${marker}`;
+  const versionRow = (p: Page, version: number) =>
+    p.getByRole("row").filter({ hasText: `Versiya ${version}` });
+
+  const teacherContext = await browser.newContext();
+  const teacher = await teacherContext.newPage();
+  await signIn(teacher, LEYLA.username, "/materials");
+  await openStatistika(teacher);
+  await follow(teacher, "Material yükləyin");
+  await teacher.getByLabel(/^Semestr/).selectOption({ label: "2026 Payız" });
+  await teacher.getByLabel(/^Növ/).selectOption("seminar");
+  await teacher.getByLabel(/^Ad/).fill(title);
+  await uploadFile(teacher, {
+    name: "Seminar 1.pdf",
+    mimeType: "application/pdf",
+    buffer: SMALL_PDF,
+  });
+  await expect(teacher.getByRole("heading", { level: 1, name: title })).toBeVisible({
+    timeout: 30_000,
+  });
+  const materialUrl = new URL(teacher.url()).pathname;
+  await waitForStatus(teacher, versionRow(teacher, 1), "Yoxlanılıb");
+
+  await follow(teacher, "Yeni versiya yükləyin");
+  await uploadFile(teacher, {
+    name: "Seminar 2.zip",
+    mimeType: "application/zip",
+    buffer: storedZip("eicar.com", EICAR),
+  });
+  await expect(teacher.getByRole("heading", { level: 1, name: title })).toBeVisible({
+    timeout: 30_000,
+  });
+  await waitForStatus(teacher, versionRow(teacher, 2), "Virus aşkarlandı");
+  await expect(versionRow(teacher, 2).getByRole("button", { name: /faylını endirin/ })).toHaveCount(
+    0,
+  );
+
+  await follow(teacher, "Yeni versiya yükləyin");
+  await uploadFile(teacher, {
+    name: "Seminar 1 - düzəliş.pdf",
+    mimeType: "application/pdf",
+    buffer: SMALL_PDF,
+  });
+  await expect(teacher.getByRole("heading", { level: 1, name: title })).toBeVisible({
+    timeout: 30_000,
+  });
+  await waitForStatus(teacher, versionRow(teacher, 3), "Yoxlanılıb");
+  await teacherContext.close();
+
+  const studentContext = await browser.newContext();
+  const student = await studentContext.newPage();
+  await signIn(student, AYSEL.username, materialUrl);
+  await expect(student.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  // The rejected version is not listed for students; the clean third one is current.
+  await expect(versionRow(student, 2)).toHaveCount(0);
+  await expect(versionRow(student, 1)).toBeVisible();
+  const download = student.waitForEvent("download");
+  await versionRow(student, 3)
+    .getByRole("button", { name: "Seminar 1 - düzəliş.pdf faylını endirin" })
+    .click();
+  expect((await download).suggestedFilename()).toBe("Seminar 1 - düzəliş.pdf");
+  await studentContext.close();
+
+  // A student without an enrollment in Statistika learns nothing about the material or the subject.
+  await signIn(
+    page,
+    await accounts.create("student", { givenName: "Səbinə", familyName: "Rəsulova" }),
+    materialUrl,
+  );
+  await expect(page.getByRole("heading", { name: title })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1, name: "Səhifə tapılmadı" })).toBeVisible();
+  await openPage(page, "/materials");
+  await expect(page.getByRole("link", { name: /Statistika\s*IQT-2102/ })).toHaveCount(0);
   await expectNoSeriousViolations(page);
 });
 

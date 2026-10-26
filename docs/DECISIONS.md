@@ -1520,3 +1520,48 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `prepare.py` says "only for local and staging stacks" while the runbook sends it to the pilot server; running it
   there creates 500 synthetic accounts in the real Keycloak and database for the length of the run, so the product
   owner has to agree to it, or the check has to run on a staging copy of the pilot server.
+
+## D-078 · 2026-10-27 · Who uploads course materials (product owner decision)
+
+- **Context:** §6 and §6.1 do not say who may upload materials, and it touches content ownership and copyright.
+  D-071 implemented teachers and staff without a recorded approval; the Sprint 6 brief asks the product owner.
+- **Options:** (1) teachers of the subject, for the semesters they teach, plus staff and admins everywhere;
+  students read only; (2) the same plus enrolled students; (3) staff and admins only.
+- **Decision:** the product owner chose **option 1, "Teachers + staff"**, on 2026-10-26 (asked through the question
+  tool in the Sprint 6 Part 2 session). The rule stays as D-071 implemented it: `materials.upload` follows teaching
+  assignments from the registry, `materials.manage` (staff, admin) uploads and hides everywhere, students only read
+  and report.
+- **Consequences:** copyright responsibility stays with the people who teach the course, and there is no student
+  moderation queue in v1. Student-shared notes are not possible; if wanted later, they need their own decision
+  (moderation load, reporting weight) and are not pulled into Sprint 7 by this one.
+
+## D-079 · 2026-10-27 · Materials: consent history, audit of uploads, rejection notices, more access tests
+
+- **Context:** the Sprint 6 brief asks that copyright consent is recorded in `consent_records` (purpose, policy
+  version), that uploads and version changes are audited, and that the uploader is told when a file is infected.
+  D-071 kept the consent on the version row only, audited reports and hiding but not uploads, and showed scan results
+  on the next page load without a notice.
+- **Decision:**
+  - Every saved version adds a `consent_records` row with the new purpose `material_copyright`, `granted = true` and
+    `policy_version = CONSENT_TEXT_VERSION`, in the same transaction as the version (migration 0020 adds the enum
+    value and copies the consents of versions saved before it). The version row keeps its own copy for display.
+    The record appears in the person's consent history and data export like every other consent.
+  - New audit actions `material.created` and `material.version_added` (target the material, details the version id
+    and number, never the file name or text). With `material.hidden` / `material.shown` (D-071) this covers
+    uploads, version changes, hides and removals: removal *is* hiding, a status change with the files kept; no
+    hard delete exists.
+  - A version rejected by the type check or by ClamAV gives its uploader an in-app notification of the new kind
+    `material.version_rejected` ("Material versiyası qəbul olunmadı", the file name, a link to the material). Like
+    rejected chat attachments (D-068) it is in-app only and filed under the existing `chat` category, so the
+    notification settings gain no switch that would do nothing. The object is still purged by the existing job.
+  - Tests added for the gaps D-076 listed: outsider and guessed-id downloads (404, never 403), the version hidden
+    after rejection, a clean later version becoming current for students, the upload and report rate limits,
+    concurrent `add_version` calls (distinct numbers, no conflict), and the consent and audit rows. The E2E test
+    covers the acceptance path in the browser: a clean second (here third) version becomes current, an EICAR ZIP is
+    shown as "Virus aşkarlandı" to the teacher and never to students, a student downloads the current file, and a
+    student without an enrollment gets "not found" for the material and does not see the subject.
+  - Object keys are never accepted by the API: downloads take a version id and are checked against the reader's
+    subjects before a one-minute presigned URL is issued; a guessed object key without a valid signature is refused
+    by storage (D-068).
+- **Consequences:** the onboarding export check that D-076 listed stays open (onboarding, not materials). Infected
+  uploads also feed the `InfectedUpload` alert (D-080).

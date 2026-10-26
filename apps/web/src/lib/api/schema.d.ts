@@ -1478,6 +1478,8 @@ export interface components {
       | "event.manual_check_in"
       | "report.created"
       | "report.handled"
+      | "material.created"
+      | "material.version_added"
       | "material.reported"
       | "material.report_handled"
       | "material.hidden"
@@ -1707,7 +1709,7 @@ export interface components {
      * @description Processing the user agreed to or declined (Law "On Personal Data", §5.4).
      * @enum {string}
      */
-    ConsentPurpose: "privacy_notice" | "contact_sharing" | "profile_photo";
+    ConsentPurpose: "privacy_notice" | "contact_sharing" | "profile_photo" | "material_copyright";
     /** ConsentRecordOut */
     ConsentRecordOut: {
       /** Granted */
@@ -2549,7 +2551,8 @@ export interface components {
       | "schedule.changed"
       | "chat.mention"
       | "chat.reply"
-      | "chat.attachment_rejected";
+      | "chat.attachment_rejected"
+      | "material.version_rejected";
     /** NotificationOut */
     NotificationOut: {
       category: components["schemas"]["NotificationCategory"];
