@@ -81,18 +81,24 @@ export function OnboardingTour({ roles }: { roles: readonly string[] }) {
   );
 }
 
-/** On the profile page: brings the tour back to the dashboard. */
-export function RestartTourButton() {
+/** Marks the tour as not done on the server and opens the dashboard, where it shows again. */
+export function useRestartTour() {
   const t = useTranslations("onboarding");
   const api = useApi();
   const router = useRouter();
   const toast = useToast();
-  const restart = useMutation({
+  return useMutation({
     mutationFn: async () =>
       unwrap(await api.PUT("/api/v1/me/onboarding", { body: { done: false } })),
     onSuccess: () => router.push("/"),
     onError: () => toast({ title: t("failed"), tone: "danger" }),
   });
+}
+
+/** On the profile page; the profile menu offers the same through useRestartTour. */
+export function RestartTourButton() {
+  const t = useTranslations("onboarding");
+  const restart = useRestartTour();
   return (
     <Button loading={restart.isPending} onClick={() => restart.mutate()}>
       {t("restart")}

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import { openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
 
@@ -55,4 +55,59 @@ test("a student reaches the support channel and sends feedback that staff close"
   await row.getByRole("button", { name: "Bağlayın" }).click();
   await expect(page.getByText("Rəyin vəziyyəti dəyişdi.").first()).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: marker })).toHaveCount(0);
+});
+
+async function expectNoSeriousViolations(page: Page) {
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+}
+
+/*
+ * The support page (D-081): reached from the profile menu, it leads registry members to the support channel and
+ * everyone else to the feedback form; it fits a 320 px screen in dark mode.
+ */
+test.describe("the support page", () => {
+  test.use({ viewport: { width: 320, height: 640 }, colorScheme: "dark" });
+
+  test("leads to the support channel or, without one, to the feedback form", async ({
+    page,
+    browser,
+    accounts,
+  }) => {
+    const studentContext = await browser.newContext({
+      viewport: { width: 320, height: 640 },
+      colorScheme: "dark",
+    });
+    const student = await studentContext.newPage();
+    await signIn(student, "aysel.mammadova", "/schedule");
+    await student.getByRole("button", { name: /Profil menyusu/ }).click();
+    await student.getByRole("menuitem", { name: "Dəstək" }).click();
+    await expect(student.getByRole("heading", { level: 1, name: "Dəstək" })).toBeVisible();
+    const channel = student.getByRole("link", { name: "Dəstək kanalını açın" });
+    await expect(channel).toHaveAttribute("href", /^\/chat\/[0-9a-f-]{36}$/);
+    const overflow = await student.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+    await expectNoSeriousViolations(student);
+    await openPage(student, (await channel.getAttribute("href"))!);
+    await expect(
+      student.getByRole("heading", { level: 2, name: /SmartAzMİU dəstəyi/ }),
+    ).toBeVisible();
+    await studentContext.close();
+
+    // Someone outside the registry is not in the channel; the page says so and offers the form instead.
+    await signIn(
+      page,
+      await accounts.create("student", { givenName: "Orxan", familyName: "Səmədov" }),
+      "/support",
+    );
+    await expect(page.getByRole("link", { name: "Dəstək kanalını açın" })).toHaveCount(0);
+    await expect(
+      page.getByText(/Dəstək kanalı registrdə olan tələbə və müəllimlər üçündür/),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Rəy bildirin" }).click();
+    await expect(page.getByRole("dialog", { name: "Rəy bildirin" })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
 });

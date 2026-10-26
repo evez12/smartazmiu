@@ -99,7 +99,7 @@ type and ClamAV has scanned them (D-068); ClamAV needs a minute or two and about
 
 Everyone in the registry and every staff account is in the chat channel "SmartAzMİU dəstəyi", which staff
 moderate; "Rəy bildirin" in the profile menu sends feedback that only staff see on `/admin/feedback` (D-074). How
-the pilot is prepared and run is in [docs/PILOT.md](docs/PILOT.md).
+the pilot is prepared and run is in [docs/runbooks/pilot.md](docs/runbooks/pilot.md).
 
 ### Materials
 

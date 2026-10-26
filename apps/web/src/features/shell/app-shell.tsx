@@ -3,7 +3,9 @@
 import {
   LogOut,
   Menu as MenuIcon,
+  LifeBuoy,
   MessageSquareText,
+  Signpost,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -33,6 +35,7 @@ import {
 } from "@/components/ui/overlay";
 import { NotificationBell } from "@/features/notifications/bell";
 import { FeedbackDialog } from "@/features/feedback/feedback-dialog";
+import { useRestartTour } from "@/features/onboarding/onboarding-tour";
 import { cn } from "@/lib/cn";
 
 import {
@@ -259,7 +262,9 @@ function BottomTabs({ sections }: { sections: NavSection[] }) {
 function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => void }) {
   const t = useTranslations("shell");
   const tFeedback = useTranslations("feedback");
+  const tTour = useTranslations("onboarding");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const restartTour = useRestartTour();
   const tRoles = useTranslations("roles");
   const tTheme = useTranslations("theme");
   const { theme, setTheme } = useTheme();
@@ -301,9 +306,19 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
             </MenuRadioGroup>
           </MenuGroup>
           <MenuSeparator />
+          <MenuItem asChild>
+            <Link href="/support">
+              <Icon icon={LifeBuoy} />
+              {t("support")}
+            </Link>
+          </MenuItem>
           <MenuItem onSelect={() => setFeedbackOpen(true)}>
             <Icon icon={MessageSquareText} />
             {tFeedback("action")}
+          </MenuItem>
+          <MenuItem onSelect={() => restartTour.mutate()}>
+            <Icon icon={Signpost} />
+            {tTour("restart")}
           </MenuItem>
           <MenuItem onSelect={onSignOut}>
             <Icon icon={LogOut} />
