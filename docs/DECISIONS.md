@@ -141,7 +141,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
-  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069). |
+  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -1326,3 +1326,43 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     guides, so the tour is a "tanışlıq turu"; course channels are "fənn kanalları"; audiences are "fənn
     təyinatı"; the refused-file message reads the same ("qəbul olunmur") in chat and materials.
 - **Consequences:** the tour content is plain text in `messages/az.json`; EN/RU follow with i18n (Phase 3).
+
+## D-073 · 2026-10-26 · Chat load test, the bottlenecks it found, and the chat E2E suite
+
+- **Context:** Sprint 6 asks for a k6 load test with 1,000 sockets and 50 messages per second, and an E2E suite
+  for chat happy paths. The target is chat delivery p95 < 300 ms (§8, §9). Keycloak's clients have direct
+  grants disabled, and enabling them would be an authentication change (to be asked first).
+- **Options:** tokens through a password grant (realm change), a test-only key the API trusts (an auth bypass that
+  must never ship), or signing in through the real browser flow; one large channel or course-sized ones.
+- **Decision:**
+  - `infra/load/prepare.py` creates `load-NNNN` Keycloak accounts (one generated password), mirrors them as
+    application users and puts them into private channels "Yük testi NN"; `down` removes exactly these, their
+    channels and messages (synthetic data only). `infra/load/chat.js` (k6 1.3.0 in Docker) signs every account
+    in through the app's own OIDC flow (`/auth/signin` → Keycloak form → callback), with cookies handled by hand
+    because the app and Keycloak mark them Secure. Each socket gets a ticket through the web proxy (session
+    cookie + CSRF header) and connects with the app's Origin. Default shape: 500 accounts with two sockets each
+    (laptop and phone) in 20 channels of 25 (a course group), every socket sending every 20 s, so 50 messages
+    per second in the hold and 1,250 deliveries per second. Thresholds: delivery and ack p95 < 300 ms, ≥ 99 %
+    sockets connected, fewer than ten refused events. `make load-up`, `make load`, `make load-down`.
+  - Measured on the 4-vCPU development box, with the whole stack, Keycloak, the web dev server and k6 on the
+    same machine and the API run as in production (two workers, no reload): the first run failed with delivery
+    p95 1.16 s (median 167 ms). A py-spy profile showed about a fifth of a worker's time spent building the
+    policy-state query (`ChannelAccess.states`, aliased statement constructed per call) and another large share
+    in the per-socket heartbeat recheck, which loaded roles and permissions for every socket every 25 s although
+    it only needs the account status and memberships. The Postgres session counter showed constant connection
+    churn: the default pool (5 + 10 overflow) closed overflow connections after each use, and every new one paid a
+    SCRAM handshake.
+  - Fixes: the policy-state statement is built once with bind parameters; the heartbeat recheck reads the status
+    column and the memberships only; the engine pool is 20 + 10 per process (two API workers stay below
+    `max_connections` 100). After them: delivery p95 101 ms, ack p95 103 ms, median 36 ms, max 618 ms; 1,000 of
+    1,000 sockets connected (one socket reconnected once during the hold), no refused events; new database
+    connections during a run fell from ~1,700 to ~180.
+  - The chat E2E suite (`e2e/chat.spec.ts`, built in Sprints 5–6) is the happy-path suite: real-time messages in a
+    course channel and a DM across two browsers with a network drop, mentions, threads, reactions, edit and
+    delete, attachments and scanning, reports, channel membership by role, membership revoked while connected,
+    the phone layout and the dark-mode accessibility check. It runs green (8/8) after these changes, and the full
+    functional suite (37 tests) with the seed-data check is green too.
+- **Consequences:** the pilot server load test (`make load` against it, runbook) replaces these numbers as the
+  reference; the Sprint 14 target (3,000 sockets, 200 msg/s) will need horizontal API workers and likely payload
+  caching. A long-lived `next dev` server can stall after many edits and break whole E2E runs: restart it before
+  a full run.
