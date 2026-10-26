@@ -567,20 +567,20 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 ### Phase 2 — Chat 2.0 & Cross-Cohort Mentorship (Sprints 7–10 · 2027-02-22 → 2027-04-16)
 
 #### Sprint 7 (02-22 → 03-05) — Subject Communities
-- [ ] Community channel UX: topics `#ümumi #suallar #materiallar #imtahan-hazırlığı #məsləhət`.
-- [ ] Eligibility service: past `completed && passed` enrollments → guide eligibility per subject (rules in §5.2).
-- [ ] Guide invitation flow (notification + e-mail) after results import; opt-in page with consent, `grade_visibility`, `show_teacher`, bio.
-- [ ] Guide badge rendering in messages and member list.
-- [ ] Import historical enrollments (previous 2 years) for pilot faculty.
+- [x] Community channel UX: topics `#ümumi #suallar #materiallar #imtahan-hazırlığı #məsləhət`.
+- [x] Eligibility service: past `completed && passed` enrollments → guide eligibility per subject (rules in §5.2).
+- [x] Guide invitation flow (notification + e-mail) after results import; opt-in page with consent, `grade_visibility`, `show_teacher`, bio.
+- [x] Guide badge rendering in messages and member list.
+- [x] Import historical enrollments (previous 2 years) for pilot faculty.
 **Acceptance:** a student who passed Mikroiqtisadiyyat in 2025-Fall opts in → appears with guide badge in the community; grade hidden by default.
 
 #### Sprint 8 (03-08 → 03-19) — Find a Guide & Advice Requests
-- [ ] "Bələdçi tap" page per subject: ranking (same teacher → same specialty → recency → helpful rate), filters.
-- [ ] Advice request form + lifecycle per the state machine in §5.2, ARQ expiry job.
-- [ ] Accept → DM channel tagged with request header card.
-- [ ] Guide availability + `max_open_requests` enforcement (race-safe).
-- [ ] Feedback (helpful / not helpful) → stats update; guide stats on profile.
-- [ ] Notifications for guides on new `#məsləhət` posts (digest, max 5/day).
+- [x] "Bələdçi tap" page per subject: ranking (same teacher → same specialty → recency → helpful rate), filters.
+- [x] Advice request form + lifecycle per the state machine in §5.2, ARQ expiry job.
+- [x] Accept → DM channel tagged with request header card.
+- [x] Guide availability + `max_open_requests` enforcement (race-safe).
+- [x] Feedback (helpful / not helpful) → stats update; guide stats on profile.
+- [x] Notifications for guides on new `#məsləhət` posts (digest, max 5/day).
 **Acceptance:** first-year student requests advice → guide accepts → DM opens → resolved → feedback recorded; stats visible.
 
 #### Sprint 9 (03-22 → 04-02) — Knowledge in channels
