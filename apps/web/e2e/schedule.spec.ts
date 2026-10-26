@@ -4,7 +4,7 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
-import { password, signIn, signInWithSecondFactor, test } from "./support/auth";
+import { openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
 import { importFile, SEED_DIR } from "./support/imports";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
@@ -138,7 +138,8 @@ test("rooms can be found by code or name, typed without Azerbaijani letters", as
 
   // On a phone the plan scrolls inside its frame so that the selected room is on screen.
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto("/map?room=1-305");
+  // The frame scrolls to the room once the page has hydrated (D-044).
+  await openPage(page, "/map?room=1-305");
   const room = await main.locator('[data-room="1-305"] rect').boundingBox();
   expect(room!.x).toBeGreaterThanOrEqual(0);
   expect(room!.x + room!.width).toBeLessThanOrEqual(320);
