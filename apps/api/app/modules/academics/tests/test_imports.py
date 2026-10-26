@@ -52,14 +52,14 @@ async def test_sample_data_imports_and_reimport_is_a_no_op(
 ) -> None:
     await seed()
 
-    assert await db.scalar(select(func.count()).select_from(Enrollment)) == 617
+    assert await db.scalar(select(func.count()).select_from(Enrollment)) == 673
     audit = await db.scalars(select(AuditLog.details).where(AuditLog.action == "import.applied"))
     registry = list(ImportKind)[: list(ImportKind).index(ImportKind.ENROLLMENTS) + 1]
     assert {entry["kind"] for entry in audit} == {kind.value for kind in registry}
 
     again = await upload(ImportKind.ENROLLMENTS, (SEED_DIR / "enrollments.csv").read_bytes())
     assert again["status"] == "ready"
-    assert again["summary"] == {"created": 0, "updated": 0, "unchanged": 617, "removed": 0}
+    assert again["summary"] == {"created": 0, "updated": 0, "unchanged": 673, "removed": 0}
     assert again["previously_applied_at"] is not None
 
 
@@ -430,7 +430,12 @@ async def test_retake_and_results_update_the_right_rows(
         apply=True,
     )
     assert body["summary"] == {"created": 0, "updated": 1, "unchanged": 0, "removed": 0}
-    grades = await db.scalars(select(Enrollment.grade).where(Enrollment.user_id == anar.id))
+    grades = await db.scalars(
+        select(Enrollment.grade)
+        .join(CourseOffering, CourseOffering.id == Enrollment.course_offering_id)
+        .join(Subject)
+        .where(Enrollment.user_id == anar.id, Subject.code == "IQT-2101")
+    )
     assert sorted(g for g in grades if g is not None) == [64]
 
 
@@ -527,8 +532,8 @@ async def test_seed_command(
     db: AsyncSession, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert await run_seed(SEED_DIR) == 0
-    assert "enrollments: created 617, updated 0, unchanged 0" in capsys.readouterr().out
-    assert await db.scalar(select(func.count()).select_from(Enrollment)) == 617
+    assert "enrollments: created 673, updated 0, unchanged 0" in capsys.readouterr().out
+    assert await db.scalar(select(func.count()).select_from(Enrollment)) == 673
 
     (tmp_path / "faculties.csv").write_bytes(b"code,name_az\nMEM,\n")
     assert await run_seed(tmp_path) == 1

@@ -13,6 +13,7 @@ DISPATCH_NOTIFICATIONS = "dispatch_notifications"
 SYNC_AUDIENCES = "sync_audiences"
 PROVISION_CHANNELS = "provision_channels"
 SCAN_ATTACHMENTS = "scan_attachments"
+SYNC_GUIDES = "sync_guides"
 
 
 class JobQueue(Protocol):
@@ -23,6 +24,8 @@ class JobQueue(Protocol):
     async def provision_channels(self) -> None: ...
 
     async def scan_attachments(self) -> None: ...
+
+    async def sync_guides(self) -> None: ...
 
 
 class ArqQueue:
@@ -47,6 +50,9 @@ class ArqQueue:
 
     async def scan_attachments(self) -> None:
         await self._enqueue(SCAN_ATTACHMENTS)
+
+    async def sync_guides(self) -> None:
+        await self._enqueue(SYNC_GUIDES)
 
     async def close(self) -> None:
         await self.redis.aclose()

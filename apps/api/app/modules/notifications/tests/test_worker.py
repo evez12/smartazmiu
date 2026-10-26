@@ -18,5 +18,13 @@ async def test_worker_starts_dispatches_and_stops(db: AsyncSession) -> None:
     assert main.dispatch_notifications in main.WorkerSettings.functions
     assert main.sync_audiences in main.WorkerSettings.functions
     assert main.scan_attachments in main.WorkerSettings.functions
-    assert set(main.RELEVANCE) == {"announcement", "event", "schedule_change", "chat_message"}
+    assert set(main.RELEVANCE) == {
+        "announcement",
+        "event",
+        "schedule_change",
+        "chat_message",
+        "mentor_invitation",
+        "mentor_request",
+        "advice_post",
+    }
     assert main.WorkerSettings.keep_result == 0

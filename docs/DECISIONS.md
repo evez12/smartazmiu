@@ -1681,3 +1681,59 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** the M1 load criterion is recorded as measured, not met; the comparison with D-073 (101 ms) is
   not like for like, because D-073 ran the API natively without nginx and without the forwarder hop. The pilot
   server check (runbook section 2, item 8) still needs the product owner's agreement (D-077).
+
+## D-083 · 2026-10-27 · Guides, advice requests and the #məsləhət digest (Sprints 7–8)
+
+- **Context:** §5.2 defines guide eligibility, opt-in, the badge, the "Bələdçi tap" ranking, the request state
+  machine and feedback; D-004 settles unaddressed requests. Several points are open: there is no chat ban yet
+  (Sprint 10), "capacity" is not defined against the request states, the digest has no shape, and grades are
+  personal data (§5.4).
+- **Decision:**
+  - **Eligibility** is one SQL rule (`mentorship/eligibility.py`): a completed, passed enrollment in a semester that
+    ended before today (Baku), no active enrollment in the subject now (retake), an active account, and no
+    moderator posting mute (`posting_muted_until`) in the subject's community, which stands in for a chat ban until
+    bans exist. The qualifying semester is the most recent passed one; its teacher is the offering's first teacher.
+    Opt-in, accept and the re-check all use it.
+  - **Re-check and invitations:** `sync_guides` runs after every applied enrollments import and nightly. It revokes
+    profiles that are no longer eligible (`revoked_at`, row kept), declines their still-open addressed requests,
+    and runs provisioning so they leave the community; it invites eligible people without a profile once per
+    subject (in-app and e-mail, new notification category `mentorship`, on by default for both).
+  - **Profile:** `mentor_profiles` as in §5.7 plus `consented_at` and `revoked_at`. Grade visibility defaults to
+    `hidden`; `range` shows 51–70 / 71–90 / 91–100, `exact` the grade; the teacher is shown only with
+    `show_teacher`. The badge in community messages and member lists is "Bələdçi · 2025 Payız" with the Lucide
+    compass, computed from active profiles; it never carries the grade. Guides stay community members through a
+    provisioning arm for active profiles. The `guides_and_teachers` DM policy now lets guides through.
+  - **Directory:** readers are people with a non-dropped enrollment in the subject, its active guides, and staff;
+    others get the same 404 as an unknown subject. Only `available`, non-revoked guides who have not blocked (or
+    been blocked by) the viewer are listed, ranked same teacher → same specialty → most recent semester → helpful
+    rate → name; filters by specialty, semester and (shown) teacher.
+  - **Capacity:** a guide's load is their `accepted` requests; `max_open_requests` (1–10, default 3) caps it at
+    accept. At create, an addressed request also counts the guide's open ones, so a guide is not flooded with
+    requests they could never accept. Accept locks the request row, then the guide's profile row: concurrent accepts
+    of one request, or by one guide, are serialised and only one can pass the capacity check (tested with two
+    parallel accepts and capacity 1).
+  - **Requests:** one open request per requester, guide and subject, and one open unaddressed request per requester
+    and subject (partial unique indexes). Blocks either way read as "guide unavailable" (D-062). Unaddressed
+    requests notify every available guide of the subject and may be accepted by any of them (D-004); they cannot be
+    declined, only expire. Accept creates or reuses the pair's DM without the requester's DM policy (they asked)
+    and stores it on the request; the DM shows a request card with subject, topic, status, the two people, resolve
+    and feedback, and the student-advice label. Expiry runs every ten minutes and is idempotent. 10 requests per
+    hour per person.
+  - **Feedback:** once, by the requester, after `resolved`, through a conditional update; it adjusts the guide's
+    helpful or unhelpful counter, `helped_count` grows at resolve, `avg_response_minutes` is a running mean of
+    create→accept. The optional note is private: never in request payloads, listed for holders of
+    `admin.reports.read` on the reports page ("Bələdçi rəyləri").
+  - **#məsləhət digest:** every 15 minutes, top-level posts of the last six hours in a community's `meslehet` topic
+    without replies notify the subject's guides who are not paused, one notification per post (deduplicated), at
+    most five such notifications per guide per Baku day.
+  - **Topics in the web chat:** course and community channels show a topic bar (all, #ümumi, #suallar,
+    #materiallar, #imtahan-hazırlığı, and #məsləhət in communities only, as provisioned since Sprint 5); a selected
+    topic filters the loaded messages and new messages are sent into it. #materiallar links to the subject's
+    Materials v1 page (channel detail now carries `subject_id`); #məsləhət shows the student-advice label.
+  - **Historical enrollments:** the sample data now has 764a1's 2024 Payız and 2025 Yaz results (7 offerings, 56
+    enrollments with grades, two failed), imported through the normal enrollments template; real files for the pilot
+    faculty use the same template and year/term columns.
+- **Consequences:** a chat ban in Sprint 10 replaces the mute in `banned()`. Requests a revoked guide already
+  accepted stay open for the two people to resolve. Topic filtering is client-side over loaded pages; a server-side
+  topic page (the API already accepts `topic`) can replace it when channels grow. Reputation XP (§5.2 flow 4) is
+  not built; it has no spec beyond the word.

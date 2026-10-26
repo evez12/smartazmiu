@@ -19,6 +19,9 @@ import { MemberSheet } from "./member-sheet";
 import { MessageList } from "./message-list";
 import { buildTimeline, chatKeys, newestId, PAGE_SIZE } from "./model";
 import { NotifyMenu } from "./notify-menu";
+import { StudentAdviceDisclaimer } from "@/features/mentorship/disclaimer";
+import { ChannelRequests } from "@/features/mentorship/request-list";
+
 import { PostingBanner } from "./posting";
 import { FALLBACK_POLL_MS, useChannels, useChatRuntime, useChatState, useMembers } from "./runtime";
 import type { PageDirection } from "./store";
@@ -34,12 +37,15 @@ export function MessagePane({
   onOpenThread: (rootId: string) => void;
 }) {
   const t = useTranslations("chat");
+  const tGuides = useTranslations("guides");
   const api = useApi();
   const runtime = useChatRuntime();
   const channels = useChannels();
   const [membersOpen, setMembersOpen] = useState(false);
   const [loading, setLoading] = useState<Exclude<PageDirection, "latest"> | null>(null);
   const [historyFailed, setHistoryFailed] = useState(false);
+  // Course and community channels have topics (§5.1); null shows every message.
+  const [topicId, setTopicId] = useState<string | null>(null);
   const atBottom = useRef(true);
 
   const detail = useQuery({
@@ -138,11 +144,22 @@ export function MessagePane({
     return () => clearInterval(timer);
   }, [channelId, load, runtime.store, status]);
 
-  const messages = useMemo(() => Object.values(history?.messages ?? {}), [history?.messages]);
-  const pending = useMemo(
-    () => Object.values(allPending).filter((item) => item.channelId === channelId),
-    [allPending, channelId],
+  const messages = useMemo(
+    () =>
+      Object.values(history?.messages ?? {}).filter(
+        (message) => topicId === null || message.topic_id === topicId,
+      ),
+    [history?.messages, topicId],
   );
+  const pending = useMemo(
+    () =>
+      Object.values(allPending).filter(
+        (item) => item.channelId === channelId && (topicId === null || item.topicId === topicId),
+      ),
+    [allPending, channelId, topicId],
+  );
+  const topics = detail.data?.topics ?? [];
+  const activeTopic = topics.find((topic) => topic.id === topicId);
   // The divider stays where the read marker was when the channel opened, even after it moves on (§12.7).
   const [frozenMarker, setFrozenMarker] = useState<string | null | undefined>(undefined);
   if (frozenMarker === undefined && listed) setFrozenMarker(listed.last_read_message_id);
@@ -238,6 +255,46 @@ export function MessagePane({
         </Button>
       </header>
 
+      {topics.length > 0 ? (
+        <nav
+          aria-label={t("topics.label")}
+          className="flex shrink-0 gap-1 overflow-x-auto border-b border-border px-2 py-1 lg:px-4"
+        >
+          {[{ id: null, name: t("topics.all") }, ...topics].map((topic) => (
+            <button
+              key={topic.id ?? "all"}
+              type="button"
+              aria-pressed={topicId === topic.id}
+              onClick={() => setTopicId(topic.id)}
+              className={buttonVariants({
+                variant: topicId === topic.id ? "secondary" : "tertiary",
+                size: "dense",
+                className: "shrink-0",
+              })}
+            >
+              {topic.id ? `#${topic.name}` : topic.name}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+      {activeTopic?.slug === "materiallar" && detail.data?.subject_id ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-bg-subtle px-4 py-2 text-sm">
+          <span>{tGuides("materialsHint")}</span>
+          <Link
+            href={`/materials/${detail.data.subject_id}`}
+            className={buttonVariants({ size: "dense" })}
+          >
+            {tGuides("materialsLink")}
+          </Link>
+        </div>
+      ) : null}
+      {activeTopic?.slug === "meslehet" ? (
+        <div className="border-b border-border px-4 py-2">
+          <StudentAdviceDisclaimer />
+        </div>
+      ) : null}
+      {channel?.type === "dm" ? <ChannelRequests channelId={channelId} /> : null}
+
       {truncated && listed?.last_read_message_id ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-bg-subtle px-4 py-2 text-sm">
           <span>{t("gapTooLarge")}</span>
@@ -324,7 +381,7 @@ export function MessagePane({
         attachTo={channelId}
         onSend={(body, attachmentIds) => {
           atBottom.current = true;
-          runtime.send(channelId, body, undefined, attachmentIds);
+          runtime.send(channelId, body, undefined, attachmentIds, topicId ?? undefined);
         }}
         onTyping={() => runtime.typing(channelId)}
       />

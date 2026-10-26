@@ -150,6 +150,7 @@ class FakeJobs:
         self.syncs = 0
         self.provisions = 0
         self.scans = 0
+        self.guide_syncs = 0
 
     async def dispatch_notifications(self) -> None:
         self.dispatches += 1
@@ -162,6 +163,9 @@ class FakeJobs:
 
     async def scan_attachments(self) -> None:
         self.scans += 1
+
+    async def sync_guides(self) -> None:
+        self.guide_syncs += 1
 
     async def close(self) -> None:
         return None

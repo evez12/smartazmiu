@@ -9,12 +9,22 @@ import { Field, Select } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { pageFromParam, Pagination } from "@/components/ui/pagination";
 import { Panel, PanelBody } from "@/components/ui/panel";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { listHref } from "@/features/admin/model";
 import { MaterialReportTable } from "@/features/materials/material-report-table";
 import { ReportTable } from "@/features/reports/report-table";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
 import { cn } from "@/lib/cn";
+import { formatDateTime } from "@/lib/format";
 
 const PAGE_SIZE = 25;
 const STATUSES = ["open", "actioned", "dismissed"] as const;
@@ -42,7 +52,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     params.status === "all"
       ? undefined
       : (STATUSES.find((value) => value === params.status) ?? "open");
-  const kind = params.kind === "materials" ? "materials" : "messages";
+  const kind =
+    params.kind === "materials" ? "materials" : params.kind === "guides" ? "guides" : "messages";
+  const tGuides = await getTranslations("guides.feedbackNotes");
+  const tRequest = await getTranslations("guides.request");
   const page = pageFromParam(params.page);
   const query = { status, offset: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE };
   const api = await serverApi();
@@ -55,7 +68,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       : null,
     getCurrentUser(),
   ]);
-  const result = (messageReports ?? materialReports)!;
+  const guideNotes =
+    kind === "guides"
+      ? await api
+          .GET("/api/v1/moderation/mentor-feedback", {
+            params: { query: { offset: query.offset, limit: query.limit } },
+          })
+          .then(loaded)
+      : null;
+  const result = (messageReports ?? materialReports ?? guideNotes)!;
   const header = (
     <PageHeader
       title={t("title")}
@@ -81,7 +102,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         aria-label={tMaterials("admin.tabsLabel")}
         className="mb-4 flex gap-4 overflow-x-auto border-b border-border"
       >
-        {(["messages", "materials"] as const).map((value) => (
+        {(["messages", "materials", "guides"] as const).map((value) => (
           <Link
             key={value}
             href={listHref("/admin/reports", { kind: value })}
@@ -93,54 +114,111 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 : "border-transparent text-muted hover:text-text",
             )}
           >
-            {tMaterials(value === "messages" ? "admin.tabMessages" : "admin.tabMaterials")}
+            {value === "guides"
+              ? tGuides("tab")
+              : tMaterials(value === "messages" ? "admin.tabMessages" : "admin.tabMaterials")}
           </Link>
         ))}
       </nav>
-      <Panel>
-        <form
-          method="get"
-          className="grid gap-4 border-b border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
-        >
-          <input type="hidden" name="kind" value={kind} />
-          <Field label={t("columns.status")}>
-            <Select name="status" defaultValue={filter}>
-              {[...STATUSES, "all" as const].map((value) => (
-                <option key={value} value={value}>
-                  {t(`filters.${value}`)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <div>
-            <Button type="submit">{t("filters.apply")}</Button>
-          </div>
-        </form>
-        {result.data.items.length === 0 ? (
-          <PanelBody>
-            <EmptyState className="py-0" icon={Flag} message={t("empty")} />
-          </PanelBody>
-        ) : (
-          <div className="flex flex-col gap-4 px-4 pb-4">
-            {messageReports?.status === "ok" ? (
-              <ReportTable
-                items={messageReports.data.items}
-                caption={t("tableCaption")}
-                canHandle={canHandle}
+      {guideNotes?.status === "ok" ? (
+        <Panel>
+          {guideNotes.data.items.length === 0 ? (
+            <PanelBody>
+              <EmptyState className="py-0" icon={Flag} message={tGuides("empty")} />
+            </PanelBody>
+          ) : (
+            <div className="flex flex-col gap-4 p-4">
+              <Table>
+                <TableCaption>{tGuides("caption")}</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tGuides("subject")}</TableHead>
+                    <TableHead>{tGuides("guide")}</TableHead>
+                    <TableHead>{tGuides("feedback")}</TableHead>
+                    <TableHead>{tGuides("note")}</TableHead>
+                    <TableHead>{tGuides("date")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {guideNotes.data.items.map((item) => (
+                    <TableRow key={item.request_id}>
+                      <TableCell label={tGuides("subject")}>{item.subject_name}</TableCell>
+                      <TableCell label={tGuides("guide")}>
+                        {item.mentor?.display_name ?? ""}
+                      </TableCell>
+                      <TableCell label={tGuides("feedback")}>
+                        {tRequest(item.feedback === "helpful" ? "helpful" : "notHelpful")}
+                      </TableCell>
+                      <TableCell
+                        label={tGuides("note")}
+                        className="break-words whitespace-pre-wrap"
+                      >
+                        {item.note}
+                      </TableCell>
+                      <TableCell label={tGuides("date")} className="tabular">
+                        {formatDateTime(item.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={guideNotes.data.total}
+                href={(target) => listHref("/admin/reports", { kind, page: target })}
               />
-            ) : null}
-            {materialReports?.status === "ok" ? (
-              <MaterialReportTable items={materialReports.data.items} canHandle={canHandle} />
-            ) : null}
-            <Pagination
-              page={page}
-              pageSize={PAGE_SIZE}
-              total={result.data.total}
-              href={(target) => listHref("/admin/reports", { kind, status: filter, page: target })}
-            />
-          </div>
-        )}
-      </Panel>
+            </div>
+          )}
+        </Panel>
+      ) : (
+        <Panel>
+          <form
+            method="get"
+            className="grid gap-4 border-b border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          >
+            <input type="hidden" name="kind" value={kind} />
+            <Field label={t("columns.status")}>
+              <Select name="status" defaultValue={filter}>
+                {[...STATUSES, "all" as const].map((value) => (
+                  <option key={value} value={value}>
+                    {t(`filters.${value}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div>
+              <Button type="submit">{t("filters.apply")}</Button>
+            </div>
+          </form>
+          {result.data.items.length === 0 ? (
+            <PanelBody>
+              <EmptyState className="py-0" icon={Flag} message={t("empty")} />
+            </PanelBody>
+          ) : (
+            <div className="flex flex-col gap-4 px-4 pb-4">
+              {messageReports?.status === "ok" ? (
+                <ReportTable
+                  items={messageReports.data.items}
+                  caption={t("tableCaption")}
+                  canHandle={canHandle}
+                />
+              ) : null}
+              {materialReports?.status === "ok" ? (
+                <MaterialReportTable items={materialReports.data.items} canHandle={canHandle} />
+              ) : null}
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={result.data.total}
+                href={(target) =>
+                  listHref("/admin/reports", { kind, status: filter, page: target })
+                }
+              />
+            </div>
+          )}
+        </Panel>
+      )}
     </>
   );
 }

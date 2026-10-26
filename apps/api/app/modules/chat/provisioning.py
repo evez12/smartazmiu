@@ -51,6 +51,7 @@ from app.modules.chat.models import (
     MemberRole,
 )
 from app.modules.chat.topics import DEFAULT_TOPICS
+from app.modules.mentorship.models import MentorProfile
 from app.modules.users.models import PersonType, Role, RoleCode, User, UserRole, UserStatus
 
 # Arbitrary but fixed: "chat" in ASCII.
@@ -85,7 +86,8 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
     """(channel_id, user_id) for every provisioned channel that is not archived, from the registry.
 
     Course channel: students of the offering's groups with an enrollment that is not dropped, plus its teachers.
-    Subject community: active enrollees of the subject in any group, no teachers. Academic group: its students and
+    Subject community: active enrollees of the subject in any group and its guides (opted in, not revoked, §5.2),
+    no teachers. Academic group: its students and
     its curator. Faculty: the students of its groups. Support: everyone in the registry plus staff and admins
     (D-074). Only active accounts are members (§13.1).
     """
@@ -132,6 +134,17 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
             active,
         )
     )
+    community_guides = (
+        select(Channel.id, MentorProfile.user_id)
+        .join(MentorProfile, MentorProfile.subject_id == Channel.subject_id)
+        .join(User, User.id == MentorProfile.user_id)
+        .where(
+            Channel.type == ChannelType.SUBJECT_COMMUNITY,
+            open_channel,
+            MentorProfile.revoked_at.is_(None),
+            active,
+        )
+    )
     group_students = (
         select(Channel.id, User.id)
         .join(User, User.academic_group_id == Channel.academic_group_id)
@@ -164,6 +177,7 @@ def desired_members() -> Select[tuple[uuid.UUID, uuid.UUID]]:
         course_students,
         course_teachers,
         community,
+        community_guides,
         group_students,
         group_curators,
         faculty_students,

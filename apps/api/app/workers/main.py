@@ -16,6 +16,7 @@ from app.core.jobs import (
     PROVISION_CHANNELS,
     SCAN_ATTACHMENTS,
     SYNC_AUDIENCES,
+    SYNC_GUIDES,
 )
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
@@ -29,6 +30,7 @@ from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
 from app.modules.materials.service import MaterialScanner
+from app.modules.mentorship import service as mentorship
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
@@ -41,6 +43,9 @@ RELEVANCE: dict[str, RelevanceCheck] = {
     events.SUBJECT_TYPE: events.still_relevant,
     schedule_changes.SUBJECT_TYPE: schedule_changes.still_affected,
     mentions.SUBJECT_TYPE: mentions.still_relevant,
+    mentorship.SUBJECT_TYPE_INVITATION: mentorship.still_relevant,
+    mentorship.SUBJECT_TYPE_REQUEST: mentorship.still_relevant,
+    mentorship.SUBJECT_TYPE_ADVICE: mentorship.still_relevant,
 }
 
 
@@ -127,6 +132,31 @@ async def provision_channels(ctx: dict[str, Any]) -> int:
     return len(result.added) + len(result.removed) + len(result.state_changed)
 
 
+async def sync_guides(ctx: dict[str, Any]) -> int:
+    """Re-checks guide eligibility after results imports: revokes, closes their open requests, invites (§5.2)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        report = await mentorship.MentorshipService(session).sync()
+    if report.revoked:
+        # Revoked guides leave the community on the next provisioning run; run it now.
+        await provision_channels(ctx)
+    return report.revoked + report.invited
+
+
+async def expire_mentor_requests(ctx: dict[str, Any]) -> int:
+    """Open advice requests older than 72 hours expire; idempotent (§5.2)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        return await mentorship.MentorshipService(session).expire()
+
+
+async def notify_advice_posts(ctx: dict[str, Any]) -> int:
+    """New unanswered #məsləhət posts reach the subject's guides, at most five a day each (D-083)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        return await mentorship.MentorshipService(session).notify_advice_posts()
+
+
 async def ensure_message_partitions(ctx: dict[str, Any]) -> int:
     """Keeps this month and the next three partitions of ``messages`` (ADR 0002)."""
     database: Database = ctx["database"]
@@ -195,6 +225,7 @@ class WorkerSettings:
         sync_audiences,
         provision_channels,
         scan_attachments,
+        sync_guides,
     ]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
     cron_jobs: ClassVar = [
@@ -205,6 +236,10 @@ class WorkerSettings:
         cron(provision_channels, name=f"{PROVISION_CHANNELS}_cron"),
         # Wake-ups come with every sent attachment; the minute tick retries deferred scans.
         cron(scan_attachments, name=f"{SCAN_ATTACHMENTS}_cron"),
+        # Imports wake the guide check; the nightly run catches corrections made any other way.
+        cron(sync_guides, name=f"{SYNC_GUIDES}_cron", hour={21}, minute={30}),
+        cron(expire_mentor_requests, minute=set(range(0, 60, 10))),
+        cron(notify_advice_posts, minute=set(range(5, 60, 15))),
         cron(purge_attachments, minute={5, 35}),
         # Daily, at night in Baku (UTC+4); both are idempotent, so a retried or doubled run is harmless.
         cron(ensure_message_partitions, hour={22}, minute={10}),

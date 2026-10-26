@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Compass, Download } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
@@ -7,8 +7,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
+import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
 import { GroupFacts } from "@/features/academics/my-academics";
+import { GuideStatsLine } from "@/features/mentorship/guide-stats";
 import { RestartTourButton } from "@/features/onboarding/onboarding-tour";
 import { ConsentHistory } from "@/features/privacy/privacy-parts";
 import { PhotoControls } from "@/features/profile/photo-controls";
@@ -26,11 +28,13 @@ export default async function ProfilePage() {
   const t = await getTranslations("profile");
   const tTour = await getTranslations("onboarding");
   const api = await serverApi();
-  const [profile, academics, consents] = await Promise.all([
+  const [profile, academics, consents, guides] = await Promise.all([
     api.GET("/api/v1/me/profile").then(loaded),
     api.GET("/api/v1/me/academics").then(loaded),
     api.GET("/api/v1/me/consents").then(loaded),
+    api.GET("/api/v1/guides/me").then(loaded),
   ]);
+  const tGuides = await getTranslations("guides");
   const header = (
     <PageHeader
       title={t("title")}
@@ -83,6 +87,25 @@ export default async function ProfilePage() {
             )}
           </PanelBody>
         </Panel>
+
+        {guides.status === "ok" && guides.data.length > 0 ? (
+          <Panel>
+            <PanelHeader title={tGuides("myProfilesTitle")} />
+            <ul aria-label={tGuides("myProfilesTitle")} className="divide-y divide-border">
+              {guides.data.map((guide) => (
+                <li key={guide.subject_id} className="flex flex-col gap-1 px-4 py-3">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{guide.subject_name}</span>
+                    <Tag tone="accent" icon={Compass}>
+                      {tGuides("directory.badge", { semester: guide.semester })}
+                    </Tag>
+                  </span>
+                  <GuideStatsLine stats={guide.stats} />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
 
         <Panel>
           <PanelHeader title={t("settingsTitle")} />

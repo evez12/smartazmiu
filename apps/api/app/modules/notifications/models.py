@@ -33,6 +33,7 @@ class NotificationCategory(StrEnum):
     EVENTS = "events"
     SCHEDULE = "schedule"
     CHAT = "chat"
+    MENTORSHIP = "mentorship"
     """Mentions and replies to one's messages (§5.6)."""
 
 
@@ -46,6 +47,12 @@ class NotificationKind(StrEnum):
     CHAT_REPLY = "chat.reply"
     CHAT_ATTACHMENT_REJECTED = "chat.attachment_rejected"
     MATERIAL_VERSION_REJECTED = "material.version_rejected"
+    MENTORSHIP_INVITATION = "mentorship.invitation"
+    MENTORSHIP_REQUEST_RECEIVED = "mentorship.request_received"
+    MENTORSHIP_REQUEST_ACCEPTED = "mentorship.request_accepted"
+    MENTORSHIP_REQUEST_DECLINED = "mentorship.request_declined"
+    MENTORSHIP_REQUEST_EXPIRED = "mentorship.request_expired"
+    MENTORSHIP_ADVICE_POST = "mentorship.advice_post"
 
 
 class DeliveryChannel(StrEnum):

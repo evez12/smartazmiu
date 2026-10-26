@@ -335,6 +335,62 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Şikayət tapılmadı.",
         "en": "The report was not found.",
     },
+    "mentorship.subject_not_found": {
+        "az": "Fənn tapılmadı və ya onun bələdçilərinə baxmaq imkanınız yoxdur.",
+        "en": "The subject was not found or you cannot see its guides.",
+    },
+    "mentorship.consent_required": {
+        "az": "Bələdçi olmaq üçün razılığınızı təsdiq edin.",
+        "en": "Confirm your consent to become a guide.",
+    },
+    "mentorship.not_eligible": {
+        "az": "Bu fənn üzrə bələdçi ola bilməzsiniz: fənni keçmiş semestrdə uğurla bitirmiş olmalısınız.",
+        "en": "You cannot guide this subject: you must have passed it in a past semester.",
+    },
+    "mentorship.profile_not_found": {
+        "az": "Bu fənn üzrə bələdçi profiliniz yoxdur. Əvvəlcə bələdçi olmağa razılıq verin.",
+        "en": "You have no guide profile for this subject. Opt in first.",
+    },
+    "mentorship.body_required": {
+        "az": "Sorğunun mətnini yazın.",
+        "en": "Write the text of the request.",
+    },
+    "mentorship.self_request": {
+        "az": "Özünüzə sorğu göndərə bilməzsiniz.",
+        "en": "You cannot send a request to yourself.",
+    },
+    "mentorship.guide_unavailable": {
+        "az": "Bu bələdçi hazırda yeni sorğu qəbul etmir. Başqa bələdçi seçin və ya sorğunu bütün bələdçilərə göndərin.",
+        "en": "This guide is not taking new requests. Choose another guide or ask any guide.",
+    },
+    "mentorship.request_exists": {
+        "az": "Bu bələdçiyə bu fənn üzrə açıq sorğunuz artıq var. Cavabını gözləyin.",
+        "en": "You already have an open request to this guide for this subject.",
+    },
+    "mentorship.request_not_found": {
+        "az": "Sorğu tapılmadı.",
+        "en": "The request was not found.",
+    },
+    "mentorship.request_closed": {
+        "az": "Bu sorğu artıq bağlanıb və ya başqa vəziyyətdədir. Səhifəni yeniləyin.",
+        "en": "The request is no longer in a state that allows this. Reload the page.",
+    },
+    "mentorship.not_available": {
+        "az": "Sorğu qəbul etmək üçün vəziyyətinizi «Əlçatan» edin.",
+        "en": "Set your availability to available to accept requests.",
+    },
+    "mentorship.capacity_reached": {
+        "az": "Açıq sorğularınızın sayı limitə çatıb. Birini həll edin və ya limiti artırın.",
+        "en": "You reached your limit of open requests. Resolve one or raise the limit.",
+    },
+    "mentorship.request_not_resolved": {
+        "az": "Rəy yalnız həll edilmiş sorğuya verilə bilər.",
+        "en": "Feedback can be given only to a resolved request.",
+    },
+    "mentorship.feedback_exists": {
+        "az": "Bu sorğuya artıq rəy vermisiniz.",
+        "en": "You already gave feedback on this request.",
+    },
     "materials.subject_not_found": {
         "az": "Fənn tapılmadı və ya onun materiallarına baxmaq icazəniz yoxdur.",
         "en": "The subject was not found or you cannot view its materials.",

@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Dialog, DialogContent, Sheet } from "@/components/ui/overlay";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
 import { ReportDialog } from "@/features/reports/report-dialog";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 
+import { AuthorBadge, useBadgeLabel } from "./author-badge";
 import { chatKeys, type Author } from "./model";
 import { PresenceDot } from "./presence-dot";
 import { useChannels, useChatRuntime, useMembers } from "./runtime";
@@ -79,7 +79,7 @@ export function MemberSheet({
                     {member.display_name}
                     {member.id === runtime.currentUserId ? ` (${t("you")})` : ""}
                   </span>
-                  {member.badge ? <Tag tone="info">{t(`badges.${member.badge}`)}</Tag> : null}
+                  <AuthorBadge author={member} />
                 </button>
               </li>
             ))}
@@ -110,6 +110,7 @@ function UserCard({
   onOpened: () => void;
 }) {
   const t = useTranslations("chat");
+  const badgeLabel = useBadgeLabel();
   const tReports = useTranslations("reports");
   const api = useApi();
   const router = useRouter();
@@ -151,7 +152,7 @@ function UserCard({
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent
         title={person.display_name}
-        description={person.badge ? t(`badges.${person.badge}`) : undefined}
+        description={badgeLabel(person)}
         footer={
           isMe ? undefined : (
             <>

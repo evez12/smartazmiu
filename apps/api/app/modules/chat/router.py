@@ -93,8 +93,12 @@ async def list_my_channels(user: CurrentUserDep, channels: ChannelsDep) -> Chann
 async def read_channel(
     user: CurrentUserDep, channels: ChannelsDep, channel_id: uuid.UUID
 ) -> ChannelDetailOut:
-    channel, topics = await channels.get(user, channel_id)
-    return ChannelDetailOut(**channel.model_dump(), topics=topics)
+    channel, topics, subject_id = await channels.get(user, channel_id)
+    return ChannelDetailOut(
+        **channel.model_dump(),
+        topics=topics,
+        subject_id=str(subject_id) if subject_id else None,
+    )
 
 
 @router.get(
