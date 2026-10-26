@@ -22,6 +22,7 @@ function message(id: string, clientMsgId = `client-${id}`, channelId = "c-1"): C
     my_reactions: [],
     mentions: [],
     mentions_channel: false,
+    attachments: [],
   };
 }
 

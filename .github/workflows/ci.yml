@@ -21,7 +21,8 @@ jobs:
   api:
     name: API · lint, types, tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # ClamAV loads its signature database before the tests start (one to three minutes).
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.3.2
@@ -31,8 +32,11 @@ jobs:
           cache-dependency-glob: apps/api/uv.lock
       - run: uv --directory apps/api sync --frozen
       - run: make lint-api
-      # Starts postgres and redis from docker-compose.yml and runs pytest with the coverage gate.
+      # Starts postgres, redis, the S3 store and ClamAV from docker-compose.yml and runs pytest with the
+      # coverage gate; the ClamAV test may not skip here (D-068).
       - run: make test-api
+        env:
+          CLAMAV_REQUIRED: "1"
 
   web:
     name: Web · lint, types, unit tests, build
@@ -117,7 +121,7 @@ jobs:
     name: E2E and accessibility (full stack)
     needs: [api, web]
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7.0.1
       # `make e2e` loads the sample data through the API's import pipeline first.

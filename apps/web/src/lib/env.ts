@@ -45,6 +45,13 @@ export const env = {
   get socketUrl() {
     return process.env.WS_PUBLIC_URL || socketUrlFor(process.env.APP_URL ?? "");
   },
+  /**
+   * Origin of presigned attachment URLs when it is not the app's own (native development, D-068); behind nginx
+   * the bucket is proxied on the same origin and this stays empty.
+   */
+  get storageUrl() {
+    return process.env.STORAGE_PUBLIC_URL ?? "";
+  },
   /** Optional on purpose: the proxy asks on every request, including where auth is not configured. */
   get isHttps() {
     return (process.env.APP_URL ?? "").startsWith("https://");

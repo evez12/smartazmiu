@@ -19,6 +19,9 @@ x-api-env: &api-env
   S3_ACCESS_KEY: ${S3_ACCESS_KEY}
   S3_SECRET_KEY: ${S3_SECRET_KEY}
   S3_BUCKET: smartazmiu
+  # Presigned URLs point at the app's origin; nginx proxies /smartazmiu/ to the store (D-068).
+  S3_PUBLIC_URL: ${APP_PUBLIC_URL}
+  CLAMAV_HOST: clamav
   SENTRY_DSN: ${SENTRY_DSN_API:-}
   APP_PUBLIC_URL: ${APP_PUBLIC_URL}
   SMTP_HOST: mailpit
@@ -111,6 +114,21 @@ services:
       timeout: 3s
       retries: 30
 
+  # Virus scanning for uploads (§14). The image carries its signature database; loading it takes a minute or two
+  # and about 1.5 GB of memory. Signatures are refreshed by freshclam inside the container.
+  clamav:
+    image: clamav/clamav:1.4.3
+    ports:
+      - "${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     command: ["start-dev", "--import-realm"]
@@ -189,7 +207,7 @@ services:
       timeout: 5s
       retries: 20
 
-  # ARQ worker: notification delivery (push, e-mail) and audience sync (D-048).
+  # ARQ worker: notification delivery (push, e-mail), audience sync (D-048), attachment scans (D-068).
   worker:
     profiles: ["app"]
     build: ./apps/api
@@ -202,6 +220,11 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_healthy
+      s3:
+        condition: service_healthy
+      # Scans wait (and retry) while ClamAV loads its database, so the worker need not wait for it.
+      clamav:
+        condition: service_started
     healthcheck:
       test: ["CMD", "arq", "--check", "app.workers.main.WorkerSettings"]
       interval: 30s
@@ -259,3 +282,4 @@ volumes:
   redis-data:
   s3-data:
   keycloak-data:
+  clamav-data:

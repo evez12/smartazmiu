@@ -52,6 +52,8 @@ const SEED_TABLES: Record<string, string> = {
   message_reactions: "SELECT count(*) FROM message_reactions",
   message_mentions: "SELECT count(*) FROM message_mentions",
   "notifications (chat)": "SELECT count(*) FROM notifications WHERE category = 'chat'",
+  "message_attachments (sent)":
+    "SELECT count(*) FROM message_attachments WHERE message_id IS NOT NULL",
 };
 
 export type RowCounts = Record<string, number>;
@@ -143,6 +145,14 @@ export class TestRecords {
       for (const table of ["message_client_ids", "message_reactions", "message_mentions"]) {
         await client.query(`DELETE FROM ${table} WHERE message_id IN (${written})`, [markers]);
       }
+      // Files become abandoned uploads, which the worker purges with their objects (D-068).
+      await client.query(
+        `UPDATE message_attachments SET message_id = NULL, created_at = now() - interval '2 days' WHERE message_id IN (${written})`,
+        [markers],
+      );
+      await client.query(
+        `DELETE FROM notifications WHERE kind = 'chat.attachment_rejected' AND subject_id IN (SELECT id FROM message_attachments WHERE message_id IS NULL AND created_at < now() - interval '1 day')`,
+      );
       // Chat notifications carry the message id as a UUID (D-067).
       await client.query(
         `DELETE FROM notifications WHERE category = 'chat' AND subject_id IN (SELECT lpad(to_hex(id), 32, '0')::uuid FROM (${written}) AS m)`,

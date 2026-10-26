@@ -16,6 +16,7 @@ import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 
 import { Composer } from "./composer";
 import { MessageToolbar, ReactionChips } from "./message-actions";
+import { MessageAttachments } from "./message-attachments";
 import { MessageBody } from "./message-body";
 import {
   canChange,
@@ -227,6 +228,9 @@ export function MessageRow({
             ) : null}
           </>
         )}
+        {!deleted && !(collapsedAsBlocked && !revealed) ? (
+          <MessageAttachments attachments={message.attachments} />
+        ) : null}
         {!deleted ? (
           <ReactionChips message={message} disabled={!canReact} onToggle={react} />
         ) : null}

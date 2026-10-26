@@ -5,6 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Browser, type Locator, type Page } from "@playwright/test";
 
 import { password, signIn, signInWithSecondFactor, test } from "./support/auth";
+import { EICAR, SMALL_PDF, storedZip } from "./support/files";
 import { importFile, SEED_DIR } from "./support/imports";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
@@ -193,6 +194,61 @@ test("students mention, reply in a thread, react, edit and delete", async ({
   await expect(messageLog(ramin).getByText("Bu mesaj silinib.")).toBeVisible({ timeout: 5000 });
   await expect(thread.getByText(`${marker}-reply`)).toBeVisible();
   await expect(thread.getByText("silinmiş mesaja cavab")).toBeVisible();
+
+  await aysel.context().close();
+  await ramin.context().close();
+});
+
+/*
+ * Sprint 6 attachments: a clean PDF reaches the other student only after the scan; a file ClamAV flags stays
+ * hidden from others and its uploader is told (§13.2, D-068).
+ */
+test("attachments are scanned before others see them", async ({ browser, records }) => {
+  test.setTimeout(240_000);
+  const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  const aysel = await openChat(browser, AYSEL.username);
+  const ramin = await openChat(browser, RAMIN.username);
+  await online(aysel);
+  await online(ramin);
+  const course = courses(aysel).first();
+  const courseName = (await course.locator("span.truncate").first().innerText()).trim();
+  await course.click();
+  await courses(ramin).filter({ hasText: courseName }).first().click();
+  await expect(ramin.getByRole("heading", { level: 2, name: courseName })).toBeVisible();
+
+  const picker = aysel.locator('input[type="file"]').first();
+  await picker.setInputFiles({
+    name: "Kurs işi.pdf",
+    mimeType: "application/pdf",
+    buffer: SMALL_PDF,
+  });
+  await expect(aysel.getByText("yükləndi")).toBeVisible({ timeout: 15_000 });
+  await send(aysel, `Kurs işinin planı əlavədədir. ${marker}-pdf`);
+  const onRamin = messageLog(ramin)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-pdf` });
+  await expect(onRamin.getByRole("button", { name: "Baxın" })).toBeVisible({ timeout: 120_000 });
+  await onRamin.getByRole("button", { name: "Baxın" }).click();
+  await expect(ramin.getByTitle("Kurs işi.pdf sənədinə baxış")).toBeVisible();
+  await ramin.keyboard.press("Escape");
+
+  await picker.setInputFiles({
+    name: "test.zip",
+    mimeType: "application/zip",
+    buffer: storedZip("eicar.com", EICAR),
+  });
+  await expect(aysel.getByText("yükləndi")).toBeVisible({ timeout: 15_000 });
+  await send(aysel, `Arxiv ${marker}-zip`);
+  const onAysel = messageLog(aysel)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-zip` });
+  await expect(onAysel.getByText(/Faylda virus aşkarlandı/)).toBeVisible({ timeout: 120_000 });
+  const zipOnRamin = messageLog(ramin)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-zip` });
+  await expect(zipOnRamin).toBeVisible();
+  await expect(zipOnRamin.getByText("test.zip")).toHaveCount(0);
+  await expectNoSeriousViolations(aysel);
 
   await aysel.context().close();
   await ramin.context().close();

@@ -14,13 +14,31 @@ from sqlalchemy import Select, case, exists, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.academics.models import AcademicGroup, CourseOfferingTeacher
-from app.modules.chat.models import Channel, Message, MessageMention, MessageReaction
+from app.modules.chat.models import (
+    Channel,
+    Message,
+    MessageAttachment,
+    MessageMention,
+    MessageReaction,
+    ScanStatus,
+)
 from app.modules.chat.reactions import REACTIONS
-from app.modules.chat.schemas import AuthorOut, Badge, MentionOut, MessageOut, ReactionOut
+from app.modules.chat.schemas import (
+    AttachmentOut,
+    AuthorOut,
+    Badge,
+    MentionOut,
+    MessageOut,
+    ReactionOut,
+)
+from app.modules.chat.snowflake import created_at_of
 from app.modules.users.models import User
 from app.modules.users.profile import photo_url
 
 AuthoredRow = tuple[Message, User | None, str | None]
+
+# Images and PDFs are previewed inline (§5.3); the attachment service accepts nothing else as previewable.
+PREVIEWABLE = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"})
 
 
 def with_authors() -> Select[Message, User, str | None]:
@@ -124,6 +142,20 @@ async def enrich(
     for message_id, user_id, display_name in named:
         mentioned[message_id].append(MentionOut(id=str(user_id), display_name=display_name))
 
+    attached: dict[int, list[AttachmentOut]] = defaultdict(list)
+    files = await session.scalars(
+        select(MessageAttachment)
+        .where(MessageAttachment.message_id.in_(ids))
+        .order_by(MessageAttachment.attached_at, MessageAttachment.id)
+    )
+    for attachment in files:
+        # Others see a file only once it is clean; the uploader also sees it while scanning or rejected.
+        if attachment.scan_status is ScanStatus.CLEAN or (
+            viewer is not None and attachment.uploader_id == viewer
+        ):
+            assert attachment.message_id is not None
+            attached[attachment.message_id].append(attachment_out(attachment))
+
     result = []
     for message, author, badge in rows:
         out = message_out(message, author, badge)
@@ -136,6 +168,7 @@ async def enrich(
                 if emoji in counts[message.id]
             ]
             out.mentions = mentioned[message.id]
+            out.attachments = attached[message.id]
             if viewer is not None:
                 order = {emoji: index for index, emoji in enumerate(REACTIONS)}
                 out.my_reactions = sorted(mine[message.id], key=order.__getitem__)
@@ -143,3 +176,31 @@ async def enrich(
             out.my_reactions = []
         result.append(out)
     return result
+
+
+def attachment_out(attachment: MessageAttachment) -> AttachmentOut:
+    return AttachmentOut(
+        id=str(attachment.id),
+        filename=attachment.filename,
+        mime=attachment.mime,
+        size_bytes=attachment.size_bytes,
+        width=attachment.width,
+        height=attachment.height,
+        status=attachment.scan_status,
+        previewable=attachment.mime in PREVIEWABLE,
+    )
+
+
+async def message_payload(
+    session: AsyncSession, message_id: int, viewer: uuid.UUID | None
+) -> MessageOut | None:
+    """One message as ``viewer`` sees it (None: as every member sees it)."""
+    found = await session.execute(
+        with_authors().where(
+            Message.id == message_id, Message.created_at == created_at_of(message_id)
+        )
+    )
+    row = found.first()
+    if row is None:
+        return None
+    return (await enrich(session, [(row[0], row[1], row[2])], viewer))[0]

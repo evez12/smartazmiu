@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     s3_secret_key: str = ""
     s3_bucket: str = "smartazmiu"
     s3_region: str = "us-east-1"
+    # The origin browsers use for presigned URLs. Behind nginx it is the app's own origin, which proxies the
+    # bucket path to the store, so the CSP needs no extra origin (D-068). Empty: the endpoint URL.
+    s3_public_url: str = ""
+
+    # ClamAV daemon for uploads (§14); the worker scans attachments before anyone can download them.
+    clamav_host: str = "127.0.0.1"
+    clamav_port: int = 3310
 
     sentry_dsn: str | None = None
 

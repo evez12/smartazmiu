@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.chat.models import ChannelType, NotifyLevel
+from app.modules.chat.models import ChannelType, NotifyLevel, ScanStatus
 from app.modules.chat.policy import Reason
 
 # Ids are strings in JSON (§4.2): snowflakes exceed JavaScript's 53-bit integers.
@@ -33,6 +33,18 @@ class MentionOut(BaseModel):
     display_name: str
 
 
+class AttachmentOut(BaseModel):
+    id: str
+    filename: str
+    mime: str
+    size_bytes: int
+    width: int | None
+    height: int | None
+    status: ScanStatus
+    """Only the uploader ever sees anything but ``clean`` (D-068)."""
+    previewable: bool
+
+
 class MessageOut(BaseModel):
     # Every field is always present in responses, so the generated client needs no optional checks.
     model_config = ConfigDict(json_schema_serialization_defaults_required=True)
@@ -59,6 +71,8 @@ class MessageOut(BaseModel):
     """The reader's own reactions; None in broadcast events, which every member receives alike."""
     mentions: list[MentionOut] = Field(default_factory=list)
     mentions_channel: bool = False
+    attachments: list[AttachmentOut] = Field(default_factory=list)
+    """Clean attachments; the uploader also sees their own that are being scanned or were rejected."""
 
 
 class PostingOut(BaseModel):
@@ -80,6 +94,8 @@ class SendMessageIn(BaseModel):
     topic_id: uuid.UUID | None = None
     parent_id: str | None = Field(default=None, pattern=MESSAGE_ID_PATTERN)
     """Reply in this message's thread; a reply to a reply joins the same thread (one level, D-067)."""
+    attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
+    """Uploads from ``POST /chat/attachments/presign``; the body may be empty when there are some."""
 
 
 Notice = Literal["chat.channel_mention_not_allowed"]
@@ -197,3 +213,24 @@ class MembershipUpdateIn(BaseModel):
     notify_level: NotifyLevel | None = None
     muted_until: datetime | None = None
     """Snooze notifications until then; send null to end the snooze."""
+
+
+class PresignIn(BaseModel):
+    channel_id: uuid.UUID
+    filename: str = Field(min_length=1, max_length=255)
+    mime: str = Field(min_length=1, max_length=127)
+    size: int = Field(ge=1)
+
+
+class PresignOut(BaseModel):
+    attachment_id: str
+    url: str
+    """PUT the file here with the same ``Content-Type`` header before the link expires."""
+    object_key: str
+    expires_at: datetime
+    headers: dict[str, str]
+
+
+class DownloadOut(BaseModel):
+    url: str
+    expires_at: datetime

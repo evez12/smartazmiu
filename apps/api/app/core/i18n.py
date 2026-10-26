@@ -287,6 +287,42 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Bu reaksiya mövcud deyil. Siyahıdakı reaksiyalardan birini seçin.",
         "en": "This reaction is not available. Choose one from the list.",
     },
+    "chat.attachments_not_allowed": {
+        "az": "Yeni hesablar ilk 24 saat ərzində fənn icmalarına fayl əlavə edə bilməz.",
+        "en": "New accounts cannot attach files in subject communities during their first 24 hours.",
+    },
+    "chat.attachment_type_not_allowed": {
+        "az": "Bu fayl növü qəbul olunmur. Şəkil, PDF, DOCX, PPTX və ya ZIP faylı əlavə edin.",
+        "en": "This file type is not accepted. Attach an image, PDF, DOCX, PPTX or ZIP file.",
+    },
+    "chat.attachment_too_large": {
+        "az": "Fayl ən çox 25 MB ola bilər.",
+        "en": "Files can be at most 25 MB.",
+    },
+    "chat.too_many_attachments": {
+        "az": "Bir mesaja ən çox 10 fayl əlavə etmək olar.",
+        "en": "A message can have at most 10 attachments.",
+    },
+    "chat.attachment_not_found": {
+        "az": "Fayl tapılmadı. Yenidən əlavə edin.",
+        "en": "The file was not found. Attach it again.",
+    },
+    "chat.attachment_not_uploaded": {
+        "az": "Fayl hələ yüklənməyib. Yükləmə bitənə qədər gözləyin və ya faylı yenidən əlavə edin.",
+        "en": "The file has not been uploaded yet. Wait for the upload to finish or attach it again.",
+    },
+    "chat.attachment_size_mismatch": {
+        "az": "Yüklənən fayl gözlənilən ölçüdə deyil. Faylı yenidən əlavə edin.",
+        "en": "The uploaded file does not have the expected size. Attach it again.",
+    },
+    "chat.attachment_not_available": {
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "en": "The file is still being checked or did not pass the check.",
+    },
+    "chat.attachments_unavailable": {
+        "az": "Fayl yükləmə xidməti müvəqqəti işləmir. Mətn mesajları göndərmək olar; faylı bir az sonra əlavə edin.",
+        "en": "File uploads are temporarily unavailable. Text messages still work; attach the file later.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

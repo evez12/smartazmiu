@@ -31,7 +31,8 @@ class Reason(StrEnum):
     MUTED = "chat.muted"
     SLOW_MODE = "chat.slow_mode"
     RATE_LIMITED = "chat.rate_limited"
-    # chat.attachments_not_allowed (new accounts in communities) joins with those restrictions in Sprint 10.
+    ATTACHMENTS_NOT_ALLOWED = "chat.attachments_not_allowed"
+    """Accounts younger than 24 hours cannot attach files in subject communities (§5.5)."""
     CHANNEL_MENTION_NOT_ALLOWED = "chat.channel_mention_not_allowed"
 
 
@@ -81,6 +82,7 @@ class ChannelState:
     slow_mode_retry_after: int | None = None
     """Seconds until the user may post again under slow mode, once the loader has claimed the slot."""
     rate_limit_retry_after: int | None = None
+    attachments_restricted: bool = False
     can_mention_channel: bool = False
 
 
@@ -121,6 +123,8 @@ def authorize(action: Action, state: ChannelState) -> Decision:
         return Decision(False, Reason.SLOW_MODE, retry_after=state.slow_mode_retry_after)
     if action in NEW_MESSAGES and state.rate_limit_retry_after:
         return Decision(False, Reason.RATE_LIMITED, retry_after=state.rate_limit_retry_after)
+    if action is Action.SEND_ATTACHMENT and state.attachments_restricted:
+        return Decision(False, Reason.ATTACHMENTS_NOT_ALLOWED)
     if action is Action.MENTION_CHANNEL and not state.can_mention_channel:
         return Decision(False, Reason.CHANNEL_MENTION_NOT_ALLOWED)
     return ALLOW

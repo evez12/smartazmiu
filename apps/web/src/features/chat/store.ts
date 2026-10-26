@@ -210,6 +210,14 @@ export function createChatStore() {
         patch(state, message.id, (current) => ({
           ...message,
           my_reactions: message.my_reactions ?? current.my_reactions,
+          // Broadcasts carry clean files only; the author keeps their own files still being scanned.
+          attachments: [
+            ...message.attachments,
+            ...current.attachments.filter(
+              (own) =>
+                own.status !== "clean" && !message.attachments.some((item) => item.id === own.id),
+            ),
+          ],
         })),
       ),
 

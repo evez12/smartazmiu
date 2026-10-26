@@ -141,6 +141,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
+  | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -1118,3 +1119,64 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   users and mute levels at delivery. Moderator deletes wait for Sprint 10.
 - **Consequences:** composing a mention to someone outside the suggestion list (typing the token by hand) works
   but shows the token while editing. Unread counts no longer include replies.
+
+## D-068 · 2026-10-26 · Chat attachments, ClamAV and same-origin storage
+
+- **Context:** Sprint 6 group A (`feat/chat-attachments`): presigned uploads to the S3 store (D-013), images, PDF,
+  DOCX, PPTX and ZIP up to 25 MB, extension + MIME + magic-byte checks, 20 per hour, ClamAV before anyone can
+  download, purging of infected and abandoned files, short-lived downloads with safe headers, no SVG, new
+  accounts kept out of community attachments, and text chat unaffected by a storage outage. The spec does not
+  say where the browser reaches the store, how the CSP allows it, or what the uploader sees meanwhile.
+- **Options:** stream every upload and download through the API (simple CSP, but the API carries every byte);
+  presigned URLs on the store's own origin (needs `connect-src`, `img-src` and `frame-src` for that origin in
+  production, plus CORS); presigned URLs on the app's origin through nginx.
+- **Decision:**
+  - **Same origin.** nginx proxies `/smartazmiu/` (the bucket path) to the store and keeps the `Host` header,
+    which is part of the SigV4 signature, so presigned URLs signed for `APP_PUBLIC_URL` (`S3_PUBLIC_URL`) work
+    unchanged and the production CSP stays as it was except an explicit `frame-src 'self'` for PDF previews.
+    Verified against SeaweedFS 4.48: a PUT through the proxied host succeeds, a PUT with another content type is
+    refused (403), and `response-content-type` / `response-content-disposition` are honoured. nginx adds
+    `X-Content-Type-Options: nosniff` and `Cross-Origin-Resource-Policy: same-origin`. Only for the native dev
+    server (another origin than the store) does the web app add `STORAGE_PUBLIC_URL` to `img-src`,
+    `connect-src` and `frame-src`; SeaweedFS answers its CORS preflight. This development-only addition is
+    flagged for the product owner; the Docker stack and production use none.
+  - **Flow.** `POST /chat/attachments/presign {channel_id, filename, mime, size}` checks `Action.SEND_ATTACHMENT`
+    (exam mode, archive, read-only, and the new reason `chat.attachments_not_allowed` for accounts younger than
+    24 hours in subject communities, §5.5), the type (the extension decides, the reported MIME must agree;
+    `application/x-zip-compressed` and `image/jpg` are accepted aliases), 1 byte–25 MB and 20 per hour, then
+    stores a `message_attachments` row (uploader, channel, file name, no message yet) and returns a five-minute
+    PUT URL for `chat/<channel>/<random hex>`. The key names neither person nor file. `message.send` /
+    `POST …/messages` take `attachment_ids` (at most 10; the body may then be empty): each must be the
+    sender's own, for this channel and unsent, and the object's size (HEAD) must equal the announced size;
+    every failure gives the same `chat.attachment_not_found` so other people's ids reveal nothing. Binding
+    happens in the message's transaction.
+  - **Scanning** is the ARQ job `scan_attachments` (woken after each send, plus every minute): it locks one
+    pending row at a time (`SKIP LOCKED`), downloads the object, checks the magic bytes (JPEG, PNG, GIF, WebP,
+    `%PDF-`, ZIP; DOCX and PPTX must contain `word/document.xml` or `ppt/presentation.xml`), reads image
+    dimensions from the header only, and streams the bytes to clamd (`INSTREAM`, a small client in
+    `app/core/antivirus.py` rather than an unmaintained library). Results: `clean`; `infected`; `failed` (type
+    mismatch or missing object). ClamAV or storage unavailable leaves the file `pending` ("Fayl yoxlanılır…")
+    and retries with back-off up to five minutes. Rejected files notify the uploader in-app
+    (`chat.attachment_rejected`, no push) and their objects are deleted by `purge_attachments` (twice an hour),
+    which also removes uploads not sent within 24 hours; the rows of sent files stay with `purged_at`.
+  - **Visibility.** Payloads list clean files to everyone; the uploader also sees their own pending or rejected
+    files. Broadcasts carry clean files only, so the server sends the uploader's own view to their per-user
+    topic after the send and after a rejection, and the channel gets `message.updated` once a file is clean.
+  - **Downloads.** `GET /chat/attachments/{id}/download?inline=` checks membership of the message's channel
+    (deleted messages: 404) and `clean` (else 409), and returns a one-minute URL whose response has the stored
+    type, `Content-Disposition: attachment` (inline only for images and PDFs, RFC 6266 file name with UTF-8) and
+    `Cache-Control: private, no-store`.
+  - **ClamAV** `clamav/clamav:1.4.3` (signature database included, ~1.5 GB memory, ready after one to three
+    minutes) runs in compose (infra and `make up`), in `make test-api` (CI sets `CLAMAV_REQUIRED=1`, so its test
+    cannot skip) and in the E2E stack. The worker waits for it only to have started; scans retry until it is
+    healthy.
+  - **Outage (§13.5):** presign and attachment sends answer `503 chat.attachments_unavailable`; text messages
+    never touch the store. Tested with the storage double switched off.
+  - **E2E:** a clean PDF appears for the other student only after the scan and opens in the preview; a ZIP with
+    the EICAR test file (built in memory, nothing committed) shows "virus aşkarlandı" to the uploader and
+    nothing to the other student. Cleanup turns the test's files into abandoned uploads, which the purge job
+    removes with their objects; the data check counts sent attachments.
+- **§13.2 in this group:** tested: infected and abandoned uploads, malicious types (SVG, renamed ZIP), safe
+  content types and dispositions, object-key guessing (§14), storage outage.
+- **Consequences:** a file is not visible to others for the seconds the scan takes. The pilot needs ~1.5 GB extra
+  memory for clamd. No new dependencies (Pillow, boto3 and httpx were already pinned).

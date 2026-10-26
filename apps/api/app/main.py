@@ -87,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             secret_key=settings.s3_secret_key,
             bucket=settings.s3_bucket,
             region=settings.s3_region,
+            public_url=settings.s3_public_url,
         )
         app.state.token_verifier = TokenVerifier(
             issuer=settings.oidc_issuer,

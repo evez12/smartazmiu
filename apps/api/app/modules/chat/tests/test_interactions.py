@@ -416,10 +416,10 @@ async def test_the_consistency_job_removes_orphans_idempotently(
     await db.execute(insert(MessageMention).values(message_id=missing, user_id=ramin.id))
     await db.execute(
         text(
-            "INSERT INTO message_attachments (id, message_id, object_key, mime, size_bytes)"
-            " VALUES (gen_random_uuid(), :id, 'chat/x', 'application/pdf', 10)"
+            "INSERT INTO message_attachments (id, message_id, channel_id, object_key, mime, size_bytes)"
+            " VALUES (gen_random_uuid(), :id, :channel, 'chat/x', 'application/pdf', 10)"
         ),
-        {"id": missing},
+        {"id": missing, "channel": room},
     )
     await db.commit()
     report = await consistency.remove_orphans(db)

@@ -1,6 +1,6 @@
 "use client";
 
-import { SendHorizontal } from "lucide-react";
+import { Paperclip, SendHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   useId,
@@ -17,7 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 
+import { AttachmentChips } from "./attachment-chips";
 import { COUNTER_FROM, encodeMentions, MAX_BODY, type Author } from "./model";
+import { ACCEPTED_FILES, MAX_ATTACHMENTS, type Upload } from "./uploads";
+import { useUploads } from "./use-uploads";
 
 const MAX_HEIGHT_PX = 160;
 const MAX_SUGGESTIONS = 6;
@@ -41,8 +44,10 @@ type ComposerProps = {
   label: string;
   placeholder?: string;
   disabled: boolean;
-  /** Receives the text with picked people encoded as `<@id>` mentions. */
-  onSend: (body: string) => void;
+  /** Receives the text with picked people encoded as `<@id>` mentions, and the uploaded attachments. */
+  onSend: (body: string, attachmentIds: string[]) => void;
+  /** The channel files are uploaded to; without it the composer has no attach button (edit mode). */
+  attachTo?: string;
   onTyping?: () => void;
   /** Channel members for the "@" suggestions; the server records only members anyway (§13.2). */
   members?: Author[];
@@ -72,6 +77,7 @@ export function Composer({
   submitLabel,
   onCancel,
   footer,
+  attachTo,
 }: ComposerProps) {
   const t = useTranslations("chat");
   const [body, setBody] = useState(initialText);
@@ -84,10 +90,15 @@ export function Composer({
   const hintId = `${baseId}-hint`;
   const counterId = `${baseId}-counter`;
   const listId = `${baseId}-mentions`;
+  const uploads = useUploads(attachTo);
+  const files = useRef<HTMLInputElement>(null);
   const length = body.length;
   const tooLong = length > MAX_BODY;
-  const empty = body.trim().length === 0;
+  const ready = uploads.items.filter((item: Upload) => item.state === "ready");
+  const uploading = uploads.items.some((item: Upload) => item.state === "uploading");
+  const empty = body.trim().length === 0 && ready.length === 0;
   const editing = onCancel !== undefined;
+  const blocked = disabled || empty || tooLong || uploading;
 
   const suggestions = useMemo(
     () =>
@@ -104,12 +115,16 @@ export function Composer({
   const open = suggestions.length > 0;
 
   const submit = () => {
-    if (disabled || empty || tooLong) return;
-    onSend(encodeMentions(body, picked));
+    if (blocked) return;
+    onSend(
+      encodeMentions(body, picked),
+      ready.map((item: Upload) => item.attachmentId!),
+    );
     if (editing) return;
     setBody("");
     setPicked(new Map());
     setQuery(null);
+    uploads.clear();
     if (field.current) {
       field.current.style.height = "";
       field.current.focus();
@@ -191,6 +206,9 @@ export function Composer({
       <label htmlFor={`${baseId}-field`} className="sr-only">
         {label}
       </label>
+      {uploads.items.length ? (
+        <AttachmentChips items={uploads.items} onRemove={uploads.remove} />
+      ) : null}
       <div className="relative flex items-end gap-2">
         {open ? (
           <ul
@@ -253,8 +271,34 @@ export function Composer({
             tooLong && "border-danger",
           )}
         />
+        {attachTo && !editing ? (
+          <>
+            <input
+              ref={files}
+              type="file"
+              multiple
+              hidden
+              accept={ACCEPTED_FILES}
+              onChange={(event) => {
+                uploads.add([...(event.target.files ?? [])]);
+                event.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              aria-label={t("attach")}
+              disabled={disabled || uploads.items.length >= MAX_ATTACHMENTS}
+              onClick={() => files.current?.click()}
+              className="max-lg:size-11"
+            >
+              <Icon icon={Paperclip} />
+            </Button>
+          </>
+        ) : null}
         {editing ? null : (
-          <Button type="submit" variant="primary" disabled={disabled || empty || tooLong}>
+          <Button type="submit" variant="primary" disabled={blocked}>
             <Icon icon={SendHorizontal} />
             <span className="max-sm:sr-only">{submitLabel ?? t("send")}</span>
           </Button>
@@ -274,7 +318,7 @@ export function Composer({
       </div>
       {editing ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" size="dense" disabled={disabled || empty || tooLong}>
+          <Button type="submit" size="dense" disabled={blocked}>
             {submitLabel ?? t("save")}
           </Button>
           <Button type="button" size="dense" variant="secondary" onClick={onCancel}>
