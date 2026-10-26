@@ -1,6 +1,12 @@
 "use client";
 
-import { LogOut, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  LogOut,
+  Menu as MenuIcon,
+  MessageSquareText,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -25,6 +31,7 @@ import {
   Tooltip,
 } from "@/components/ui/overlay";
 import { NotificationBell } from "@/features/notifications/bell";
+import { FeedbackDialog } from "@/features/feedback/feedback-dialog";
 import { cn } from "@/lib/cn";
 
 import {
@@ -250,6 +257,8 @@ function BottomTabs({ sections }: { sections: NavSection[] }) {
 
 function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => void }) {
   const t = useTranslations("shell");
+  const tFeedback = useTranslations("feedback");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const tRoles = useTranslations("roles");
   const tTheme = useTranslations("theme");
   const { theme, setTheme } = useTheme();
@@ -257,41 +266,48 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
   const roleLabel = roles.length ? roles.map((code) => tRoles(code)).join(" · ") : tRoles("none");
 
   return (
-    <Menu>
-      <MenuTrigger asChild>
-        <button
-          type="button"
-          className="flex h-10 items-center gap-2 rounded-control px-1.5 text-left hover:bg-bg-subtle"
-        >
-          <Avatar name={user.displayName} src={user.photoUrl ?? undefined} size={32} decorative />
-          {/* Visible text is part of the accessible name (WCAG 2.5.3); on phones it is read but not shown. */}
-          <span className="flex max-w-48 flex-col leading-tight max-md:sr-only">
-            <span className="truncate font-medium">{user.displayName}</span>
-            <span className="truncate text-xs text-muted">{roleLabel}</span>
-          </span>
-          <span className="sr-only">{t("profileMenu")}</span>
-        </button>
-      </MenuTrigger>
-      <MenuContent className="w-64">
-        <MenuLabel className="flex flex-col py-2">
-          <span className="font-medium text-text">{user.displayName}</span>
-          <span>{roleLabel}</span>
-        </MenuLabel>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuLabel>{tTheme("label")}</MenuLabel>
-          <MenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
-            <MenuRadioItem value="light">{tTheme("light")}</MenuRadioItem>
-            <MenuRadioItem value="dark">{tTheme("dark")}</MenuRadioItem>
-            <MenuRadioItem value="system">{tTheme("system")}</MenuRadioItem>
-          </MenuRadioGroup>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuItem onSelect={onSignOut}>
-          <Icon icon={LogOut} />
-          {t("signOut")}
-        </MenuItem>
-      </MenuContent>
-    </Menu>
+    <>
+      <Menu>
+        <MenuTrigger asChild>
+          <button
+            type="button"
+            className="flex h-10 items-center gap-2 rounded-control px-1.5 text-left hover:bg-bg-subtle"
+          >
+            <Avatar name={user.displayName} src={user.photoUrl ?? undefined} size={32} decorative />
+            {/* Visible text is part of the accessible name (WCAG 2.5.3); on phones it is read but not shown. */}
+            <span className="flex max-w-48 flex-col leading-tight max-md:sr-only">
+              <span className="truncate font-medium">{user.displayName}</span>
+              <span className="truncate text-xs text-muted">{roleLabel}</span>
+            </span>
+            <span className="sr-only">{t("profileMenu")}</span>
+          </button>
+        </MenuTrigger>
+        <MenuContent className="w-64">
+          <MenuLabel className="flex flex-col py-2">
+            <span className="font-medium text-text">{user.displayName}</span>
+            <span>{roleLabel}</span>
+          </MenuLabel>
+          <MenuSeparator />
+          <MenuGroup>
+            <MenuLabel>{tTheme("label")}</MenuLabel>
+            <MenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
+              <MenuRadioItem value="light">{tTheme("light")}</MenuRadioItem>
+              <MenuRadioItem value="dark">{tTheme("dark")}</MenuRadioItem>
+              <MenuRadioItem value="system">{tTheme("system")}</MenuRadioItem>
+            </MenuRadioGroup>
+          </MenuGroup>
+          <MenuSeparator />
+          <MenuItem onSelect={() => setFeedbackOpen(true)}>
+            <Icon icon={MessageSquareText} />
+            {tFeedback("action")}
+          </MenuItem>
+          <MenuItem onSelect={onSignOut}>
+            <Icon icon={LogOut} />
+            {t("signOut")}
+          </MenuItem>
+        </MenuContent>
+      </Menu>
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+    </>
   );
 }

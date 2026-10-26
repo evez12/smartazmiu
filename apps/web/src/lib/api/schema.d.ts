@@ -21,6 +21,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Feedback, newest first */
+    get: operations["listFeedback"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/feedback/{feedback_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Close feedback or open it again */
+    patch: operations["setFeedbackStatus"];
+    trace?: never;
+  };
   "/api/v1/admin/imports": {
     parameters: {
       query?: never;
@@ -619,6 +653,23 @@ export interface paths {
     post?: never;
     /** Withdraw my RSVP; the ticket stops working (idempotent) */
     delete: operations["cancelEventRegistration"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send feedback to the platform team */
+    post: operations["sendFeedback"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1430,7 +1481,8 @@ export interface components {
       | "material.reported"
       | "material.report_handled"
       | "material.hidden"
-      | "material.shown";
+      | "material.shown"
+      | "feedback.handled";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -1582,7 +1634,8 @@ export interface components {
       | "announcement"
       | "club"
       | "private_group"
-      | "dm";
+      | "dm"
+      | "support";
     /** CheckInIn */
     CheckInIn: {
       /** Code */
@@ -1840,6 +1893,80 @@ export interface components {
       title: string;
       /** Version */
       version: number;
+    };
+    /**
+     * FeedbackCategory
+     * @enum {string}
+     */
+    FeedbackCategory: "problem" | "suggestion" | "question" | "other";
+    /** FeedbackCreatedOut */
+    FeedbackCreatedOut: {
+      /** Id */
+      id: string;
+    };
+    /** FeedbackIn */
+    FeedbackIn: {
+      category: components["schemas"]["FeedbackCategory"];
+      /**
+       * Contact Ok
+       * @default false
+       */
+      contact_ok: boolean;
+      /** Message */
+      message: string;
+      /**
+       * Page
+       * @default
+       */
+      page: string;
+    };
+    /** FeedbackOut */
+    FeedbackOut: {
+      category: components["schemas"]["FeedbackCategory"];
+      /** Contact Ok */
+      contact_ok: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Handled At */
+      handled_at: string | null;
+      /** Handled By */
+      handled_by: string | null;
+      /** Id */
+      id: string;
+      /** Message */
+      message: string;
+      /** Page */
+      page: string;
+      sender: components["schemas"]["FeedbackPerson"] | null;
+      status: components["schemas"]["FeedbackStatus"];
+    };
+    /** FeedbackPageOut */
+    FeedbackPageOut: {
+      /** Items */
+      items: components["schemas"]["FeedbackOut"][];
+      /** Total */
+      total: number;
+    };
+    /** FeedbackPerson */
+    FeedbackPerson: {
+      /** Display Name */
+      display_name: string;
+      /** Email */
+      email: string | null;
+      /** Id */
+      id: string;
+    };
+    /**
+     * FeedbackStatus
+     * @enum {string}
+     */
+    FeedbackStatus: "open" | "closed";
+    /** FeedbackStatusIn */
+    FeedbackStatusIn: {
+      status: components["schemas"]["FeedbackStatus"];
     };
     /**
      * FileEncoding
@@ -3076,6 +3203,146 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AuditPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listFeedback: {
+    parameters: {
+      query?: {
+        status?: components["schemas"]["FeedbackStatus"] | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedbackPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setFeedbackStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        feedback_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FeedbackStatusIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedbackOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -6067,6 +6334,75 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["EventOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  sendFeedback: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FeedbackIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedbackCreatedOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

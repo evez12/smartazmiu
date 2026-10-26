@@ -32,6 +32,7 @@ class AuditAction(StrEnum):
     MATERIAL_REPORT_HANDLED = "material.report_handled"
     MATERIAL_HIDDEN = "material.hidden"
     MATERIAL_SHOWN = "material.shown"
+    FEEDBACK_HANDLED = "feedback.handled"
 
 
 class AuditLog(Base):

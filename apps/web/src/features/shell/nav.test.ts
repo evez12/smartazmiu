@@ -18,12 +18,14 @@ describe("visibleNavigation", () => {
       "academics.import",
       "admin.users.read",
       "admin.reports.read",
+      "admin.feedback.read",
       "admin.audit.read",
     ]);
     expect(sections[1]?.items.map((item) => item.href)).toEqual([
       "/admin/users",
       "/admin/imports",
       "/admin/reports",
+      "/admin/feedback",
       "/admin/audit",
     ]);
   });

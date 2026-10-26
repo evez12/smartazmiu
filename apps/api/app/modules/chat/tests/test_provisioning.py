@@ -112,7 +112,8 @@ async def test_the_registry_becomes_channels_with_members_and_topics(
         await db.scalar(select(func.count()).select_from(table)) or 0
         for table in (Subject, CourseOffering, AcademicGroup, Faculty)
     ]
-    assert result.channels_created == sum(counts)
+    # One channel per subject, offering, group and faculty, and the support channel.
+    assert result.channels_created == sum(counts) + 1
 
     statistics = await course_channel(db, "IQT-2102", 2026, "765a2")
     assert statistics.name == "Statistika"

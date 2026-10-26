@@ -43,6 +43,8 @@ class ChannelType(StrEnum):
     CLUB = "club"
     PRIVATE_GROUP = "private_group"
     DM = "dm"
+    SUPPORT = "support"
+    """The one platform-wide support channel of the pilot (D-074)."""
 
 
 # Channels whose membership the provisioning job derives from the registry (§5.1).
@@ -52,6 +54,7 @@ PROVISIONED_TYPES = frozenset(
         ChannelType.SUBJECT_COMMUNITY,
         ChannelType.ACADEMIC_GROUP,
         ChannelType.FACULTY,
+        ChannelType.SUPPORT,
     }
 )
 
@@ -104,6 +107,9 @@ class Channel(Base):
             "faculty_id",
             unique=True,
             postgresql_where=text("type = 'faculty'"),
+        ),
+        Index(
+            "uq_channels_support", "type", unique=True, postgresql_where=text("type = 'support'")
         ),
         Index(
             "uq_channels_dm_pair",

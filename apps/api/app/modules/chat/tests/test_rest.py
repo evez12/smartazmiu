@@ -74,10 +74,12 @@ async def test_my_channels_are_grouped_with_capped_unread_counts_and_no_grades(
     assert listed.status_code == 200, listed.text
     channels = listed.json()["channels"]
     types = [channel["type"] for channel in channels]
-    # Sidebar order: courses, communities, group, faculty (§12.7).
+    # Sidebar order: courses, communities, group, faculty, then the support channel (§12.7, D-074).
     assert types == sorted(
-        types, key=["course_offering", "subject_community", "academic_group", "faculty"].index
+        types,
+        key=["course_offering", "subject_community", "academic_group", "faculty", "support"].index,
     )
+    assert types[-1] == "support"
     statistics = next(
         c
         for c in channels

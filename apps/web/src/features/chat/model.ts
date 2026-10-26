@@ -160,6 +160,7 @@ const GROUP_OF: Record<ChannelType, SidebarGroupKey> = {
   announcement: "groups",
   club: "groups",
   private_group: "groups",
+  support: "groups",
   dm: "direct",
 };
 

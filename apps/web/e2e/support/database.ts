@@ -46,8 +46,9 @@ const SEED_TABLES: Record<string, string> = {
   // Channels derived from the registry (provisioning, D-061); DMs and messages are test data, not seed.
   "channels (registry)": "SELECT count(*) FROM channels WHERE type <> 'dm'",
   channel_topics: "SELECT count(*) FROM channel_topics",
+  // The support channel follows accounts, including the e2e- ones a run signs in (D-074), so it is left out.
   "channel_members (registry)":
-    "SELECT count(*) FROM channel_members m JOIN channels c ON c.id = m.channel_id WHERE c.type <> 'dm'",
+    "SELECT count(*) FROM channel_members m JOIN channels c ON c.id = m.channel_id WHERE c.type NOT IN ('dm', 'support')",
   // Not seed data, but rows that hang off test messages without a foreign key (ADR 0002): a run that leaves
   // any behind has a cleanup gap (D-067).
   message_reactions: "SELECT count(*) FROM message_reactions",
@@ -58,6 +59,7 @@ const SEED_TABLES: Record<string, string> = {
   // Materials are test data in every run (D-071); one left behind is a cleanup gap.
   materials: "SELECT count(*) FROM materials",
   material_reports: "SELECT count(*) FROM material_reports",
+  feedback: "SELECT count(*) FROM feedback",
 };
 
 export type RowCounts = Record<string, number>;
@@ -94,6 +96,7 @@ export class TestRecords {
   private readonly published = { events: [] as string[], announcements: [] as string[] };
   private readonly chat = { markers: [] as string[], people: [] as string[] };
   private readonly materialMarkers: string[] = [];
+  private readonly feedbackMarkers: string[] = [];
   private readonly mailboxes: string[] = [];
   private readonly limited: { emails: string[]; rule: string }[] = [];
 
@@ -143,6 +146,13 @@ export class TestRecords {
   materials(marker: string): string {
     if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
     this.materialMarkers.push(marker);
+    return marker;
+  }
+
+  /** Feedback whose text contains `marker` (D-074). */
+  feedback(marker: string): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.feedbackMarkers.push(marker);
     return marker;
   }
 
@@ -197,6 +207,9 @@ export class TestRecords {
         [markers],
       );
       await client.query(`DELETE FROM messages WHERE id IN (${written})`, [markers]);
+      await client.query("DELETE FROM feedback WHERE message LIKE ANY($1)", [
+        this.feedbackMarkers.map((marker) => `%${marker}%`),
+      ]);
       const materials = "SELECT id FROM materials WHERE title LIKE ANY($1)";
       const titles = this.materialMarkers.map((marker) => `%${marker}%`);
       await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
@@ -277,6 +290,7 @@ export class TestRecords {
         this.chat.markers,
         this.chat.people,
         this.materialMarkers,
+        this.feedbackMarkers,
       ]) {
         list.length = 0;
       }
