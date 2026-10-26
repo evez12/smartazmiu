@@ -296,7 +296,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "en": "This file type is not accepted. Attach an image, PDF, DOCX, PPTX or ZIP file.",
     },
     "chat.attachment_too_large": {
-        "az": "Fayl ən çox 25 MB ola bilər.",
+        "az": "Fayl ən çox 25 MB ola bilər. Daha kiçik fayl seçin.",
         "en": "Files can be at most 25 MB.",
     },
     "chat.too_many_attachments": {
@@ -316,7 +316,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "en": "The uploaded file does not have the expected size. Attach it again.",
     },
     "chat.attachment_not_available": {
-        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib. Bir neçə dəqiqədən sonra səhifəni yeniləyin.",
         "en": "The file is still being checked or did not pass the check.",
     },
     "chat.attachments_unavailable": {
@@ -348,7 +348,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "en": "This file type is not accepted. Upload a PDF, DOCX, PPTX, ZIP or image.",
     },
     "materials.too_large": {
-        "az": "Fayl ən çox 50 MB ola bilər.",
+        "az": "Fayl ən çox 50 MB ola bilər. Daha kiçik fayl seçin.",
         "en": "Files can be at most 50 MB.",
     },
     "materials.storage_unavailable": {
@@ -380,7 +380,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "en": "The material was not found.",
     },
     "materials.not_available": {
-        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib. Bir neçə dəqiqədən sonra səhifəni yeniləyin.",
         "en": "The file is still being checked or did not pass the check.",
     },
     "materials.report_not_found": {

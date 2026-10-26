@@ -243,7 +243,7 @@ test("attachments are scanned before others see them", async ({ browser, records
     .filter({ hasText: `${marker}-pdf` });
   await expect(onRamin.getByRole("button", { name: "Baxın" })).toBeVisible({ timeout: 120_000 });
   await onRamin.getByRole("button", { name: "Baxın" }).click();
-  await expect(ramin.getByTitle("Kurs işi.pdf sənədinə baxış")).toBeVisible();
+  await expect(ramin.getByTitle("Kurs işi.pdf faylının önizləməsi")).toBeVisible();
   await ramin.keyboard.press("Escape");
 
   await picker.setInputFiles({

@@ -1600,3 +1600,44 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   university's chat) need the contacts the runbook still lacks, so on-call checks the Prometheus alert page as part
   of the checklist. Delivery latency is measured by k6 (D-073, D-082), not by the server. Thresholds are revisited
   after the first pilot week.
+
+## D-081 · 2026-10-27 · Support page, runbook location, tour replay from the menu, copy review
+
+- **Context:** the Sprint 6 brief asks for a support entry in the app (a page and a profile-menu link), the pilot
+  runbook at `docs/runbooks/pilot.md` with deploy, rollback, backup and restore pointers, an on-call checklist,
+  re-running provisioning and imports, revoking a session, the infected-upload alert, the exam-session freeze
+  (D-047) and the alerts; the tour replayable from the profile menu; and every copy change listed. D-072 and D-074
+  delivered the support channel, the feedback form, the runbook as `docs/PILOT.md` and the replay on the profile
+  page only.
+- **Decision:**
+  - `/support` ("Dəstək"), linked from the profile menu: the support channel (a button to it for members; for people
+    outside the registry, who are not members, a sentence that sends them to the form), the feedback form (the same
+    dialog as the menu), answer times (weekdays 08:30–18:00, usually within four working hours) and a reminder not
+    to post grades, e-mail addresses or phone numbers (§5.4). If the channel list cannot be loaded, a warning
+    replaces only that section. No new endpoint: the page reads the user's own channel list.
+  - The profile menu also offers "Tanışlıq turunu yenidən göstərin" (the same server call as the profile page,
+    `PUT /me/onboarding {done: false}`, then the dashboard).
+  - The runbook moved to `docs/runbooks/pilot.md` and gained: deploying (with the D-047 freeze and verification),
+    backups with a restore drill on a separate machine, rollback, the on-call checklist, re-running provisioning
+    and imports (nothing to start by hand; imports wake the jobs), revoking a session (Keycloak sign-out, effective
+    within the 15-minute access-token lifetime, also for open sockets), and one section per alert of D-080,
+    including the infected-upload alert.
+  - Copy review (§12.8, §1.2) of all 1,252 strings in `messages/az.json` and the 99 API error messages: no
+    exclamation marks, emoji, informal "sən" forms or English words; account ("hesab") and profile ("profil")
+    are distinct concepts, both used consistently. Changed:
+    - `chat.channelsFailed`, `chat.membersFailed`, `chat.historyFailed`, `chat.threadFailed`: "… yükləmək mümkün
+      olmadı." → "… yükləmək mümkün olmadı. Yenidən cəhd edin." (what to do next).
+    - `chat.attachments.previewFailed` "Önizləmə alınmadı." and `materials.previewFailed` "Önizləməni göstərmək
+      mümkün olmadı." → both "Önizləməni göstərmək mümkün olmadı. Faylı endirib açın." (one wording, a next step).
+    - `chat.attachments.pdfTitle` "{name} sənədinə baxış" → "{name} faylının önizləməsi" (one term for preview,
+      as in materials).
+    - `chat.attachments.errors.tooLarge`, `materials.form.errors.fileSize`, API `chat.attachment_too_large`,
+      `materials.too_large`: "Fayl ən çox … ola bilər." → "… Daha kiçik fayl seçin."
+    - API `chat.attachment_not_available`, `materials.not_available`: "Fayl hələ yoxlanılır və ya yoxlamadan
+      keçməyib." → "… Bir neçə dəqiqədən sonra səhifəni yeniləyin."
+    - New strings this sprint: `support.*`, `shell.support`, `notifications.kinds.materialVersionRejected`,
+      `admin.audit.actions.material_created` / `material_version_added`, `privacy.purposes.material_copyright`.
+    The earlier review (D-072) changed one existing string, "Bu fayl növü qəbul edilmir" → "qəbul olunmur" in the
+    web file and the API catalogue; everything else in it was new tour text.
+- **Consequences:** support remains one shared channel plus the form until the helpdesk (Sprint 18). The contacts
+  table in the runbook still has to be filled in before the pilot week.

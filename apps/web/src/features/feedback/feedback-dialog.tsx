@@ -118,3 +118,15 @@ export function FeedbackDialog({
     </Dialog>
   );
 }
+
+/** Opens the form from a page (the support page); the profile menu opens the same dialog. */
+export function FeedbackButton() {
+  const t = useTranslations("feedback");
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>{t("action")}</Button>
+      <FeedbackDialog open={open} onOpenChange={setOpen} />
+    </>
+  );
+}

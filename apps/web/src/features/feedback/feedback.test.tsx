@@ -6,7 +6,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { ApiProvider } from "@/lib/api/provider";
 import { renderWithIntl } from "@/test/render";
 
-import { FeedbackDialog } from "./feedback-dialog";
+import { FeedbackButton, FeedbackDialog } from "./feedback-dialog";
 import { FeedbackTable, type FeedbackItem } from "./feedback-table";
 
 const router = { refresh: vi.fn(), push: vi.fn() };
@@ -26,6 +26,16 @@ function wrap(ui: React.ReactNode) {
     </ApiProvider>,
   );
 }
+
+describe("FeedbackButton", () => {
+  it("opens the same form from the support page", async () => {
+    wrap(<FeedbackButton />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Rəy bildirin" }));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Təklif" })).toBeVisible();
+  });
+});
 
 describe("FeedbackDialog", () => {
   it("asks for the text, then sends it with the current page and the contact choice", async () => {

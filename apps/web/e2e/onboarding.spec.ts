@@ -40,4 +40,13 @@ test("a new student steps through the tour, closes it and brings it back", async
   await page.getByRole("button", { name: "Tanışlıq turunu yenidən göstərin" }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(tour).toContainText("Addım 1 / 5");
+
+  // The profile menu brings it back too, from any page.
+  await tour.getByRole("button", { name: "Tanışlığı bağlayın" }).click();
+  await expect(tour).toHaveCount(0);
+  await openPage(page, "/schedule");
+  await page.getByRole("button", { name: /Profil menyusu/ }).click();
+  await page.getByRole("menuitem", { name: "Tanışlıq turunu yenidən göstərin" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(tour).toContainText("Addım 1 / 5");
 });

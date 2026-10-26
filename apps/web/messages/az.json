@@ -240,6 +240,7 @@
     "collapseNavigation": "Yan menyunu kiçildin",
     "expandNavigation": "Yan menyunu genişləndirin",
     "profileMenu": "Profil menyusu",
+    "support": "Dəstək",
     "signOut": "Çıxış edin",
     "sections": {
       "main": "Əsas",
@@ -1061,13 +1062,13 @@
     "archived": "Arxiv ({count})",
     "archivedTag": "Arxiv",
     "noChannels": "Hələ heç bir kanalınız yoxdur. Fənn və qrup kanallarınız akademik məlumatlarınız idxal olunduqdan sonra avtomatik görünəcək.",
-    "channelsFailed": "Kanalları yükləmək mümkün olmadı.",
+    "channelsFailed": "Kanalları yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "retry": "Yenidən cəhd edin",
     "chooseChannel": "Sol tərəfdən kanal seçin.",
     "back": "Kanallara qayıdın",
     "members": "Üzvlər",
     "membersTitle": "Kanalın üzvləri",
-    "membersFailed": "Üzvləri yükləmək mümkün olmadı.",
+    "membersFailed": "Üzvləri yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "presence": {
       "online": "onlayn",
       "offline": "oflayn"
@@ -1081,7 +1082,7 @@
     "messagesLabel": "{channel} kanalının mesajları",
     "loadOlder": "Əvvəlki mesajları yükləyin",
     "loadNewer": "Sonrakı mesajları yükləyin",
-    "historyFailed": "Mesajları yükləmək mümkün olmadı.",
+    "historyFailed": "Mesajları yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "emptyChannel": "Bu kanalda hələ mesaj yoxdur. İlk mesajı siz yazın.",
     "newMessages": "Yeni mesajlar",
     "jumpToUnread": "Oxunmamış mesajlara keçin",
@@ -1165,7 +1166,7 @@
     "replies": "{count, plural, one {# cavab} other {# cavab}}",
     "threadTitle": "Cavablar",
     "closeThread": "Mövzunu bağlayın",
-    "threadFailed": "Cavabları yükləmək mümkün olmadı.",
+    "threadFailed": "Cavabları yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "threadEmpty": "Hələ cavab yoxdur. İlk cavabı siz yazın.",
     "threadNotFound": "Mesaj tapılmadı və ya ona daxil olmaq imkanınız yoxdur.",
     "replyPlaceholder": "Cavab yazın",
@@ -1201,15 +1202,15 @@
       "infected": "Faylda virus aşkarlandı. Fayl göstərilmir və silinəcək.",
       "rejected": "Fayl növü məzmununa uyğun deyil. Fayl göstərilmir və silinəcək.",
       "preview": "Baxın",
-      "pdfTitle": "{name} sənədinə baxış",
+      "pdfTitle": "{name} faylının önizləməsi",
       "imageAlt": "Şəkil: {name}",
       "loading": "Yüklənir…",
-      "previewFailed": "Önizləmə alınmadı.",
+      "previewFailed": "Önizləməni göstərmək mümkün olmadı. Faylı endirib açın.",
       "download": "{name} faylını yükləyin",
       "downloadFailed": "Fayl yüklənmədi. Yenidən cəhd edin.",
       "errors": {
         "typeNotAllowed": "Bu fayl növü qəbul olunmur: şəkil, PDF, DOCX, PPTX və ya ZIP seçin.",
-        "tooLarge": "Fayl ən çox 25 MB ola bilər.",
+        "tooLarge": "Fayl ən çox 25 MB ola bilər. Daha kiçik fayl seçin.",
         "notAllowed": "Yeni hesablar ilk 24 saat fənn icmalarına fayl əlavə edə bilməz.",
         "unavailable": "Fayl yükləmə müvəqqəti işləmir. Mətn mesajı göndərə bilərsiniz.",
         "tooMany": "Bir mesaja ən çox 10 fayl əlavə etmək olar.",
@@ -1333,7 +1334,7 @@
     "preview": "Baxın",
     "download": "{name} faylını endirin",
     "downloadFailed": "Faylı endirmək mümkün olmadı. Yenidən cəhd edin.",
-    "previewFailed": "Önizləməni göstərmək mümkün olmadı.",
+    "previewFailed": "Önizləməni göstərmək mümkün olmadı. Faylı endirib açın.",
     "loading": "Yüklənir",
     "pdfTitle": "{name} faylının önizləməsi",
     "imageAlt": "{name} şəkli",
@@ -1375,7 +1376,7 @@
         "title": "Materialın adını yazın.",
         "file": "Faylı seçin.",
         "fileType": "Bu fayl növü qəbul olunmur: PDF, DOCX, PPTX, ZIP və ya şəkil seçin.",
-        "fileSize": "Fayl ən çox {max} ola bilər.",
+        "fileSize": "Fayl ən çox {max} ola bilər. Daha kiçik fayl seçin.",
         "consent": "Faylı paylaşmaq hüququnuzu təsdiq edin."
       },
       "failed": "Material yüklənmədi",
@@ -1401,6 +1402,26 @@
       "material": "{subject} · {title}",
       "hiddenTag": "Gizlədilib"
     }
+  },
+  "support": {
+    "title": "Dəstək",
+    "description": "Platformadan istifadə ilə bağlı suallarınızı harada verə biləcəyiniz və problemləri necə bildirə biləcəyiniz.",
+    "channel": {
+      "title": "Dəstək kanalı",
+      "body": "Platformadan necə istifadə etmək barədə suallarınızı \"SmartAzMİU dəstəyi\" kanalında yazın. Kanalda dəstək əməkdaşları cavab verir; sualınız və cavabı başqalarına da kömək edə bilər.",
+      "open": "Dəstək kanalını açın",
+      "notMember": "Dəstək kanalı registrdə olan tələbə və müəllimlər üçündür. Sualınızı aşağıdakı forma ilə göndərin.",
+      "unavailable": "Dəstək kanalını indi göstərmək mümkün olmadı. Bir az sonra yenidən cəhd edin və ya aşağıdakı formadan istifadə edin."
+    },
+    "feedback": {
+      "title": "Problem və ya təklif",
+      "body": "Şəxsi məsələlər, səhvlər və təkliflər üçün formadan istifadə edin. Formanı yalnız dəstək əməkdaşları görür; olduğunuz səhifə avtomatik əlavə olunur."
+    },
+    "hours": {
+      "title": "Cavab vaxtı",
+      "body": "Suallar iş günləri 08:30–18:00 arası, adətən dörd iş saatı ərzində cavablandırılır."
+    },
+    "privacy": "Qiymətlərinizi, e-poçt ünvanınızı və telefon nömrənizi kanalda paylaşmayın."
   },
   "onboarding": {
     "title": "SmartAzMİU ilə tanışlıq",
