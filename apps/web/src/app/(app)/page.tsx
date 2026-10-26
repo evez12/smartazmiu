@@ -1,4 +1,4 @@
-import { Megaphone, MessagesSquare } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
@@ -9,6 +9,7 @@ import { TextLink } from "@/components/ui/text-link";
 import { MyAcademics } from "@/features/academics/my-academics";
 import { AnnouncementList } from "@/features/announcements/announcement-list";
 import { DASHBOARD_COUNT } from "@/features/announcements/model";
+import { UnreadSummary } from "@/features/chat/unread-summary";
 import { NoticePrompt } from "@/features/privacy/privacy-parts";
 import { bakuToday } from "@/features/schedule/model";
 import { TodayClasses } from "@/features/schedule/schedule-views";
@@ -22,13 +23,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * Dashboard: today's classes, the newest announcements and unread chat, then the user's group and subjects.
- * Chat arrives with Sprint 5; until then its widget explains what will appear (D-043).
  */
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
   const api = await serverApi();
   const today = bakuToday();
-  const [schedule, academics, consents, announcements] = await Promise.all([
+  const [schedule, academics, consents, announcements, chat] = await Promise.all([
     api
       .GET("/api/v1/me/schedule", { params: { query: { start: today, end: today } } })
       .then(loaded),
@@ -37,6 +37,7 @@ export default async function DashboardPage() {
     api
       .GET("/api/v1/announcements", { params: { query: { limit: DASHBOARD_COUNT } } })
       .then(loaded),
+    api.GET("/api/v1/chat/channels").then(loaded),
   ]);
   return (
     <>
@@ -72,7 +73,11 @@ export default async function DashboardPage() {
             <Panel>
               <PanelHeader title={t("chatTitle")} />
               <PanelBody>
-                <EmptyState className="py-0" icon={MessagesSquare} message={t("chatPlaceholder")} />
+                {chat.status === "ok" ? (
+                  <UnreadSummary channels={chat.data.channels} />
+                ) : (
+                  <ForbiddenState />
+                )}
               </PanelBody>
             </Panel>
           </div>

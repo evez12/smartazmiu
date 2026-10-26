@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/ui/count-badge";
 import { Icon } from "@/components/ui/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/overlay";
+import { useChatStatus } from "@/features/chat/runtime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
@@ -25,11 +26,13 @@ export function NotificationBell() {
   const api = useApi();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const socket = useChatStatus();
 
   const unread = useQuery({
     queryKey: notificationKeys.unread,
     queryFn: async () => unwrap(await api.GET("/api/v1/me/notifications/unread-count")).count,
-    refetchInterval: UNREAD_POLL_MS,
+    // The socket announces new notifications (D-062); polling only while it is down (D-049).
+    refetchInterval: socket === "online" ? false : UNREAD_POLL_MS,
   });
   const latest = useQuery({
     queryKey: notificationKeys.latest,

@@ -24,6 +24,8 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
 
+import { ChatSpecimen } from "@/features/chat/specimen";
+
 import { GroupTable } from "./group-table";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -401,6 +403,9 @@ export function StaticSpecimens() {
       </Section>
       <Navigation />
       <States />
+      <Section title={t("sections.chat")}>
+        <ChatSpecimen />
+      </Section>
     </div>
   );
 }

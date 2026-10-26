@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { contentSecurityPolicy } from "@/lib/csp";
+import { socketUrlFor } from "@/lib/env";
 import { scrubEvent } from "@/lib/observability";
 
 import { safeReturnTo } from "./return-to";
@@ -60,6 +61,18 @@ describe("contentSecurityPolicy", () => {
     const csp = contentSecurityPolicy({ nonce: "abc", isDev: true, isHttps: false });
     expect(csp).toContain("'unsafe-eval'");
     expect(csp).not.toContain("upgrade-insecure-requests");
+  });
+
+  it("lets the page open the chat socket and nothing else", () => {
+    const csp = contentSecurityPolicy({
+      nonce: "abc",
+      isDev: false,
+      isHttps: true,
+      socketUrl: "wss://smartazmiu.example/ws",
+    });
+    expect(csp).toContain("connect-src 'self' wss://smartazmiu.example;");
+    expect(socketUrlFor("https://smartazmiu.example")).toBe("wss://smartazmiu.example/ws");
+    expect(socketUrlFor("http://localhost")).toBe("ws://localhost/ws");
   });
 });
 

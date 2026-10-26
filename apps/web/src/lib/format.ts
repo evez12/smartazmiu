@@ -53,6 +53,12 @@ function dayMonth(day: string, month: string): string {
   return `${Number(day)} ${MONTHS[Number(month) - 1]}`;
 }
 
+/** The Baku calendar day of an instant as `2026-10-26`, for grouping by day. */
+export function bakuDay(value: Date | string): string {
+  const { year, month, day } = partsInBaku(value);
+  return `${year}-${month}-${day}`;
+}
+
 /** "24 Oktyabr 2026" (§1.3), the Baku date of an instant. */
 export function formatDate(value: Date | string): string {
   const { year, month, day } = partsInBaku(value);

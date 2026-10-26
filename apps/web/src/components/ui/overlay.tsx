@@ -248,11 +248,19 @@ type SheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  side?: "left" | "bottom";
+  side?: "left" | "right" | "bottom";
   children: ReactNode;
 };
 
-/** Side or bottom panel; the mobile navigation uses it (§12.6). */
+const sheetSides = {
+  left: "inset-y-0 left-0 w-72 max-w-[85vw] border-r data-[state=closed]:-translate-x-4 data-[state=closed]:opacity-0",
+  right:
+    "inset-y-0 right-0 w-80 max-w-[85vw] border-l data-[state=closed]:translate-x-4 data-[state=closed]:opacity-0",
+  bottom:
+    "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-panel border-t pb-[env(safe-area-inset-bottom)] data-[state=closed]:translate-y-4 data-[state=closed]:opacity-0",
+} as const;
+
+/** Side or bottom panel; the mobile navigation and the chat member list use it (§12.6). */
 export function Sheet({ open, onOpenChange, title, side = "left", children }: SheetProps) {
   const t = useTranslations("ui");
   return (
@@ -262,9 +270,7 @@ export function Sheet({ open, onOpenChange, title, side = "left", children }: Sh
         <DialogPrimitive.Content
           className={cn(
             "fixed z-50 flex flex-col border-border bg-surface text-text shadow-overlay transition-[opacity,translate]",
-            side === "left"
-              ? "inset-y-0 left-0 w-72 max-w-[85vw] border-r data-[state=closed]:-translate-x-4 data-[state=closed]:opacity-0"
-              : "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-panel border-t pb-[env(safe-area-inset-bottom)] data-[state=closed]:translate-y-4 data-[state=closed]:opacity-0",
+            sheetSides[side],
           )}
           aria-describedby={undefined}
         >

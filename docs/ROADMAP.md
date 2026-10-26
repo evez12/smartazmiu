@@ -547,7 +547,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Redis pub/sub fan-out; presence; typing (throttled).
 - [x] REST: channel list with unread counts, paginated history, read marker.
 - [x] DM creation with `dm_policy` + block checks.
-- [ ] Frontend: channel sidebar (grouped: Fənlər / Fənn icmaları / Qrup / Şəxsi), message list (virtualized), composer, unread badges, presence dots — built to the chat UI rules in §12.7.
+- [x] Frontend: channel sidebar (grouped: Fənlər / Fənn icmaları / Qrup / Şəxsi), message list (virtualized), composer, unread badges, presence dots — built to the chat UI rules in §12.7.
 - [x] Rate limiting (10 msg / 10 s).
 **Acceptance:** two browsers, two students of 765a2 → real-time messages in course channel and DM; reconnect after network drop loses nothing; teacher appears in course channel but not in subject community.
 

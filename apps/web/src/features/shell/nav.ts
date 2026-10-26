@@ -5,6 +5,7 @@ import {
   FileUp,
   House,
   Megaphone,
+  MessagesSquare,
   Map as MapIcon,
   ScrollText,
   UserRound,
@@ -24,6 +25,7 @@ export type NavItem = {
   labelKey:
     | "home"
     | "schedule"
+    | "chat"
     | "map"
     | "announcements"
     | "events"
@@ -42,8 +44,7 @@ export type NavItem = {
 export type NavSection = { labelKey: "main" | "admin"; items: NavItem[] };
 
 /*
- * Only sections that exist are listed (DECISIONS D-024); schedule, chat and notifications join the
- * navigation and tab bar in the sprints that build them.
+ * Only sections that exist are listed (DECISIONS D-024); the tab bar holds the five of §12.6.
  */
 export const NAVIGATION: NavSection[] = [
   {
@@ -51,6 +52,7 @@ export const NAVIGATION: NavSection[] = [
     items: [
       { href: "/", labelKey: "home", icon: House, inTabBar: true },
       { href: "/schedule", labelKey: "schedule", icon: CalendarDays, inTabBar: true },
+      { href: "/chat", labelKey: "chat", icon: MessagesSquare, inTabBar: true },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },

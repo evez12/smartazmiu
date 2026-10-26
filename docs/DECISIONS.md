@@ -140,6 +140,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Web dev | typescript 6.0.3, eslint 9.39.5, eslint-config-next 16.4.3, prettier 3.9.10, prettier-plugin-tailwindcss 0.8.1, vitest 5.0.5, @vitejs/plugin-react 6.1.2, jsdom 30.1.3, @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.8, @playwright/test 1.64.1 (image `mcr.microsoft.com/playwright:v1.64.1-noble`), @axe-core/playwright 4.14.0, openapi-typescript 7.13.0 |
   | Hooks / CI | pre-commit-hooks v6.0.0, ruff-pre-commit v0.17.2 |
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
+  | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -975,3 +976,45 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   - `POST /chat/channels/{id}/messages` answers 201 for a new message and 200 with `duplicate: true` for a
     repeated `client_msg_id`. `POST`/`DELETE /users/{id}/block` are idempotent (204).
 - **Consequences:** non-members get the same 404 as for a channel that does not exist on every chat endpoint.
+
+## D-064 · 2026-10-26 · Chat in the browser
+
+- **Context:** Sprint 5's frontend: sidebar, virtualized messages, composer with an offline queue, a WebSocket
+  client with reconnect, backfill and `auth.expired` handling, the Çat tab, DM start, and real-time bell
+  updates. The spec leaves open where the socket lives, how long unsent messages are kept, how the composer
+  reads its state, and how the screens get visual baselines without a database.
+- **Decision:**
+  - **One socket per tab for the whole signed-in app** (`ChatRuntimeProvider` in the app layout), so unread
+    badges, the dashboard widget and the bell are live everywhere. It subscribes to every channel of the user,
+    with `after = newest id seen` on reconnect. The ticket is fetched through the same-origin proxy (CSRF-checked,
+    D-032), which also refreshes the session, so a 4401 close or `auth.refresh_needed` simply gets a new ticket; a
+    401 there sends the user to sign in. The socket URL is `WS_PUBLIC_URL`, or `/ws` on `APP_URL` (nginx); the
+    native dev server uses `ws://localhost:8000/ws` and the API admits that origin (`WS_ALLOWED_ORIGINS`). The CSP
+    lists the socket origin in `connect-src`.
+  - **Connection states:** `connecting`, `online`, `offline` (browser offline: the socket is closed at once),
+    `fallback` (close 1013 or no ticket: sends go through REST, the open channel is polled every 5 s, the channel
+    list every 30 s, the bell every 60 s as before). Reconnects back off 1–30 s with jitter.
+  - **Unsent messages** wait in memory in the order written and are sent one at a time after the reconnect with
+    their original `client_msg_id`, so a resend can never duplicate (D-058). They are not persisted: closing the
+    tab drops them, and anything older than three days is not resent without the user pressing "Yenidən
+    göndərin". Refusals (rate limit, read-only, …) show the reason from the policy and the retry button.
+  - **History:** Zustand holds per-channel windows of messages ordered by snowflake id (compared as BigInt); live
+    messages are appended only to a window that reaches the newest message. A truncated backfill drops the
+    window, shows the latest page and offers "Oxunmamış mesajlara keçin", which loads the page after the read
+    marker. The "new messages" divider stays where the marker was when the channel was opened. The read marker is
+    sent (debounced) while the newest message is visible and the tab is in front.
+  - **Sidebar:** Fənlər, Fənn icmaları, Qrup (group and faculty channels), Şəxsi; archived course channels sit in a
+    collapsed "Arxiv (n)" list. Presence dots appear for DM peers and in the member list, and are requested only
+    for those people.
+  - **People:** the channel header opens the member list (D-063) in a side sheet; a member opens a card with
+    "Mesaj yazın" and "Bloklayın" / "Bloku götürün". Messages of blocked people collapse to one line with
+    "Göstərin".
+  - **Dashboard:** the unread-chat widget (D-043) shows up to five channels with unread messages.
+  - **Visual baselines:** the chat parts (sidebar entries, message rows, divider, blocked and unsent messages, the
+    posting banner, the composer) are a section of `/design-system` with fixed sample data, so `make visual`
+    records them in both themes without a database. Whole screens are covered by the functional E2E suite with
+    axe checks in light and dark, at 320 px and on desktop.
+  - **Dependencies:** zustand 5.0.15 and @tanstack/react-virtual 3.14.19, the newest releases that were at least
+    ten days old, rather than ones published days before (D-014).
+- **Consequences:** every signed-in tab holds one WebSocket even outside chat. Offline queues do not survive a
+  reload until the PWA offline work (Sprint 15).
