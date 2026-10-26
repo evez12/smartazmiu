@@ -81,6 +81,7 @@ export class TestRecords {
   private readonly offerings: string[] = [];
   private readonly people: string[] = [];
   private readonly published = { events: [] as string[], announcements: [] as string[] };
+  private readonly chat = { markers: [] as string[], people: [] as string[] };
   private readonly mailboxes: string[] = [];
 
   /** A faculty, specialty and group (one of each, all coded `code`) the test is about to import. */
@@ -106,6 +107,17 @@ export class TestRecords {
     return email;
   }
 
+  /**
+   * Chat written by seeded accounts: messages containing `marker`, the direct messages among `people` (e-mail
+   * addresses) and their read markers. Seeded people may write messages; nothing else about them changes.
+   */
+  chatMessages(marker: string, people: string[]): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.chat.markers.push(marker);
+    this.chat.people.push(...people);
+    return marker;
+  }
+
   event(id: string): void {
     this.published.events.push(id);
   }
@@ -119,6 +131,21 @@ export class TestRecords {
     const client = await database().connect();
     try {
       await client.query("BEGIN");
+      const markers = this.chat.markers.map((marker) => `%${marker}%`);
+      const written = "SELECT id FROM messages WHERE body LIKE ANY($1)";
+      await client.query(`DELETE FROM message_client_ids WHERE message_id IN (${written})`, [
+        markers,
+      ]);
+      await client.query("DELETE FROM messages WHERE body LIKE ANY($1)", [markers]);
+      const people = "SELECT id FROM users WHERE email = ANY($1)";
+      // Topics, members, read markers and the rest of their messages cascade from the channel.
+      await client.query(
+        `DELETE FROM channels WHERE type = 'dm' AND user_low_id IN (${people}) AND user_high_id IN (${people})`,
+        [this.chat.people],
+      );
+      await client.query(`DELETE FROM channel_reads WHERE user_id IN (${people})`, [
+        this.chat.people,
+      ]);
       const subjects = [...this.published.events, ...this.published.announcements];
       // Notifications point at their subject without a foreign key; recipients and RSVPs cascade.
       await client.query("DELETE FROM notifications WHERE subject_id = ANY($1::uuid[])", [
@@ -175,6 +202,8 @@ export class TestRecords {
         this.structure.groups,
         this.published.events,
         this.published.announcements,
+        this.chat.markers,
+        this.chat.people,
       ]) {
         list.length = 0;
       }

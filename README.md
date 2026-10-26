@@ -21,7 +21,7 @@ make infra     # postgres, two redis instances, s3, keycloak, mailpit
 make migrate && make seed      # schema, sample groups 764a1/765a1/765a2, campus and timetable
 make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
-make dev-worker                # notification delivery and audience sync (third terminal)
+make dev-worker                # notifications, audience sync, chat channels (third terminal)
 ```
 
 `make help` lists every target.
@@ -75,6 +75,20 @@ Mailpit locally (`http://localhost:8025`); Web Push needs a desktop Chrome, Edge
 allowed for the site (headless test browsers refuse them). Timetable changes for today or later notify the people
 who have the class (D-052).
 
+### Chat
+
+**Çat** (`/chat`) lists the channels the registry gives each person (D-061): a course channel per offering
+(students of its groups and its teachers), a community per subject (current students, no teachers), the group (with
+its curator) and the faculty. The worker creates and syncs them after every import and once a minute; `make seed`
+provisions the sample data directly. Course channels become read-only archives after their semester. Direct
+messages start from a channel's member list and follow each person's `dm_policy` and blocks (D-063).
+
+The browser keeps one WebSocket per tab (`/ws` behind nginx, `ws://localhost:8000/ws` natively), opened with a
+one-use ticket from `POST /api/v1/ws/ticket` (ADR 0003). It carries messages, typing, presence, read markers,
+membership changes and bell updates; without it the app sends through REST and polls (D-062, D-064). Message ids are
+snowflakes and `messages` is partitioned by month (ADR 0002); who may post is decided by one function with reason
+codes (ADR 0004). Try it with Aysel and Ramin in two browsers.
+
 ## Architecture
 
 A modular monolith: one FastAPI app and one Next.js app.
@@ -82,13 +96,15 @@ A modular monolith: one FastAPI app and one Next.js app.
 | Path | Contents |
 |---|---|
 | `apps/api` | FastAPI, SQLAlchemy 2 (async), Alembic. Domain code lives in `app/modules/<module>/`. |
-| `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync. |
+| `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync, chat channel provisioning, message partitions. |
+| `apps/api/app/modules/chat` | Chat: provisioning, the authorisation policy, messages, the WebSocket gateway (`ws.py`, `hub.py`). |
 | `apps/web` | Next.js (App Router), TypeScript, Tailwind. Design tokens in `src/styles/tokens.css`. |
 | `infra/` | nginx, Keycloak realm and login theme, Postgres init scripts, object-storage entrypoint. |
 | `docs/` | Spec, decision log, ADRs. |
 
 Local services: Keycloak `http://localhost:8080`, Mailpit `http://localhost:8025`, S3 API `http://localhost:8333`,
-Postgres `localhost:5433`, Redis A (sessions, job queue) `localhost:6379`, Redis B (cache) `localhost:6380` (D-053).
+Postgres `localhost:5433`, Redis A (sessions, job queue, snowflake leases, WebSocket tickets) `localhost:6379`, Redis B
+(cache, rate limits, presence, chat pub/sub) `localhost:6380` (D-053).
 
 ## Testing
 

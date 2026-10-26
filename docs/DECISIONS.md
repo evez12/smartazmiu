@@ -1018,3 +1018,30 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     ten days old, rather than ones published days before (D-014).
 - **Consequences:** every signed-in tab holds one WebSocket even outside chat. Offline queues do not survive a
   reload until the PWA offline work (Sprint 15).
+
+## D-065 · 2026-10-26 · Chat end-to-end tests and the §13 checklist for Sprint 5
+
+- **Context:** the acceptance scenario needs two seeded 765a2 students in two browsers; D-040 allows seeded
+  accounts to be signed in to but never changed, and D-045 requires every run to leave the sample data as it was.
+- **Decision:**
+  - `e2e/chat.spec.ts` signs in as Aysel and Ramin, who only write messages. Each message carries a random marker;
+    the `records` fixture (`chatMessages`) deletes the marked messages, their duplicate-send keys, the DMs between
+    the listed people and their read markers, also when a test fails. The data check now counts registry channels,
+    topics and members (D-061). The file runs serially because its tests share the seeded students.
+  - The network drop is Playwright's offline mode: the client closes its socket on the browser's `offline` event,
+    queues what is written meanwhile and reconnects on `online` (D-064). The test checks that every message
+    arrives exactly once on both sides.
+  - Live revocation uses a throwaway student imported into 765a2 and then moved to 765a1 by a second students file;
+    the open page must show the neutral notice and swap the group channel without a reload.
+  - The map test at 320 px measured the room before the page had hydrated, which the larger client bundle made
+    visible; it now waits with `openPage` like every test that depends on client code (D-044).
+- **§13 coverage in Sprint 5:** tested: duplicate send (concurrent and retried), offline compose then reconnect,
+  events for revoked channels, blocked user in shared channels (collapsed) and for DMs, `dm_policy` changed after a
+  DM exists, slow mode + exam mode + mute precedence (policy table), huge bodies (4,000-character limit), many tabs
+  (read markers, presence), snowflake restart and clock regression, backfill gap over 1,000 messages, group transfer,
+  dropped enrollment, teacher replaced, inactive accounts, job retried (provisioning idempotency), Redis outage
+  (REST fallback, persistence first). Not applicable yet: edit/delete windows, deleted parent messages, mentions and
+  `@channel`, attachments and virus scans, malicious Markdown, link previews (Sprint 6 and 10); exam slots (Sprint 10,
+  provider stub tested); account deletion (no deletion feature yet; messages already keep a NULL author).
+- **Consequences:** `make up` could not be run from scratch in the Sprint 5 build container (its network allows no
+  image builds); CI's E2E job runs the suite through `make up` and nginx on every push.
