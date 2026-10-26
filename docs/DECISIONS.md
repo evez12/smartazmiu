@@ -895,3 +895,53 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** guides (Sprint 7) and moderator-assigned roles (Sprint 10) must be added to the desired-member
   query, or the job would remove them. A per-minute run costs a few set-based queries; at the pilot's size this is
   milliseconds.
+
+## D-062 · 2026-10-26 · WebSocket gateway details
+
+- **Context:** §5.9 and ADRs 0003/0004 fix the protocol's shape, tickets and authorisation; they leave open how
+  events fan out across API processes, how presence is scoped, how backfill and backpressure behave, what happens
+  when Redis is down, and how the bell learns about new notifications (D-049 deferred real-time updates here).
+- **Decision:**
+  - **Fan-out:** each API process runs one hub that pattern-subscribes to `chat:*` on Redis B and delivers to its
+    local sockets: `chat:channel:<id>` (messages, typing, channel changes), `chat:user:<id>` (the per-user
+    control channel: membership changes, read markers) and `chat:presence`. Events are published only after
+    the commit. One subscription per process is simpler than per-channel subscriptions at the pilot's scale.
+  - **Protocol additions:** `subscribe {channel_ids, after?, presence?}`; channels the user is not in are dropped
+    silently. With `after`, missed messages are replayed as `message.created` before the `ack`, paced to the
+    client. A channel with more than 1,000 missed messages, or an `after` older than the three-day window
+    (D-058), is listed in `ack.truncated` instead, and the client reloads its latest page. Acks carry the event's
+    `id` plus `message_id`/`client_msg_id`/`duplicate` for sends. Revoked or added access arrives as
+    `channel.updated {channel_id, removed|added: true}`. Edit, delete and reaction events answer
+    `request.not_supported` until Sprint 6.
+  - **Heartbeat:** the client sends `ping` every 25 s and the server acks it; after 75 s without any frame the
+    server closes the socket. On its own 25 s tick the server re-checks the account and every subscribed
+    membership, so a lost control event delays a revocation by 25 s at most. A minute before the token ends,
+    `auth.refresh_needed` asks for `auth.refresh {ticket}`; at the end, `error auth.expired` and close 4401.
+  - **Presence** is visible only for people who share a channel with the asker (at most 200 per `subscribe`),
+    `online` while any socket lives, `offline` 30 s after the last one closed. **Typing** is throttled with a
+    3-second Redis key per user and channel and needs the right to post.
+  - **Backpressure and abuse:** at most 256 frames wait per socket; beyond that the socket is closed with 4408
+    (`chat.slow_consumer`) and the client reconnects with backfill. More than 60 client frames in 10 s closes it
+    with 4429.
+  - **Redis outage (§13.5):** when the hub loses Redis B, every socket gets `error chat.realtime_unavailable` and
+    close 1013, and new sockets are refused with 1013 until it is back; a `message.send` that slips in is refused
+    with the same code. Clients send through `POST /chat/channels/{id}/messages` and poll meanwhile. Messages are
+    unaffected because they are stored before anything is published. Without Redis A, tickets cannot be issued
+    (`503 chat.unavailable`) or redeemed (1013), and sends stop once the snowflake lease is unconfirmed (ADR 0002).
+  - **Real-time bell:** migration 0013 adds a statement-level trigger on `notifications` that runs
+    `pg_notify('notification_created', user_id)` for each recipient. NOTIFY is delivered only on commit, from the
+    API and the worker alike, so no notification path had to change. Each hub `LISTEN`s on one dedicated
+    connection and sends `notification {}` to the recipient's sockets; the client then refreshes the bell. The
+    bell keeps polling while no socket is open.
+  - **Tickets:** issuing needs the access token's `exp`, so `TokenClaims` now carries it (no change to sign-in,
+    sessions or token validation). Origins allowed to open sockets: the origin of `APP_PUBLIC_URL`, plus
+    `WS_ALLOWED_ORIGINS` (the native dev server, set by the Makefile).
+  - **No ticket in logs:** uvicorn logs WebSocket handshakes with the query string, so the API's log handler
+    rewrites any `ticket=…` to `ticket=[redacted]`; the structlog key `ticket` is redacted; Sentry events lose the
+    query string and the query part of `request.url`; nginx logs `$uri` only and proxies `/ws` with the upgrade
+    headers and a 90 s read timeout.
+  - **DM refusals:** a sender who blocked the other person gets `chat.user_blocked`; a sender who is blocked, or
+    writes to someone whose `dm_policy` is `nobody` (teachers and staff excepted), gets `chat.dm_unavailable`.
+    One code for both keeps a block from being inferred (§5.4).
+- **Consequences:** every API process receives every chat event; at the Phase 4 load target (200 msg/s) that is
+  cheap, and per-channel subscriptions can replace the pattern later without changing the protocol.

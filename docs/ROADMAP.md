@@ -543,12 +543,12 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 #### Sprint 5 (01-25 → 02-05) — Chat Core
 - [x] Chat models (channels, topics, members, reads, messages partitioned, attachments, reactions, mentions).
 - [ ] Auto-provisioning job: on enrollment import create/sync `course_offering`, `subject_community`, `academic_group`, `faculty` channels and memberships; default topics. Must be idempotent and handle membership removal (dropped enrollment, group transfer).
-- [ ] WebSocket gateway: ticket auth, subscribe, `message.send` (persist → publish), ack, error codes, heartbeat, reconnect + backfill, live membership revocation (§5.9).
-- [ ] Redis pub/sub fan-out; presence; typing (throttled).
+- [x] WebSocket gateway: ticket auth, subscribe, `message.send` (persist → publish), ack, error codes, heartbeat, reconnect + backfill, live membership revocation (§5.9).
+- [x] Redis pub/sub fan-out; presence; typing (throttled).
 - [ ] REST: channel list with unread counts, paginated history, read marker.
 - [ ] DM creation with `dm_policy` + block checks.
 - [ ] Frontend: channel sidebar (grouped: Fənlər / Fənn icmaları / Qrup / Şəxsi), message list (virtualized), composer, unread badges, presence dots — built to the chat UI rules in §12.7.
-- [ ] Rate limiting (10 msg / 10 s).
+- [x] Rate limiting (10 msg / 10 s).
 **Acceptance:** two browsers, two students of 765a2 → real-time messages in course channel and DM; reconnect after network drop loses nothing; teacher appears in course channel but not in subject community.
 
 #### Sprint 6 (02-08 → 02-19) — Chat UX + Materials v1 + Pilot hardening
