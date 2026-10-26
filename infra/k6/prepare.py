@@ -1,7 +1,7 @@
 """Creates and removes the throwaway accounts and channels of the chat load test (D-073).
 
-    uv --directory apps/api run python ../../infra/load/prepare.py up --users 500 --channels 20
-    uv --directory apps/api run python ../../infra/load/prepare.py down
+    uv --directory apps/api run python ../../infra/k6/prepare.py up --users 500 --channels 20
+    uv --directory apps/api run python ../../infra/k6/prepare.py down
 
 Accounts are Keycloak users ``load-NNNN`` mirrored as application users with a ``load-…@smartazmiu.test``
 address; channels are private groups named ``Yük testi NN``. ``down`` removes exactly these (and the messages in

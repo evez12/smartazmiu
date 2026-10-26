@@ -145,6 +145,11 @@ jobs:
       - run: make e2e
         env:
           E2E_BASE_URL: http://localhost
+      # k6 smoke profile on the same stack (D-082): real sign-in, tickets and sockets, 20 sockets at 2 msg/s.
+      - run: make load-up LOAD_USERS=10 LOAD_CHANNELS=2
+      - run: make load-compose LOAD_SOCKETS=20 LOAD_RATE=2 LOAD_RAMP=15s LOAD_HOLD=30s
+      - if: always()
+        run: make load-down
       - name: Container logs
         if: failure()
         run: docker compose --profile app logs --no-color --tail=200

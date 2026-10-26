@@ -1641,3 +1641,43 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     web file and the API catalogue; everything else in it was new tour text.
 - **Consequences:** support remains one shared channel plus the form until the helpdesk (Sprint 18). The contacts
   table in the runbook still has to be filled in before the pilot week.
+
+## D-082 · 2026-10-27 · k6 against the compose stack, the CI smoke profile, and the full 1,000-socket run
+
+- **Context:** the Sprint 6 brief asks for `infra/k6/` scripts, a run of 1,000 sockets at 50 messages per second
+  with real WebSocket tickets against the compose stack, the p95 delivery latency, machine specs and profile in a
+  decision, a bottleneck and fix plan if the target is missed (without relaxing it), and a small smoke profile in
+  CI. D-077 found that `make load` cannot reach the stack on this machine because Docker Desktop host networking is
+  off, and that changing it is the owner's machine setting.
+- **Decision:**
+  - The scripts moved to `infra/k6/` (`chat.js`, `prepare.py`, unchanged behaviour). New target
+    `make load-compose`: a forwarder container from the stack's own `nginx:1.30.6-alpine` image
+    (`infra/k6/forward.conf`, TCP stream proxy) joins the compose network and listens on `localhost:80` (nginx) and
+    `localhost:8080` (Keycloak); k6 runs in that container's network namespace with `APP_URL=http://localhost` and
+    `WS_URL=ws://localhost/ws`. Sign-in redirects, cookies and the Origin check see the same addresses as a
+    browser, so no host networking, realm or authentication change is needed. The forwarder is removed after the
+    run, also on failure. No new dependency.
+  - CI runs `make load-up` (10 accounts, 2 channels), `make load-compose` with 20 sockets at 2 messages per second
+    (15 s ramp, 30 s hold, same thresholds) after the E2E suite on the same stack, and always `make load-down`.
+  - **Full run, 2026-10-27,** stack at `883c4ca` (`make up`: API in Docker with two uvicorn workers, through nginx),
+    profile 500 accounts × 2 sockets = 1,000 sockets in 20 channels of 25, every socket sending every 20 s
+    (50 messages per second in the hold), 2 min ramp + 5 min hold. Machine: AMD Ryzen 9 8940HX (16 cores, 32
+    threads), 15.2 GB RAM, Windows 11 Pro, Docker Desktop with a WSL2 VM of 32 CPUs and 7.4 GB; k6 1.3.0 on the same
+    machine. Result: **1,000 of 1,000 sockets connected; delivery p95 301 ms, median 47 ms, p90 184 ms, max 5.6 s;
+    ack p95 302 ms, median 49 ms**; 19,252 messages sent and 920,676 deliveries received over the 10.4-minute run
+    (setup included); no failed checks. **The p95 < 300 ms target is missed by 1–2 ms**; the 300 ms threshold stays.
+    The smoke profile passes (delivery p95 81 ms).
+  - **Bottleneck:** the API container ran at a median 118 % and peaked at 186 % CPU, against a ceiling of 200 % for
+    two single-threaded uvicorn workers, while Postgres (median 33 %), nginx (32 %), Redis B (3 %) and the forwarder
+    (22 %) had room; k6 itself took up to 7.3 cores of the same machine. Fan-out already encodes each event once
+    and pushes the same frame to every socket (D-062, D-073), so the time goes to the per-send path (access check,
+    insert, publish) and to per-frame WebSocket writes, on two processes while 30 hardware threads stay idle. The
+    tail (max 5.6 s) matches event-loop queuing during the ramp.
+  - **Fix plan (Sprint 7 hardening, before the M2 pilot):** make the API worker count configurable (`API_WORKERS`,
+    default 4 on the pilot server's 4 vCPU) and size the SQLAlchemy pool per process so that workers × (pool +
+    overflow) stays below Postgres `max_connections` (for example 4 × (15 + 5) = 80 of 100); rerun this profile and
+    record it here; if p95 is still above target, profile the send path with py-spy under load as in D-073 and
+    move to two API replicas behind nginx (sockets are already stateless across processes through Redis B).
+- **Consequences:** the M1 load criterion is recorded as measured, not met; the comparison with D-073 (101 ms) is
+  not like for like, because D-073 ran the API natively without nginx and without the forwarder hop. The pilot
+  server check (runbook section 2, item 8) still needs the product owner's agreement (D-077).
