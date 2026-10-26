@@ -33,9 +33,11 @@ describe("safeReturnTo", () => {
 
 describe("sealed cookies", () => {
   it("round-trips a payload", async () => {
-    const value = await seal({ refreshToken: "rt", subject: "s" }, SECRET, 60);
-    expect(value).not.toContain("rt");
-    expect(await unseal(value, SECRET)).toMatchObject({ refreshToken: "rt", subject: "s" });
+    // Long enough that random base64 ciphertext never contains it by chance ("rt" did about 3 % of the time).
+    const token = "refresh-token-plaintext";
+    const value = await seal({ refreshToken: token, subject: "s" }, SECRET, 60);
+    expect(value).not.toContain(token);
+    expect(await unseal(value, SECRET)).toMatchObject({ refreshToken: token, subject: "s" });
   });
 
   it("rejects tampering, another key and expiry", async () => {
