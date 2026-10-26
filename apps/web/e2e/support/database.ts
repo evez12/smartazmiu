@@ -42,6 +42,11 @@ const SEED_TABLES: Record<string, string> = {
   schedule_entries: "SELECT count(*) FROM schedule_entries",
   schedule_entry_groups: "SELECT count(*) FROM schedule_entry_groups",
   schedule_changes: "SELECT count(*) FROM schedule_changes",
+  // Channels derived from the registry (provisioning, D-061); DMs and messages are test data, not seed.
+  "channels (registry)": "SELECT count(*) FROM channels WHERE type <> 'dm'",
+  channel_topics: "SELECT count(*) FROM channel_topics",
+  "channel_members (registry)":
+    "SELECT count(*) FROM channel_members m JOIN channels c ON c.id = m.channel_id WHERE c.type <> 'dm'",
 };
 
 export type RowCounts = Record<string, number>;
@@ -124,6 +129,20 @@ export class TestRecords {
         this.published.announcements,
       ]);
       const offerings = "SELECT id FROM course_offerings WHERE code = ANY($1)";
+      // Channels provisioned for test records go first: they refer to the offering, group or faculty, and
+      // their topics, members and messages cascade.
+      await client.query(
+        `DELETE FROM channels WHERE course_offering_id IN (${offerings})
+           OR academic_group_id IN (SELECT id FROM academic_groups WHERE code = ANY($2))
+           OR faculty_id IN (SELECT id FROM faculties WHERE code = ANY($3))`,
+        [this.offerings, this.structure.groups, this.structure.faculties],
+      );
+      // Memberships of people leaving the registry; the provisioning job would remove them within a minute.
+      await client.query(
+        `DELETE FROM channel_members WHERE user_id IN (SELECT id FROM users WHERE email = ANY($1))
+           AND channel_id IN (SELECT id FROM channels WHERE type <> 'dm')`,
+        [this.people],
+      );
       await client.query(`DELETE FROM enrollments WHERE course_offering_id IN (${offerings})`, [
         this.offerings,
       ]);
