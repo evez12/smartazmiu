@@ -1201,6 +1201,7 @@
         "rateLimited": "Bir saatda ən çox 20 fayl əlavə etmək olar. Bir az sonra yenidən cəhd edin.",
         "generic": "Fayl əlavə olunmadı. Yenidən cəhd edin."
       }
-    }
+    },
+    "externalLink": "(xarici keçid, yeni pəncərədə açılır)"
   }
 }

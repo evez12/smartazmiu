@@ -152,6 +152,15 @@ test("students mention, reply in a thread, react, edit and delete", async ({
     .filter({ hasText: `${marker}-root` });
   await expect(rootOnRamin).toContainText("@Ramin Əliyev", { timeout: 5000 });
 
+  // Markdown and math render on the other side; raw HTML stays text (§13.2).
+  await send(aysel, `**Düstur:** $x^2$ və <b>qalın deyil</b> ${marker}-md`);
+  const formatted = messageLog(ramin)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-md` });
+  await expect(formatted.locator("strong")).toHaveText("Düstur:", { timeout: 5000 });
+  await expect(formatted.locator(".katex")).toHaveCount(1);
+  await expect(formatted).toContainText("<b>qalın deyil</b>");
+
   await rootOnRamin.hover();
   await rootOnRamin.getByRole("button", { name: "Cavab yazın" }).click();
   const thread = ramin.getByRole("region", { name: "Cavablar" });

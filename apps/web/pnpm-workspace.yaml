@@ -4,3 +4,8 @@ allowBuilds:
   "@parcel/watcher": false
   "@swc/core": false
   unrs-resolver: false
+
+# KaTeX before 0.18.2 lets prototype pollution bypass `trust: false` (GHSA-238p-pmpm-9mq7); rehype-katex and
+# micromark-extension-math still ask for ^0.16, so every copy is lifted to the pinned release (D-069).
+overrides:
+  katex: 0.18.11

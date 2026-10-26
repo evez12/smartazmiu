@@ -17,7 +17,7 @@ import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { Composer } from "./composer";
 import { MessageToolbar, ReactionChips } from "./message-actions";
 import { MessageAttachments } from "./message-attachments";
-import { MessageBody } from "./message-body";
+import { MessageMarkdown } from "./markdown";
 import {
   canChange,
   CHANGE_ERROR_KEYS,
@@ -67,6 +67,7 @@ export function TimelineRow({ item, context, blockedIds, onRetry }: RowProps) {
         pending={item.pending}
         showHeader={item.showHeader}
         author={context.currentUser}
+        members={context.members}
         onRetry={onRetry}
       />
     );
@@ -207,8 +208,9 @@ export function MessageRow({
           </div>
         ) : (
           <>
-            <MessageBody
-              message={message}
+            <MessageMarkdown
+              body={message.body}
+              mentions={message.mentions}
               currentUserId={context.currentUser.id}
               suffix={
                 message.edited_at ? (
@@ -291,11 +293,14 @@ export function PendingRow({
   pending,
   showHeader,
   author,
+  members = [],
   onRetry,
 }: {
   pending: PendingMessage;
   showHeader: boolean;
   author: { id: string; name: string };
+  /** Names for the mention tokens of a message the server has not confirmed yet. */
+  members?: Author[];
   onRetry: (clientMsgId: string) => void;
 }) {
   const t = useTranslations("chat");
@@ -315,9 +320,12 @@ export function PendingRow({
             <span className="font-medium">{author.name}</span>
           </header>
         ) : null}
-        <p className={cn("break-words whitespace-pre-wrap", !failed && "text-muted")}>
-          {pending.body}
-        </p>
+        <MessageMarkdown
+          body={pending.body}
+          mentions={members.map((member) => ({ id: member.id, display_name: member.display_name }))}
+          currentUserId={author.id}
+          className={cn(!failed && "text-muted")}
+        />
         <p
           className={cn(
             "mt-0.5 flex items-start gap-1 text-xs",
