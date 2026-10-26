@@ -80,11 +80,14 @@ export function NotificationSettingsForm({ settings }: { settings: NotificationS
                 checked={channels[category].push}
                 onCheckedChange={(value) => toggle(category, "push", value === true)}
               />
-              <Checkbox
-                label={t("email")}
-                checked={channels[category].email}
-                onCheckedChange={(value) => toggle(category, "email", value === true)}
-              />
+              {/* Chat e-mail is a weekly digest in a later phase; until then there is nothing to switch (D-067). */}
+              {category === "chat" ? null : (
+                <Checkbox
+                  label={t("email")}
+                  checked={channels[category].email}
+                  onCheckedChange={(value) => toggle(category, "email", value === true)}
+                />
+              )}
             </div>
           </fieldset>
         ))}

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChannelLink } from "./channel-sidebar";
 import { Composer } from "./composer";
 import { TimelineRow } from "./message-row";
-import type { Channel, ChatMessage, TimelineItem } from "./model";
+import { REACTIONS, type Channel, type ChatMessage, type TimelineItem } from "./model";
 import { PostingBanner } from "./posting";
 
 const posting = { allowed: true, reason: null, until: null, retry_after_seconds: null } as const;
@@ -22,6 +22,7 @@ function channel(overrides: Partial<Channel>): Channel {
     notify_level: "all",
     muted_until: null,
     unread_count: 0,
+    mention_count: 0,
     last_read_message_id: null,
     posting,
     ...overrides,
@@ -51,6 +52,13 @@ function message(id: string, at: string, author: ChatMessage["author"], body: st
     created_at: at,
     edited_at: null,
     deleted_at: null,
+    is_verified_answer: false,
+    reply_count: 0,
+    last_reply_at: null,
+    reactions: [],
+    my_reactions: [],
+    mentions: [],
+    mentions_channel: false,
   };
 }
 
@@ -80,12 +88,32 @@ const TIMELINE: TimelineItem[] = [
     kind: "message",
     key: "2",
     showHeader: false,
-    message: message(
-      "2",
-      "2026-11-02T06:31:00Z",
-      LEYLA,
-      "Ehtimal paylanmaları mövzusunu təkrar edin.",
-    ),
+    message: {
+      ...message(
+        "2",
+        "2026-11-02T06:31:00Z",
+        LEYLA,
+        "<@5d0c6f1e-3a7b-4c2d-9e8f-0a1b2c3d4e5f> ehtimal paylanmaları mövzusunu təkrar edin.",
+      ),
+      edited_at: "2026-11-02T06:33:00Z",
+      mentions: [{ id: "5d0c6f1e-3a7b-4c2d-9e8f-0a1b2c3d4e5f", display_name: "Aysel Məmmədova" }],
+      reactions: [
+        { emoji: REACTIONS[0], count: 4 },
+        { emoji: REACTIONS[5], count: 1 },
+      ],
+      my_reactions: [REACTIONS[0]],
+      reply_count: 3,
+      last_reply_at: "2026-11-02T06:40:00Z",
+    },
+  },
+  {
+    kind: "message",
+    key: "2b",
+    showHeader: false,
+    message: {
+      ...message("2b", "2026-11-02T06:32:00Z", LEYLA, ""),
+      deleted_at: "2026-11-02T06:34:00Z",
+    },
   },
   { kind: "unread", key: "unread" },
   {
@@ -152,7 +180,12 @@ export function ChatSpecimen() {
             <TimelineRow
               key={item.key}
               item={item}
-              currentUser={me}
+              context={{
+                currentUser: me,
+                canPost: true,
+                members: [],
+                onOpenThread: () => undefined,
+              }}
               blockedIds={new Set(["orxan"])}
               onRetry={() => undefined}
             />
@@ -167,7 +200,8 @@ export function ChatSpecimen() {
           }}
         />
         <Composer
-          channelName="Statistika"
+          label={t("composerLabel")}
+          placeholder={t("composerPlaceholder", { channel: "Statistika" })}
           disabled={false}
           onSend={() => undefined}
           onTyping={() => undefined}

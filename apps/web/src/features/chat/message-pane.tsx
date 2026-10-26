@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -18,17 +18,20 @@ import { Composer } from "./composer";
 import { MemberSheet } from "./member-sheet";
 import { MessageList } from "./message-list";
 import { buildTimeline, chatKeys, newestId, PAGE_SIZE } from "./model";
+import { NotifyMenu } from "./notify-menu";
 import { PostingBanner } from "./posting";
-import { FALLBACK_POLL_MS, useChannels, useChatRuntime, useChatState } from "./runtime";
+import { FALLBACK_POLL_MS, useChannels, useChatRuntime, useChatState, useMembers } from "./runtime";
 import type { PageDirection } from "./store";
 
 /** One channel: header, history, typing line, the posting banner and the composer (§12.7). */
 export function MessagePane({
   channelId,
   currentUserName,
+  onOpenThread,
 }: {
   channelId: string;
   currentUserName: string;
+  onOpenThread: (rootId: string) => void;
 }) {
   const t = useTranslations("chat");
   const api = useApi();
@@ -55,6 +58,8 @@ export function MessagePane({
   const allPending = useChatState((state) => state.pending);
   const typing = useChatState((state) => state.typing[channelId]);
   const revoked = useChatState((state) => state.revoked === channelId);
+  const notices = useChatState((state) => state.notices[channelId]);
+  const members = useMembers(channelId);
   const listed = channels.data?.channels.find((channel) => channel.id === channelId);
   const channel = detail.data ?? listed;
 
@@ -226,6 +231,7 @@ export function MessagePane({
             <Skeleton className="h-4 w-40" />
           )}
         </div>
+        {listed ? <NotifyMenu channel={listed} /> : null}
         <Button variant="tertiary" size="dense" onClick={() => setMembersOpen(true)}>
           <Icon icon={Users} />
           <span className="max-sm:sr-only">{t("members")}</span>
@@ -274,7 +280,12 @@ export function MessagePane({
             atBottom.current = bottom;
             if (bottom) markRead();
           }}
-          currentUser={{ id: runtime.currentUserId, name: currentUserName }}
+          context={{
+            currentUser: { id: runtime.currentUserId, name: currentUserName },
+            canPost: channel?.posting.allowed ?? false,
+            members: members.data ?? [],
+            onOpenThread,
+          }}
           blockedIds={blockedIds}
           onRetry={runtime.retry}
         />
@@ -287,10 +298,29 @@ export function MessagePane({
             ? t("typingMany")
             : t("typing", { names: typists.join(", ") })}
       </p>
+      {notices?.includes("chat.channel_mention_not_allowed") ? (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-2 border-t border-border bg-bg-subtle px-4 py-2 text-sm"
+        >
+          <span>{t("notices.channelMention")}</span>
+          <Button
+            variant="tertiary"
+            size="icon-dense"
+            aria-label={t("cancel")}
+            onClick={() => runtime.store.getState().setNotices(channelId, [])}
+          >
+            <Icon icon={X} />
+          </Button>
+        </div>
+      ) : null}
       {channel ? <PostingBanner posting={channel.posting} /> : null}
       <Composer
-        channelName={channel?.name ?? ""}
+        label={t("composerLabel")}
+        placeholder={t("composerPlaceholder", { channel: channel?.name ?? "" })}
         disabled={!channel?.posting.allowed}
+        members={members.data}
+        currentUserId={runtime.currentUserId}
         onSend={(body) => {
           atBottom.current = true;
           runtime.send(channelId, body);

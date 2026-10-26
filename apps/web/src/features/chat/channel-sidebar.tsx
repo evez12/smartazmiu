@@ -1,8 +1,9 @@
 "use client";
 
-import { Archive, Hash, MessagesSquare, Users } from "lucide-react";
+import { Archive, BellOff, Hash, MessagesSquare, Users } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Icon } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 
-import { sidebarGroups, type Channel } from "./model";
+import { badgeCounts, isMuted, sidebarGroups, type Channel } from "./model";
 import { PresenceDot, PresenceIndicator } from "./presence-dot";
 import { useChannels, useChatState } from "./runtime";
 
@@ -99,7 +100,11 @@ export function ChannelLink({
   active: boolean;
   presence?: "online" | "offline";
 }) {
-  const unread = channel.unread_count > 0;
+  // Fixed for the render; the list re-renders whenever the channel list changes.
+  const [now] = useState(() => Date.now());
+  const counts = badgeCounts(channel, now);
+  const muted = isMuted(channel, now);
+  const unread = counts.unread > 0 || counts.mentions > 0;
   return (
     <Link
       href={`/chat/${channel.id}`}
@@ -137,7 +142,20 @@ export function ChannelLink({
           <span className="truncate text-xs text-muted tabular">{channel.context}</span>
         ) : null}
       </span>
-      <CountBadge count={channel.unread_count} />
+      {muted ? <MutedMark /> : null}
+      <CountBadge count={counts.mentions} kind="mention" />
+      <CountBadge count={counts.unread} />
     </Link>
+  );
+}
+
+/** Muted channels show no counts; the icon says so with a text alternative (§12.7). */
+function MutedMark() {
+  const t = useTranslations("chat.notify");
+  return (
+    <span className="shrink-0 text-muted">
+      <Icon icon={BellOff} />
+      <span className="sr-only">{t("muted")}</span>
+    </span>
   );
 }

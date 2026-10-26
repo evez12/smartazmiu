@@ -15,6 +15,13 @@ function message(id: string, clientMsgId = `client-${id}`, channelId = "c-1"): C
     created_at: "2026-10-26T10:00:00Z",
     edited_at: null,
     deleted_at: null,
+    is_verified_answer: false,
+    reply_count: 0,
+    last_reply_at: null,
+    reactions: [],
+    my_reactions: [],
+    mentions: [],
+    mentions_channel: false,
   };
 }
 
@@ -121,5 +128,80 @@ describe("chat store", () => {
     expect(store.getState().typing["c-1"]).toBeDefined();
     store.getState().expireTyping(5000);
     expect(store.getState().typing).toEqual({});
+  });
+});
+
+describe("threads, edits and reactions", () => {
+  const thumbs = "\u{1F44D}";
+  const heart = "\u{2764}\u{FE0F}";
+
+  it("routes replies to their thread and counts them on the root once", () => {
+    const store = createChatStore();
+    store.getState().loadPage("c-1", { messages: [message("10")], has_more: false }, "latest");
+    const reply = { ...message("11", "local-r"), parent_id: "10" };
+    store.getState().receive(reply);
+    store.getState().receive(reply);
+    const root = store.getState().windows["c-1"]!.messages["10"]!;
+    expect(root.reply_count).toBe(1);
+    expect(Object.keys(store.getState().windows["c-1"]!.messages)).toEqual(["10"]);
+
+    store.getState().loadThread("10", { root, replies: [reply], has_more: false }, "replace");
+    store.getState().receive({ ...message("12"), parent_id: "10" });
+    expect(Object.keys(store.getState().threads["10"]!.replies).sort()).toEqual(["11", "12"]);
+    expect(store.getState().threads["10"]!.root.reply_count).toBe(2);
+  });
+
+  it("keeps the reader's own reactions when a broadcast edit carries none", () => {
+    const store = createChatStore();
+    const mine = {
+      ...message("10"),
+      reactions: [{ emoji: thumbs, count: 1 }],
+      my_reactions: [thumbs],
+    };
+    store.getState().loadPage("c-1", { messages: [mine], has_more: false }, "latest");
+    store.getState().update({ ...mine, body: "Düzəliş", my_reactions: null, edited_at: "x" });
+    const updated = store.getState().windows["c-1"]!.messages["10"]!;
+    expect(updated.body).toBe("Düzəliş");
+    expect(updated.my_reactions).toEqual([thumbs]);
+  });
+
+  it("shows deletions everywhere and lowers the root's reply count", () => {
+    const store = createChatStore();
+    const root = { ...message("10"), reply_count: 1, reactions: [{ emoji: thumbs, count: 2 }] };
+    const reply = { ...message("11"), parent_id: "10" };
+    store.getState().loadPage("c-1", { messages: [root], has_more: false }, "latest");
+    store.getState().loadThread("10", { root, replies: [reply], has_more: false }, "replace");
+    store.getState().markDeleted({ id: "11", channel_id: "c-1", parent_id: "10", deleted_at: "t" });
+    expect(store.getState().windows["c-1"]!.messages["10"]!.reply_count).toBe(0);
+    expect(store.getState().threads["10"]!.replies["11"]!.deleted_at).toBe("t");
+    store.getState().markDeleted({ id: "10", channel_id: "c-1", parent_id: null, deleted_at: "t" });
+    const deleted = store.getState().threads["10"]!.root;
+    expect(deleted.body).toBe("");
+    expect(deleted.reactions).toEqual([]);
+  });
+
+  it("applies reaction counts in the fixed order and tracks only the reader's own", () => {
+    const store = createChatStore();
+    store.getState().loadPage("c-1", { messages: [message("10")], has_more: false }, "latest");
+    const event = { message_id: "10", channel_id: "c-1", user_id: "u-ramin", added: true };
+    store.getState().applyReaction({ ...event, emoji: heart, count: 1 }, "u-aysel");
+    store
+      .getState()
+      .applyReaction({ ...event, emoji: thumbs, count: 1, user_id: "u-aysel" }, "u-aysel");
+    let current = store.getState().windows["c-1"]!.messages["10"]!;
+    expect(current.reactions).toEqual([
+      { emoji: thumbs, count: 1 },
+      { emoji: heart, count: 1 },
+    ]);
+    expect(current.my_reactions).toEqual([thumbs]);
+    store
+      .getState()
+      .applyReaction(
+        { ...event, emoji: thumbs, count: 0, user_id: "u-aysel", added: false },
+        "u-aysel",
+      );
+    current = store.getState().windows["c-1"]!.messages["10"]!;
+    expect(current.reactions).toEqual([{ emoji: heart, count: 1 }]);
+    expect(current.my_reactions).toEqual([]);
   });
 });

@@ -133,12 +133,16 @@ async def test_settings_default_update_and_validate(
         "announcements": (True, True),
         "events": (True, False),
         "schedule": (True, False),
+        "chat": (True, False),
     }
     assert defaults["push_public_key"].startswith("B")
     assert defaults["devices"] == 0
 
     body = {
-        "categories": [{"category": "announcements", "push": False, "email": True}],
+        "categories": [
+            {"category": "announcements", "push": False, "email": True},
+            {"category": "chat", "push": False, "email": True},
+        ],
         "quiet_hours": {"enabled": True, "starts_at": "22:30", "ends_at": "07:15"},
     }
     updated = await client.put("/api/v1/me/notification-settings", json=body, headers=headers)
@@ -147,6 +151,8 @@ async def test_settings_default_update_and_validate(
     assert settings["quiet_hours"] == body["quiet_hours"]
     assert {"category": "announcements", "push": False, "email": True} in settings["categories"]
     assert {"category": "events", "push": True, "email": False} in settings["categories"]
+    # Chat has no e-mail until the digest exists (D-067).
+    assert {"category": "chat", "push": False, "email": False} in settings["categories"]
 
     empty = {**body, "quiet_hours": {"enabled": True, "starts_at": "22:00", "ends_at": "22:00"}}
     rejected = await client.put("/api/v1/me/notification-settings", json=empty, headers=headers)

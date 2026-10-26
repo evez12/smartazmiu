@@ -32,6 +32,8 @@ class NotificationCategory(StrEnum):
     ANNOUNCEMENTS = "announcements"
     EVENTS = "events"
     SCHEDULE = "schedule"
+    CHAT = "chat"
+    """Mentions and replies to one's messages (§5.6)."""
 
 
 class NotificationKind(StrEnum):
@@ -40,6 +42,8 @@ class NotificationKind(StrEnum):
     EVENT_CHANGED = "event.changed"
     EVENT_CANCELLED = "event.cancelled"
     SCHEDULE_CHANGED = "schedule.changed"
+    CHAT_MENTION = "chat.mention"
+    CHAT_REPLY = "chat.reply"
 
 
 class DeliveryChannel(StrEnum):

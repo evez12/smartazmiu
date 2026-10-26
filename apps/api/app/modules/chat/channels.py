@@ -16,6 +16,7 @@ from sqlalchemy import (
     exists,
     func,
     literal,
+    or_,
     select,
     text,
     update,
@@ -23,6 +24,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute, aliased
+from sqlalchemy.sql.selectable import ScalarSelect
 
 from app.core.errors import AppError
 from app.modules.academics.models import (
@@ -43,6 +45,7 @@ from app.modules.chat.models import (
     ChannelType,
     MemberRole,
     Message,
+    MessageMention,
     NotifyLevel,
     UserBlock,
 )
@@ -114,22 +117,36 @@ class ChannelService:
         since = func.greatest(
             func.coalesce(read.last_read_message_id, 0), _id_floor(member.joined_at)
         )
-        counted = (
-            select(literal(1))
-            .where(
-                Message.channel_id == member.channel_id,
-                Message.id > since,
-                # The id bound turned into a created_at bound lets the planner skip older months (ADR 0002).
-                Message.created_at
-                >= func.to_timestamp((since.op(">>")(TIMESTAMP_SHIFT) + EPOCH_MS) / 1000.0),
-                Message.author_id.is_distinct_from(user.id),
-                Message.deleted_at.is_(None),
+
+        def capped_count(*conditions: ColumnElement[bool]) -> ScalarSelect[int]:
+            counted = (
+                select(literal(1))
+                .where(
+                    Message.channel_id == member.channel_id,
+                    Message.id > since,
+                    # The id bound turned into a created_at bound lets the planner skip older months (ADR 0002).
+                    Message.created_at
+                    >= func.to_timestamp((since.op(">>")(TIMESTAMP_SHIFT) + EPOCH_MS) / 1000.0),
+                    Message.author_id.is_distinct_from(user.id),
+                    Message.deleted_at.is_(None),
+                    *conditions,
+                )
+                .limit(UNREAD_CAP)
+                .correlate(member, read)
+                .subquery()
             )
-            .limit(UNREAD_CAP)
-            .correlate(member, read)
-            .subquery()
+            return select(func.count()).select_from(counted).scalar_subquery()
+
+        # Replies live in their threads and are announced to the people concerned, not in the badge (D-067).
+        unread = capped_count(Message.parent_id.is_(None))
+        mentioned = capped_count(
+            or_(
+                Message.mentions_channel,
+                exists().where(
+                    MessageMention.message_id == Message.id, MessageMention.user_id == user.id
+                ),
+            )
         )
-        unread = select(func.count()).select_from(counted).scalar_subquery()
         peer_id = case(
             (Channel.user_low_id == user.id, Channel.user_high_id), else_=Channel.user_low_id
         )
@@ -150,6 +167,7 @@ class ChannelService:
                 member.muted_until,
                 read.last_read_message_id,
                 unread,
+                mentioned,
                 peer,
                 groups,
                 Semester.year,
@@ -167,7 +185,7 @@ class ChannelService:
         rows = list(await self.session.execute(query))
         states = await self.access.states(user, [row[0].id for row in rows])
         result = []
-        for channel, level, muted, last_read, count, other, codes, year, term in rows:
+        for channel, level, muted, last_read, count, mentions, other, codes, year, term in rows:
             decision = authorize(Action.SEND, states[channel.id])
             context = None
             if channel.type is ChannelType.COURSE_OFFERING and year is not None:
@@ -184,6 +202,7 @@ class ChannelService:
                     notify_level=level,
                     muted_until=muted,
                     unread_count=count,
+                    mention_count=mentions,
                     last_read_message_id=str(last_read) if last_read is not None else None,
                     posting=PostingOut(
                         allowed=decision.allowed,

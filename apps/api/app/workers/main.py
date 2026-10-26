@@ -14,7 +14,7 @@ from app.core.jobs import DISPATCH_NOTIFICATIONS, PROVISION_CHANNELS, SYNC_AUDIE
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.modules.announcements import service as announcements
-from app.modules.chat import partitions
+from app.modules.chat import consistency, mentions, partitions
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
@@ -29,6 +29,7 @@ RELEVANCE: dict[str, RelevanceCheck] = {
     announcements.SUBJECT_TYPE: announcements.still_addressed,
     events.SUBJECT_TYPE: events.still_relevant,
     schedule_changes.SUBJECT_TYPE: schedule_changes.still_affected,
+    mentions.SUBJECT_TYPE: mentions.still_relevant,
 }
 
 
@@ -123,6 +124,14 @@ async def purge_message_client_ids(ctx: dict[str, Any]) -> int:
         return await partitions.purge_client_ids(session)
 
 
+async def remove_chat_orphans(ctx: dict[str, Any]) -> int:
+    """Removes reactions, mentions and attachments whose message no longer exists (§5.7)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        report = await consistency.remove_orphans(session)
+    return report.total
+
+
 class WorkerSettings:
     functions: ClassVar = [dispatch_notifications, sync_audiences, provision_channels]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
@@ -135,6 +144,8 @@ class WorkerSettings:
         # Daily, at night in Baku (UTC+4); both are idempotent, so a retried or doubled run is harmless.
         cron(ensure_message_partitions, hour={22}, minute={10}),
         cron(purge_message_client_ids, hour={22}, minute={20}),
+        # Weekly, Monday 03:40 in Baku.
+        cron(remove_chat_orphans, weekday="sun", hour={23}, minute={40}),
     ]
     on_startup = startup
     on_shutdown = shutdown

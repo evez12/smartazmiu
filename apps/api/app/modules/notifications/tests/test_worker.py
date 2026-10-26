@@ -17,5 +17,5 @@ async def test_worker_starts_dispatches_and_stops(db: AsyncSession) -> None:
         await main.shutdown(ctx)
     assert main.dispatch_notifications in main.WorkerSettings.functions
     assert main.sync_audiences in main.WorkerSettings.functions
-    assert set(main.RELEVANCE) == {"announcement", "event", "schedule_change"}
+    assert set(main.RELEVANCE) == {"announcement", "event", "schedule_change", "chat_message"}
     assert main.WorkerSettings.keep_result == 0

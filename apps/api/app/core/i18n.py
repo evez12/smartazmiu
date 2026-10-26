@@ -267,6 +267,26 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Özünüzü bloklaya bilməzsiniz.",
         "en": "You cannot block yourself.",
     },
+    "chat.message_not_found": {
+        "az": "Mesaj tapılmadı. Ola bilsin ki, silinib.",
+        "en": "The message was not found. It may have been deleted.",
+    },
+    "chat.not_author": {
+        "az": "Yalnız öz mesajınızı dəyişə və ya silə bilərsiniz.",
+        "en": "You can only change or delete your own messages.",
+    },
+    "chat.change_window_expired": {
+        "az": "Mesajı yalnız göndərildikdən sonra 15 dəqiqə ərzində dəyişmək və ya silmək olar.",
+        "en": "A message can only be changed or deleted within 15 minutes of sending it.",
+    },
+    "chat.parent_not_found": {
+        "az": "Cavab yazdığınız mesaj tapılmadı. Ola bilsin ki, silinib.",
+        "en": "The message you are replying to was not found. It may have been deleted.",
+    },
+    "chat.reaction_not_allowed": {
+        "az": "Bu reaksiya mövcud deyil. Siyahıdakı reaksiyalardan birini seçin.",
+        "en": "This reaction is not available. Choose one from the list.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

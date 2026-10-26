@@ -8,6 +8,7 @@ from app.modules.chat.access import ChannelAccess
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.channels import ChannelService
 from app.modules.chat.messages import MessageService
+from app.modules.chat.reactions import ReactionService
 
 
 def get_durable_redis(request: Request) -> Redis:
@@ -37,3 +38,10 @@ def get_channels(session: SessionDep, cache: RedisDep, access: AccessDep) -> Cha
 
 
 ChannelsDep = Annotated[ChannelService, Depends(get_channels)]
+
+
+def get_reactions(session: SessionDep, cache: RedisDep, access: AccessDep) -> ReactionService:
+    return ReactionService(session, access, ChatBus(cache))
+
+
+ReactionsDep = Annotated[ReactionService, Depends(get_reactions)]
