@@ -157,7 +157,7 @@ describe("UploadForm", () => {
     await userEvent.upload(input, new File(["x"], "sxem.svg"), { applyAccept: false });
     await userEvent.click(screen.getByRole("button", { name: "Yükləyin" }));
     expect(
-      screen.getByText("Bu fayl növü qəbul edilmir. PDF, DOCX, PPTX, ZIP və ya şəkil seçin."),
+      screen.getByText("Bu fayl növü qəbul olunmur: PDF, DOCX, PPTX, ZIP və ya şəkil seçin."),
     ).toBeVisible();
   });
 

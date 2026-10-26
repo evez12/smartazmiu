@@ -1302,3 +1302,27 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     links, upload and new-version forms with inline validation and the consent checkbox.
 - **Consequences:** materials are not linked from course channels or `#materiallar` yet (Sprint 7 community UX).
   Every E2E run uploads and removes its own material; the data check counts `materials` and `material_reports`.
+
+## D-072 · 2026-10-26 · Onboarding tour, empty states and copy review
+
+- **Context:** Sprint 6 asks for an onboarding tour, empty states and an Azerbaijani copy review (§12.8). The spec
+  gives no shape for the tour; §13.1 requires an explanatory state for users without imported data.
+- **Options:** a modal step-by-step overlay on first sign-in, coach marks pointing at navigation items, or an
+  inline panel on the dashboard; remembering it in the browser or on the account.
+- **Decision:**
+  - An inline panel on the dashboard ("SmartAzMİU ilə tanışlıq"), never a modal: it does not stand between the
+    user and the page they came for, needs no positioning against the shell at 320 px and stays usable with a
+    keyboard and screen reader. Four or five steps, each a short paragraph with a link to the section; the steps
+    follow the main capacity: students (schedule, channels, materials, notifications, profile), teachers (the
+    same with teaching wording), staff and admins (imports, announcements and events, reports, profile).
+  - Finishing or closing it sets `users.onboarded_at` (migration 0018) through `PUT /me/onboarding {done}`;
+    `GET /me` returns `onboarding_done`. Stored on the account so it does not return on every device; the profile
+    page offers "Tanışlıq turunu yenidən göstərin" (`done: false`). The timestamp is in the data export.
+  - Empty states: every list screen already has an empty and a forbidden state; the materials detail page no
+    longer shows an empty version table. The dashboard keeps the explanatory state for accounts without imported
+    data (§13.1), checked in the new E2E test with a throwaway account.
+  - Copy review: no exclamation marks, informal forms, English words or codes in `messages/az.json` (1,187
+    strings) or the API error catalogue. Terminology fixed to the glossary (§1.2): "bələdçi" is reserved for
+    guides, so the tour is a "tanışlıq turu"; course channels are "fənn kanalları"; audiences are "fənn
+    təyinatı"; the refused-file message reads the same ("qəbul olunmur") in chat and materials.
+- **Consequences:** the tour content is plain text in `messages/az.json`; EN/RU follow with i18n (Phase 3).

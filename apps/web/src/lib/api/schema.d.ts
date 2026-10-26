@@ -931,6 +931,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/onboarding": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Finish or dismiss the first-run tour, or show it again */
+    put: operations["setMyOnboarding"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/photo": {
     parameters: {
       query?: never;
@@ -2247,6 +2264,8 @@ export interface components {
       given_name: string;
       /** Id */
       id: string;
+      /** Onboarding Done */
+      onboarding_done: boolean;
       /** Permissions */
       permissions: string[];
       /** Photo Url */
@@ -2455,6 +2474,11 @@ export interface components {
      * @enum {string}
      */
     OccurrenceStatus: "scheduled" | "cancelled" | "changed" | "moved_away" | "moved_here";
+    /** OnboardingIn */
+    OnboardingIn: {
+      /** Done */
+      done: boolean;
+    };
     /** OpenDmIn */
     OpenDmIn: {
       /**
@@ -7353,6 +7377,73 @@ export interface operations {
       };
       /** @description Not one of my notifications */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setMyOnboarding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OnboardingIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
         headers: {
           [name: string]: unknown;
         };

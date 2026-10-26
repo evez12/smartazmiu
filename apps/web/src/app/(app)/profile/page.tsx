@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { TextLink } from "@/components/ui/text-link";
 import { GroupFacts } from "@/features/academics/my-academics";
+import { RestartTourButton } from "@/features/onboarding/onboarding-tour";
 import { ConsentHistory } from "@/features/privacy/privacy-parts";
 import { PhotoControls } from "@/features/profile/photo-controls";
 import { ProfileForm } from "@/features/profile/profile-form";
@@ -23,6 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ProfilePage() {
   const t = await getTranslations("profile");
+  const tTour = await getTranslations("onboarding");
   const api = await serverApi();
   const [profile, academics, consents] = await Promise.all([
     api.GET("/api/v1/me/profile").then(loaded),
@@ -117,6 +119,12 @@ export default async function ProfilePage() {
               <h3 className="font-medium text-text">{t("data.historyTitle")}</h3>
               <ConsentHistory consents={consents.data} />
             </div>
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelHeader title={tTour("restartTitle")} description={tTour("restartHint")} />
+          <PanelBody>
+            <RestartTourButton />
           </PanelBody>
         </Panel>
       </div>

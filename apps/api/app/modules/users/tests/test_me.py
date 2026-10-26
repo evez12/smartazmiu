@@ -50,6 +50,7 @@ async def test_first_request_provisions_the_user(
         "roles": ["moderator", "student"],
         "permissions": [],
         "photo_url": None,
+        "onboarding_done": False,
     }
     assert uuid.UUID(body["id"]).version == 7
     user = await db.scalar(select(User).where(User.idp_subject == subject))
@@ -146,3 +147,25 @@ async def test_second_identity_with_the_same_email_is_rejected(
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "auth.identity_conflict"
     assert await db.scalar(select(func.count()).select_from(User)) == 1
+
+
+async def test_onboarding_is_finished_once_and_can_be_shown_again(
+    client: AsyncClient, tokens: TokenFactory, db: AsyncSession
+) -> None:
+    headers = bearer(tokens.issue(str(uuid.uuid4()), ["student"]))
+    assert (await client.get("/api/v1/me", headers=headers)).json()["onboarding_done"] is False
+
+    finished = await client.put("/api/v1/me/onboarding", headers=headers, json={"done": True})
+    assert finished.status_code == 204
+    user_id = uuid.UUID((await client.get("/api/v1/me", headers=headers)).json()["id"])
+    first = await db.scalar(select(User.onboarded_at).where(User.id == user_id))
+    assert first is not None
+    await client.put("/api/v1/me/onboarding", headers=headers, json={"done": True})
+    db.expire_all()
+    assert await db.scalar(select(User.onboarded_at).where(User.id == user_id)) == first
+    assert (await client.get("/api/v1/me", headers=headers)).json()["onboarding_done"] is True
+
+    await client.put("/api/v1/me/onboarding", headers=headers, json={"done": False})
+    assert (await client.get("/api/v1/me", headers=headers)).json()["onboarding_done"] is False
+    invalid = await client.put("/api/v1/me/onboarding", headers=headers, json={})
+    assert invalid.status_code == 422

@@ -344,7 +344,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "en": "You cannot upload materials for this subject and semester.",
     },
     "materials.type_not_allowed": {
-        "az": "Bu fayl növü qəbul edilmir. PDF, DOCX, PPTX, ZIP və ya şəkil yükləyin.",
+        "az": "Bu fayl növü qəbul olunmur: PDF, DOCX, PPTX, ZIP və ya şəkil yükləyin.",
         "en": "This file type is not accepted. Upload a PDF, DOCX, PPTX, ZIP or image.",
     },
     "materials.too_large": {

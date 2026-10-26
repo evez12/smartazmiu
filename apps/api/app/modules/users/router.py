@@ -11,7 +11,7 @@ from app.core.rbac import CurrentUserDep
 from app.modules.users.models import User
 from app.modules.users.photos import MAX_UPLOAD_BYTES
 from app.modules.users.profile import ProfileChanges, ProfileService, photo_url
-from app.modules.users.schemas import MeResponse, ProfileOut, ProfileUpdate
+from app.modules.users.schemas import MeResponse, OnboardingIn, ProfileOut, ProfileUpdate
 
 PHOTO_UPLOADS = RateLimit("photo_upload", limit=10, window_seconds=3600)
 
@@ -37,7 +37,18 @@ async def read_me(user: CurrentUserDep, profiles: Profiles) -> MeResponse:
         roles=sorted(user.roles),
         permissions=sorted(user.permissions),
         photo_url=photo_url(account),
+        onboarding_done=account.onboarded_at is not None,
     )
+
+
+@router.put(
+    "/me/onboarding",
+    status_code=204,
+    operation_id="setMyOnboarding",
+    summary="Finish or dismiss the first-run tour, or show it again",
+)
+async def set_my_onboarding(user: CurrentUserDep, profiles: Profiles, body: OnboardingIn) -> None:
+    await profiles.set_onboarded(user.id, body.done)
 
 
 @router.get(

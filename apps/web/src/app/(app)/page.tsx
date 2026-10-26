@@ -10,11 +10,12 @@ import { MyAcademics } from "@/features/academics/my-academics";
 import { AnnouncementList } from "@/features/announcements/announcement-list";
 import { DASHBOARD_COUNT } from "@/features/announcements/model";
 import { UnreadSummary } from "@/features/chat/unread-summary";
+import { OnboardingTour } from "@/features/onboarding/onboarding-tour";
 import { NoticePrompt } from "@/features/privacy/privacy-parts";
 import { bakuToday } from "@/features/schedule/model";
 import { TodayClasses } from "@/features/schedule/schedule-views";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
-import { loaded, serverApi } from "@/lib/api/server";
+import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("dashboard");
@@ -28,7 +29,8 @@ export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
   const api = await serverApi();
   const today = bakuToday();
-  const [schedule, academics, consents, announcements, chat] = await Promise.all([
+  const [me, schedule, academics, consents, announcements, chat] = await Promise.all([
+    getCurrentUser(),
     api
       .GET("/api/v1/me/schedule", { params: { query: { start: today, end: today } } })
       .then(loaded),
@@ -48,6 +50,9 @@ export default async function DashboardPage() {
       />
       <div className="flex flex-col gap-6">
         {consents.status === "ok" ? <NoticePrompt consents={consents.data} /> : null}
+        {me.status === "ok" && !me.user.onboarding_done ? (
+          <OnboardingTour roles={me.user.roles} />
+        ) : null}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
           {schedule.status === "ok" ? (
             <TodayClasses schedule={schedule.data} />

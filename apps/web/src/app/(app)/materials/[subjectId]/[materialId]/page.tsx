@@ -110,52 +110,56 @@ export default async function MaterialPage({ params }: MaterialPageProps) {
             </div>
           </PanelBody>
         </Panel>
-        <Panel>
-          <PanelHeader title={t("versions")} />
-          <div className="px-4 pb-4">
-            <Table>
-              <TableCaption>{t("versionsCaption")}</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("columns.file")}</TableHead>
-                  <TableHead>{t("columns.updated")}</TableHead>
-                  <TableHead>{t("columns.status")}</TableHead>
-                  <TableHead>{t("columns.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {material.versions.map((version) => (
-                  <TableRow key={version.id}>
-                    <TableCell label={t("columns.file")} className="max-w-md">
-                      <span className="flex flex-col">
-                        <span className="break-all">
-                          {t("versionLabel", { version: version.version })} · {version.filename}
-                        </span>
-                        {version.note ? (
-                          <span className="text-sm break-words text-muted">{version.note}</span>
-                        ) : null}
-                      </span>
-                    </TableCell>
-                    <TableCell label={t("columns.updated")}>
-                      <span className="text-sm tabular">
-                        {t("uploadedBy", {
-                          name: version.uploaded_by?.display_name ?? t("deletedAccount"),
-                          time: formatDateTime(version.created_at),
-                        })}
-                      </span>
-                    </TableCell>
-                    <TableCell label={t("columns.status")}>
-                      <Tag tone={STATUS_TONE[version.status]}>{t(`status.${version.status}`)}</Tag>
-                    </TableCell>
-                    <TableCell label={t("columns.actions")}>
-                      <VersionActions version={version} />
-                    </TableCell>
+        {material.versions.length > 0 ? (
+          <Panel>
+            <PanelHeader title={t("versions")} />
+            <div className="px-4 pb-4">
+              <Table>
+                <TableCaption>{t("versionsCaption")}</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("columns.file")}</TableHead>
+                    <TableHead>{t("columns.updated")}</TableHead>
+                    <TableHead>{t("columns.status")}</TableHead>
+                    <TableHead>{t("columns.actions")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Panel>
+                </TableHeader>
+                <TableBody>
+                  {material.versions.map((version) => (
+                    <TableRow key={version.id}>
+                      <TableCell label={t("columns.file")} className="max-w-md">
+                        <span className="flex flex-col">
+                          <span className="break-all">
+                            {t("versionLabel", { version: version.version })} · {version.filename}
+                          </span>
+                          {version.note ? (
+                            <span className="text-sm break-words text-muted">{version.note}</span>
+                          ) : null}
+                        </span>
+                      </TableCell>
+                      <TableCell label={t("columns.updated")}>
+                        <span className="text-sm tabular">
+                          {t("uploadedBy", {
+                            name: version.uploaded_by?.display_name ?? t("deletedAccount"),
+                            time: formatDateTime(version.created_at),
+                          })}
+                        </span>
+                      </TableCell>
+                      <TableCell label={t("columns.status")}>
+                        <Tag tone={STATUS_TONE[version.status]}>
+                          {t(`status.${version.status}`)}
+                        </Tag>
+                      </TableCell>
+                      <TableCell label={t("columns.actions")}>
+                        <VersionActions version={version} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Panel>
+        ) : null}
       </div>
     </>
   );

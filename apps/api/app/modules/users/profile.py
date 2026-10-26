@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.storage import ObjectStorage, StorageUnavailableError
+from app.core.time import utc_now
 from app.modules.privacy.models import ConsentPurpose
 from app.modules.privacy.service import record_consent
 from app.modules.users.models import ContactVisibility, DmPolicy, User
@@ -42,6 +43,15 @@ class ProfileService:
         if user is None:
             raise AppError("request.not_found", 404)
         return user
+
+    async def set_onboarded(self, user_id: uuid.UUID, done: bool) -> None:
+        user = await self.get(user_id)
+        # The first finish is kept: repeating it does not move the timestamp.
+        if done and user.onboarded_at is None:
+            user.onboarded_at = utc_now()
+        elif not done:
+            user.onboarded_at = None
+        await self.session.commit()
 
     async def update(self, user_id: uuid.UUID, changes: ProfileChanges) -> User:
         user = await self._locked(user_id)
