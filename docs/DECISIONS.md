@@ -1429,3 +1429,69 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   and the functional suite, including the 320 px overflow and accessibility checks, passes. Signed-in screens still
   have no screenshot baselines; they are checked by the e2e accessibility and overflow tests and by manual review.
   Devices whose primary pointer is fine (touch-screen laptops) get no extra tap area, by design.
+
+## D-076 · 2026-10-26 · §13 edge-case review of Sprint 6 features (D-071 to D-074)
+
+- **Context:** CLAUDE.md asks that every feature is checked against the §13 catalogue, with applicable cases tested and
+  skipped ones noted. D-071 to D-074 did not record that review. This one was done afterwards from the code and the
+  tests as they are on `main`; "tested" names the test that asserts it, "by design" means the code does it but no test
+  asserts it, "open" means neither.
+- **Decision (materials, D-071):**
+  - Tested: a user without a not-dropped enrollment or teaching assignment gets the same `404` as an unknown subject, in
+    the subject list and the catalogue (`test_who_reads_and_who_uploads`, §13.1 and §14); a student cannot upload
+    (`403`), a teacher of other subjects neither sees nor learns about the subject; staff upload for any subject and
+    semester and read hidden materials (`test_semester_filter_and_staff_upload`, `test_reports_and_hiding`, §13.1 roles
+    are a union); type, size and consent are refused with typed errors, an upload belongs to one material only and
+    cannot be claimed by another person (`test_upload_checks_type_size_and_storage`, §13.2 duplicate send); a version
+    is invisible and not downloadable (`409`) until clean, an infected new version never replaces the clean one, and
+    rejected files and uploads never saved (after 24 h) are removed from storage and database
+    (`test_versions_scan_download_and_purge`, §13.2 infected or abandoned); ClamAV down or a file that is not what it
+    claims to be is retried with backoff or rejected (`test_scan_waits_out_outages_and_rejects_wrong_content`);
+    storage down refuses presigning with `503` (§13.5); a repeated report returns the first one
+    (`test_reports_and_hiding`, §13.2 duplicate); inline versus attachment disposition and a one-minute link
+    (`test_versions_scan_download_and_purge`, `materials.test.tsx`); dates are shown in Asia/Baku (§13.4, the fixed
+    08:00 UTC specimen reads 12:00 in the visual baselines).
+  - By design, not asserted: SVG and HTML are not on the allow-list (only the `.exe` refusal is tested); object keys
+    are random UUIDs and downloads go through a version id whose material passes the same access check as the
+    catalogue (a download by an outsider is not tested separately); a dropped enrollment stops reading at once
+    because access is computed per request; a teacher replaced mid-semester loses upload rights the same way; two
+    people adding a version at once are serialised by a row lock on the material.
+  - Open: the upload (30 per hour) and report (10 per hour) rate limits have no test; the scan job's retry safety
+    (§13.5, at-least-once) is by design (`SKIP LOCKED`, status check) but untested; the download link for a purged
+    file after storage loss is untested; there is no test of two simultaneous `add_version` calls.
+- **Decision (onboarding, D-072):**
+  - Tested: finishing is stored on the account, repeating it keeps the first timestamp, showing it again resets it and a
+    body without `done` is `422` (`test_onboarding_is_finished_once_and_can_be_shown_again`); the tour stays closed
+    after a reload and returns from the profile page, an account without registry data gets the explanatory
+    empty state instead of an error, and the page passes the accessibility check (`onboarding.spec.ts`, §13.1);
+    steps follow the user's main role, closing stores once, and a failed save restores the tour with a message
+    (`onboarding.test.tsx`, §13.6); the tour fits 320 px with 44 px targets (`touch-targets.spec.ts`).
+  - By design, not asserted: the flag lives on the account, so it holds across devices and tabs (no two-browser test);
+    a user with several roles gets the administrative steps if staff or admin, else the teaching steps, else the student steps (`tourSteps`, tested per role in `onboarding.test.tsx` for the main capacity only).
+  - Open: `onboarded_at` in the data export has no test (the export code includes it).
+- **Decision (load test and chat E2E, D-073):**
+  - Tested: the chat happy paths on two browsers including a dropped network (§13.2 offline compose and backfill),
+    mentions, threads, reactions, edit and delete, attachments, reports, role-based membership and revoked access
+    while connected (`chat.spec.ts`, 8 tests).
+  - By design, not asserted: two sockets per account measure many tabs and devices for one user, but the load test
+    asserts latency, connection and refusal counts only, not read-state consistency or message order; two API
+    workers ran during the measured run, without a monotonic-ID check.
+  - Open: the `prepare.py up/down` scripts have no automated test. `down` was checked by hand on 2026-10-26 (500
+    accounts and 20 channels created, then removed; the database and Keycloak showed none left) but only with no
+    messages in the channels; the removal of messages and reactions was exercised only by the D-073 run. The result
+    of D-073 was not reproduced on 2026-10-26 (D-077).
+- **Decision (support channel and feedback, D-074):**
+  - Tested: registry people become members and staff moderators, a signed-in stranger is not a member, losing the staff
+    role demotes, an inactive account leaves the channel and posting follows the normal policy
+    (`test_registry_people_and_staff_share_one_support_channel`, §13.1); feedback: trimmed text, only the path is kept,
+    blank text and an unknown category are `422`, only staff list and close it (`403`, `404`), closing is idempotent
+    and reversible, audit entries carry no text, the sender's e-mail appears only with consent, ten per hour per
+    person, own feedback is in the export (`test_feedback.py`); the dialog sends the current page and contact choice,
+    and handlers only see actions (`feedback.test.tsx`); a student sends feedback and staff close it
+    (`pilot.spec.ts`).
+  - By design, not asserted: feedback of a deleted account keeps its text with no sender (`user_id` is nullable and the
+    list handles it); the 2,000-character limit is enforced by the schema.
+  - Open: there is no idempotency key on `POST /feedback`, so a double submit that bypasses the disabled button creates
+    two rows (the rate limit bounds it); the support channel's size at university scale (D-074 consequence).
+- **Consequences:** the open items are test gaps, not known defects, and are not scheduled in the roadmap; they can
+  be closed in the Sprint 7 hardening time or left to the pilot review. Nothing here changes behaviour.
