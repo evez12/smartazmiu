@@ -95,6 +95,14 @@ bell header menu sets each channel's notification level and snooze (D-067). File
 to 25 MB) upload straight to object storage and become visible to others only after the worker has checked their
 type and ClamAV has scanned them (D-068); ClamAV needs a minute or two and about 1.5 GB of memory to start.
 
+### Materials
+
+**Materiallar** (`/materials`) holds a catalogue per subject with a semester filter (D-071). Students of a subject
+(also past ones) and its teachers read it; teachers upload for the semesters they teach, staff everywhere. Every
+upload needs a copyright confirmation, becomes a new version and is downloadable only after the same scan as chat
+files. Reports reach staff under "Şikayətlər → Materiallar", who can hide a material without deleting it. Try it
+as Leyla Həsənova (upload to Statistika) and Aysel Məmmədova (read it).
+
 ## Architecture
 
 A modular monolith: one FastAPI app and one Next.js app.
@@ -104,6 +112,7 @@ A modular monolith: one FastAPI app and one Next.js app.
 | `apps/api` | FastAPI, SQLAlchemy 2 (async), Alembic. Domain code lives in `app/modules/<module>/`. |
 | `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync, chat channel provisioning, message partitions, attachment scans and purges. |
 | `apps/api/app/modules/chat` | Chat: provisioning, the authorisation policy, messages, the WebSocket gateway (`ws.py`, `hub.py`). |
+| `apps/api/app/modules/materials` | Materials: catalogue access, versioned uploads, scanning, reports and hiding. |
 | `apps/web` | Next.js (App Router), TypeScript, Tailwind. Design tokens in `src/styles/tokens.css`. |
 | `infra/` | nginx, Keycloak realm and login theme, Postgres init scripts, object-storage entrypoint. |
 | `docs/` | Spec, decision log, ADRs. |

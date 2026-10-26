@@ -1,5 +1,6 @@
 import { Flag } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { pageFromParam, Pagination } from "@/components/ui/pagination";
 import { Panel, PanelBody } from "@/components/ui/panel";
 import { listHref } from "@/features/admin/model";
+import { MaterialReportTable } from "@/features/materials/material-report-table";
 import { ReportTable } from "@/features/reports/report-table";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
+import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 25;
 const STATUSES = ["open", "actioned", "dismissed"] as const;
@@ -22,29 +25,37 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-type ReportsPageProps = { searchParams: Promise<{ status?: string; page?: string }> };
+type ReportsPageProps = {
+  searchParams: Promise<{ kind?: string; status?: string; page?: string }>;
+};
 
-/** Reports for staff and admins (§5.5, D-070); open ones first by default. No moderation console yet (Sprint 10). */
+/**
+ * Reports for staff and admins (§5.5, D-070), messages and people or materials (D-071); open ones first by
+ * default. No moderation console yet (Sprint 10).
+ */
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const t = await getTranslations("reports.admin");
+  const tMaterials = await getTranslations("materials");
   const params = await searchParams;
   // "all" lists every status; anything unknown falls back to the open queue.
   const status: Status | undefined =
     params.status === "all"
       ? undefined
       : (STATUSES.find((value) => value === params.status) ?? "open");
+  const kind = params.kind === "materials" ? "materials" : "messages";
   const page = pageFromParam(params.page);
-  const [result, me] = await Promise.all([
-    (async () =>
-      loaded(
-        await (
-          await serverApi()
-        ).GET("/api/v1/moderation/reports", {
-          params: { query: { status, offset: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE } },
-        }),
-      ))(),
+  const query = { status, offset: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE };
+  const api = await serverApi();
+  const [messageReports, materialReports, me] = await Promise.all([
+    kind === "messages"
+      ? api.GET("/api/v1/moderation/reports", { params: { query } }).then(loaded)
+      : null,
+    kind === "materials"
+      ? api.GET("/api/v1/moderation/material-reports", { params: { query } }).then(loaded)
+      : null,
     getCurrentUser(),
   ]);
+  const result = (messageReports ?? materialReports)!;
   const header = (
     <PageHeader
       title={t("title")}
@@ -66,11 +77,32 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   return (
     <>
       {header}
+      <nav
+        aria-label={tMaterials("admin.tabsLabel")}
+        className="mb-4 flex gap-4 overflow-x-auto border-b border-border"
+      >
+        {(["messages", "materials"] as const).map((value) => (
+          <Link
+            key={value}
+            href={listHref("/admin/reports", { kind: value })}
+            aria-current={value === kind ? "page" : undefined}
+            className={cn(
+              "-mb-px flex h-10 items-center border-b-2 font-medium whitespace-nowrap",
+              value === kind
+                ? "border-primary text-text"
+                : "border-transparent text-muted hover:text-text",
+            )}
+          >
+            {tMaterials(value === "messages" ? "admin.tabMessages" : "admin.tabMaterials")}
+          </Link>
+        ))}
+      </nav>
       <Panel>
         <form
           method="get"
           className="grid gap-4 border-b border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
         >
+          <input type="hidden" name="kind" value={kind} />
           <Field label={t("columns.status")}>
             <Select name="status" defaultValue={filter}>
               {[...STATUSES, "all" as const].map((value) => (
@@ -90,16 +122,21 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </PanelBody>
         ) : (
           <div className="flex flex-col gap-4 px-4 pb-4">
-            <ReportTable
-              items={result.data.items}
-              caption={t("tableCaption")}
-              canHandle={canHandle}
-            />
+            {messageReports?.status === "ok" ? (
+              <ReportTable
+                items={messageReports.data.items}
+                caption={t("tableCaption")}
+                canHandle={canHandle}
+              />
+            ) : null}
+            {materialReports?.status === "ok" ? (
+              <MaterialReportTable items={materialReports.data.items} canHandle={canHandle} />
+            ) : null}
             <Pagination
               page={page}
               pageSize={PAGE_SIZE}
               total={result.data.total}
-              href={(target) => listHref("/admin/reports", { status: filter, page: target })}
+              href={(target) => listHref("/admin/reports", { kind, status: filter, page: target })}
             />
           </div>
         )}

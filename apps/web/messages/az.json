@@ -252,7 +252,8 @@
       "announcements": "Elanlar",
       "events": "Tədbirlər",
       "chat": "Çat",
-      "reports": "Şikayətlər"
+      "reports": "Şikayətlər",
+      "materials": "Materiallar"
     }
   },
   "roles": {
@@ -642,7 +643,11 @@
         "event_cancelled": "Tədbir ləğv edildi",
         "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı",
         "report_created": "Şikayət göndərildi",
-        "report_handled": "Şikayətin vəziyyəti dəyişdi"
+        "report_handled": "Şikayətin vəziyyəti dəyişdi",
+        "material_reported": "Materialdan şikayət edildi",
+        "material_report_handled": "Material şikayətinin vəziyyəti dəyişdi",
+        "material_hidden": "Material gizlədildi",
+        "material_shown": "Material yenidən göstərildi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -1267,6 +1272,123 @@
       "handledBy": "{name}, {time}",
       "updated": "Şikayətin vəziyyəti dəyişdi.",
       "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
+    }
+  },
+  "materials": {
+    "title": "Materiallar",
+    "description": "Fənləriniz üzrə mühazirə, seminar və digər tədris materialları.",
+    "subjectsCaption": "Fənlər",
+    "subjectsEmpty": "Materiallarına baxa biləcəyiniz fənn yoxdur. Fənlərinizə yazılış idxal olunduqdan sonra burada görünəcək.",
+    "materialCount": "{count, plural, one {# material} other {# material}}",
+    "catalogDescription": "{code} · semestrlər üzrə tədris materialları",
+    "upload": "Material yükləyin",
+    "allSemesters": "Bütün semestrlər",
+    "semesterFilter": "Semestr",
+    "catalogEmpty": "Bu fənn üçün hələ material yüklənməyib.",
+    "catalogEmptyUploader": "Bu fənn üçün hələ material yüklənməyib. İlk materialı yükləyin.",
+    "tableCaption": "Materiallar, növünə görə",
+    "columns": {
+      "title": "Ad",
+      "type": "Növ",
+      "semester": "Semestr",
+      "file": "Fayl",
+      "updated": "Yüklənib",
+      "status": "Vəziyyət",
+      "actions": "Əməliyyat"
+    },
+    "types": {
+      "lecture": "Mühazirə",
+      "seminar": "Seminar",
+      "lab": "Laboratoriya",
+      "syllabus": "Sillabus",
+      "exam_prep": "İmtahana hazırlıq",
+      "other": "Digər"
+    },
+    "scanning": "Yoxlanılır",
+    "hidden": "Gizlədilib",
+    "notChecked": "Fayl hələ yoxlanılır",
+    "versionLabel": "Versiya {version}",
+    "versions": "Versiyalar",
+    "versionsCaption": "Bütün versiyalar, ən yenisi əvvəldə",
+    "versionCount": "{count, plural, one {# versiya} other {# versiya}}",
+    "uploadedBy": "{name}, {time}",
+    "deletedAccount": "Silinmiş istifadəçi",
+    "status": {
+      "pending": "Yoxlanılır",
+      "clean": "Yoxlanılıb",
+      "infected": "Virus aşkarlandı",
+      "failed": "Yoxlamadan keçmədi"
+    },
+    "preview": "Baxın",
+    "download": "{name} faylını endirin",
+    "downloadFailed": "Faylı endirmək mümkün olmadı. Yenidən cəhd edin.",
+    "previewFailed": "Önizləməni göstərmək mümkün olmadı.",
+    "loading": "Yüklənir",
+    "pdfTitle": "{name} faylının önizləməsi",
+    "imageAlt": "{name} şəkli",
+    "hiddenBanner": "Bu material əməkdaşlar tərəfindən gizlədilib. Tələbələr və müəllimlər onu görmür.",
+    "scanningBanner": "Yeni yüklənən fayl yoxlanılır. Yoxlamadan keçdikdən sonra hamıya görünəcək.",
+    "noCleanVersion": "Bu materialın yoxlamadan keçmiş faylı hələ yoxdur.",
+    "newVersion": "Yeni versiya yükləyin",
+    "hide": "Gizlədin",
+    "show": "Yenidən göstərin",
+    "hideTitle": "Material gizlədilsin?",
+    "hideConsequence": "Material kataloqdan çıxarılacaq. Fayllar və versiyalar silinmir; sonra yenidən göstərə bilərsiniz.",
+    "hiddenToast": "Material gizlədildi.",
+    "shownToast": "Material yenidən göstərilir.",
+    "visibilityFailed": "Dəyişiklik saxlanılmadı. Yenidən cəhd edin.",
+    "form": {
+      "newTitle": "Material yükləyin",
+      "newDescription": "Fayl yoxlanıldıqdan sonra fənnin bütün tələbələrinə görünəcək.",
+      "versionTitle": "Yeni versiya",
+      "versionDescription": "Yeni fayl əvvəlki versiyaları əvəz etmir; onlar da saxlanılır.",
+      "semester": "Semestr",
+      "chooseSemester": "Semestri seçin",
+      "type": "Növ",
+      "chooseType": "Növü seçin",
+      "titleLabel": "Ad",
+      "titleHelper": "Məsələn: 3-cü mühazirə – Təsviri statistika",
+      "descriptionLabel": "Qısa təsvir (istəyə bağlı)",
+      "note": "Nə dəyişib (istəyə bağlı)",
+      "noteHelper": "Məsələn: 3-cü slayddakı düstur düzəldilib",
+      "file": "Fayl",
+      "fileHelper": "PDF, DOCX, PPTX, ZIP və ya şəkil, ən çox {max}.",
+      "consent": "Bu faylı paylaşmaq hüququm var və o, müəllif hüquqlarını pozmur.",
+      "consentHelper": "Kitabların və başqalarının əsərlərinin tam skanlarını yükləməyin.",
+      "submit": "Yükləyin",
+      "cancel": "Ləğv edin",
+      "uploading": "Yüklənir: {percent}%",
+      "errors": {
+        "semester": "Semestri seçin.",
+        "type": "Materialın növünü seçin.",
+        "title": "Materialın adını yazın.",
+        "file": "Faylı seçin.",
+        "fileType": "Bu fayl növü qəbul edilmir. PDF, DOCX, PPTX, ZIP və ya şəkil seçin.",
+        "fileSize": "Fayl ən çox {max} ola bilər.",
+        "consent": "Faylı paylaşmaq hüququnuzu təsdiq edin."
+      },
+      "failed": "Material yüklənmədi",
+      "saved": "Material yükləndi. Fayl yoxlanıldıqdan sonra hamıya görünəcək."
+    },
+    "report": {
+      "action": "Şikayət edin",
+      "title": "Materialdan şikayət",
+      "description": "Şikayətinizi platformanın əməkdaşları nəzərdən keçirəcək. Kimin şikayət etdiyi müəllifə göstərilmir.",
+      "reasons": {
+        "copyright": "Müəllif hüququ pozulub",
+        "wrong_content": "Səhv və ya köhnəlmiş məzmun",
+        "inappropriate": "Yersiz məzmun",
+        "other": "Digər"
+      }
+    },
+    "admin": {
+      "tabsLabel": "Şikayət növü",
+      "tabMessages": "Mesajlar və istifadəçilər",
+      "tabMaterials": "Materiallar",
+      "description": "İstifadəçilərin materiallar barədə göndərdiyi şikayətlər.",
+      "tableCaption": "Material şikayətləri, ən yenisi əvvəldə",
+      "material": "{subject} · {title}",
+      "hiddenTag": "Gizlədilib"
     }
   }
 }

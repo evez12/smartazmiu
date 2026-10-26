@@ -19,7 +19,9 @@ import { cn } from "@/lib/cn";
 
 import { AttachmentChips } from "./attachment-chips";
 import { COUNTER_FROM, encodeMentions, MAX_BODY, type Author } from "./model";
-import { ACCEPTED_FILES, MAX_ATTACHMENTS, type Upload } from "./uploads";
+import { ACCEPTED_FILES } from "@/lib/uploads";
+
+import { MAX_ATTACHMENTS, type Upload } from "./uploads";
 import { useUploads } from "./use-uploads";
 
 const MAX_HEIGHT_PX = 160;

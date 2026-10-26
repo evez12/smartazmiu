@@ -28,6 +28,7 @@ from app.modules.chat.models import ScanStatus
 from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
+from app.modules.materials.service import MaterialScanner
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
@@ -143,9 +144,12 @@ async def purge_message_client_ids(ctx: dict[str, Any]) -> int:
 
 
 async def scan_attachments(ctx: dict[str, Any]) -> int:
-    """Checks sent attachments (type, ClamAV) and tells the channel or the uploader (§13.2, D-068)."""
+    """Checks sent attachments and saved material versions (type, ClamAV); tells the channel or the uploader
+    about attachments (§13.2, D-068). Materials show their status on the next page load (D-071)."""
     database: Database = ctx["database"]
     bus = ChatBus(ctx["cache_redis"])
+    async with database.sessionmaker() as session:
+        materials = await MaterialScanner(session, ctx["storage"], ctx["scanner"]).scan_pending()
     async with database.sessionmaker() as session:
         report, changed = await AttachmentScanner(
             session, ctx["storage"], ctx["scanner"]
@@ -165,14 +169,16 @@ async def scan_attachments(ctx: dict[str, Any]) -> int:
                 continue
             if payload is not None:
                 await bus.publish(topic, "message.updated", payload.model_dump(mode="json"))
-    return report.clean + report.rejected
+    return report.clean + report.rejected + materials.clean + materials.rejected
 
 
 async def purge_attachments(ctx: dict[str, Any]) -> int:
-    """Deletes the objects of rejected and abandoned uploads (§13.2)."""
+    """Deletes the objects of rejected and abandoned uploads, chat and materials (§13.2)."""
     database: Database = ctx["database"]
     async with database.sessionmaker() as session:
-        return await AttachmentScanner(session, ctx["storage"], ctx["scanner"]).purge()
+        purged = await AttachmentScanner(session, ctx["storage"], ctx["scanner"]).purge()
+    async with database.sessionmaker() as session:
+        return purged + await MaterialScanner(session, ctx["storage"], ctx["scanner"]).purge()
 
 
 async def remove_chat_orphans(ctx: dict[str, Any]) -> int:

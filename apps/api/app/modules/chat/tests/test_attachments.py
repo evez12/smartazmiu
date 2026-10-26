@@ -24,13 +24,8 @@ from app.core.config import Settings
 from app.core.db import Database
 from app.core.errors import AppError
 from app.core.time import utc_now
-from app.modules.chat.attachments import (
-    AttachmentScanner,
-    content_disposition,
-    content_matches,
-    file_type,
-    safe_filename,
-)
+from app.core.uploads import content_disposition, content_matches, safe_filename
+from app.modules.chat.attachments import AttachmentScanner, file_type
 from app.modules.chat.models import ChannelType, MessageAttachment, ScanStatus
 from app.modules.notifications.models import Notification, NotificationKind
 from app.modules.users.models import User
