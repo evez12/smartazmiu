@@ -100,10 +100,14 @@ test("two students talk in a course channel and a DM, and a network drop loses n
     .getByRole("dialog", { name: "Kanalın üzvləri" })
     .getByRole("button", { name: /Ramin Əliyev/ })
     .click();
+  const courseUrl = aysel.url();
   await aysel
     .getByRole("dialog", { name: "Ramin Əliyev" })
     .getByRole("button", { name: "Mesaj yazın" })
     .click();
+  // The profile dialog's title is also a heading "Ramin Əliyev": wait for the DM page itself.
+  await expect(aysel.getByRole("dialog")).toHaveCount(0);
+  await expect(aysel).not.toHaveURL(courseUrl);
   await expect(aysel.getByRole("heading", { level: 2, name: "Ramin Əliyev" })).toBeVisible();
   await send(aysel, `Şəxsi sual: konspekti göndərə bilərsiniz? ${marker}-7`);
   const dm = sidebar(ramin)
@@ -215,6 +219,7 @@ test("students mention, reply in a thread, react, edit and delete", async ({
 test("attachments are scanned before others see them", async ({ browser, records }) => {
   test.setTimeout(240_000);
   const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  records.rateLimit("chat_attachment", [AYSEL.email]);
   const aysel = await openChat(browser, AYSEL.username);
   const ramin = await openChat(browser, RAMIN.username);
   await online(aysel);
@@ -261,6 +266,49 @@ test("attachments are scanned before others see them", async ({ browser, records
 
   await aysel.context().close();
   await ramin.context().close();
+});
+
+/* Sprint 6 reports: a student reports a message from its menu; staff see it and dismiss it (§5.4, D-070). */
+test("a reported message reaches the staff report list", async ({
+  page,
+  browser,
+  records,
+  accounts,
+}) => {
+  test.setTimeout(180_000);
+  const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email, RAMIN.email]);
+  records.rateLimit("report_create", [AYSEL.email]);
+  const aysel = await openChat(browser, AYSEL.username);
+  const ramin = await openChat(browser, RAMIN.username);
+  await online(aysel);
+  await online(ramin);
+  const course = courses(aysel).first();
+  const courseName = (await course.locator("span.truncate").first().innerText()).trim();
+  await course.click();
+  await courses(ramin).filter({ hasText: courseName }).first().click();
+  await expect(ramin.getByRole("heading", { level: 2, name: courseName })).toBeVisible();
+  await send(ramin, `Ucuz kurs işləri satılır. ${marker}-spam`);
+  const reported = messageLog(aysel)
+    .getByRole("article")
+    .filter({ hasText: `${marker}-spam` });
+  await reported.hover();
+  await reported.getByRole("button", { name: "Digər əməliyyatlar" }).click();
+  await aysel.getByRole("menuitem", { name: "Şikayət edin" }).click();
+  const dialog = aysel.getByRole("dialog", { name: "Mesajdan şikayət" });
+  await dialog.getByRole("radio", { name: "Spam və ya reklam" }).click();
+  await dialog.getByRole("button", { name: "Şikayət göndərin" }).click();
+  await expect(aysel.getByText("Şikayətiniz qeydə alındı.").first()).toBeVisible();
+  await aysel.context().close();
+  await ramin.context().close();
+
+  await signInWithSecondFactor(page, await accounts.create("staff", STAFF_NAME), "/admin/reports");
+  const row = page.getByRole("row").filter({ hasText: `${marker}-spam` });
+  await expect(row).toContainText("Spam və ya reklam");
+  await expect(row).toContainText("Aysel Məmmədova");
+  await expectNoSeriousViolations(page);
+  await row.getByRole("button", { name: "Rədd edin" }).click();
+  await expect(page.getByText("Şikayətin vəziyyəti dəyişdi.").first()).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: `${marker}-spam` })).toHaveCount(0);
 });
 
 test("the teacher is in the course channel but not in the subject community", async ({ page }) => {

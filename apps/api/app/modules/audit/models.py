@@ -26,6 +26,8 @@ class AuditAction(StrEnum):
     EVENT_EDITED = "event.edited"
     EVENT_CANCELLED = "event.cancelled"
     EVENT_MANUAL_CHECK_IN = "event.manual_check_in"
+    REPORT_CREATED = "report.created"
+    REPORT_HANDLED = "report.handled"
 
 
 class AuditLog(Base):

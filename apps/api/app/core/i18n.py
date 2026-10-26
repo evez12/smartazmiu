@@ -323,6 +323,18 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Fayl yükləmə xidməti müvəqqəti işləmir. Mətn mesajları göndərmək olar; faylı bir az sonra əlavə edin.",
         "en": "File uploads are temporarily unavailable. Text messages still work; attach the file later.",
     },
+    "reports.target_not_found": {
+        "az": "Şikayət etdiyiniz mesaj və ya istifadəçi tapılmadı.",
+        "en": "The message or person you are reporting was not found.",
+    },
+    "reports.own_content": {
+        "az": "Öz mesajınızdan və ya özünüzdən şikayət edə bilməzsiniz.",
+        "en": "You cannot report your own message or yourself.",
+    },
+    "reports.not_found": {
+        "az": "Şikayət tapılmadı.",
+        "en": "The report was not found.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

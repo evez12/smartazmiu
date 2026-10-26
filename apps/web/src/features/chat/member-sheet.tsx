@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, UserX } from "lucide-react";
+import { Flag, MessageSquare, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, Sheet } from "@/components/ui/overlay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
+import { ReportDialog } from "@/features/reports/report-dialog";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 
@@ -109,6 +110,7 @@ function UserCard({
   onOpened: () => void;
 }) {
   const t = useTranslations("chat");
+  const tReports = useTranslations("reports");
   const api = useApi();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -118,6 +120,7 @@ function UserCard({
   const channels = useChannels();
   const blocked = channels.data?.blocked_user_ids.includes(person.id) ?? false;
   const isMe = person.id === runtime.currentUserId;
+  const [reporting, setReporting] = useState(false);
 
   const openDm = useMutation({
     mutationFn: async () =>
@@ -152,6 +155,10 @@ function UserCard({
         footer={
           isMe ? undefined : (
             <>
+              <Button variant="tertiary" onClick={() => setReporting(true)}>
+                <Icon icon={Flag} />
+                {tReports("action")}
+              </Button>
               <Button loading={toggleBlock.isPending} onClick={() => toggleBlock.mutate()}>
                 <Icon icon={UserX} />
                 {blocked ? t("user.unblock") : t("user.block")}
@@ -182,6 +189,14 @@ function UserCard({
           ) : null}
         </div>
       </DialogContent>
+      {reporting ? (
+        <ReportDialog
+          open={reporting}
+          onOpenChange={setReporting}
+          targetType="user"
+          targetId={person.id}
+        />
+      ) : null}
     </Dialog>
   );
 }

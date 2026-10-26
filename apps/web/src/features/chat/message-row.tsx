@@ -1,15 +1,16 @@
 "use client";
 
-import { CircleAlert, Clock, MessagesSquare } from "lucide-react";
+import { CircleAlert, Clock, Flag, MessagesSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
-import { ConfirmDialog } from "@/components/ui/overlay";
+import { ConfirmDialog, MenuItem } from "@/components/ui/overlay";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
+import { ReportDialog } from "@/features/reports/report-dialog";
 import { ApiRequestError } from "@/lib/api/browser";
 import { cn } from "@/lib/cn";
 import { formatDate, formatDateTime, formatTime } from "@/lib/format";
@@ -105,6 +106,7 @@ export function MessageRow({
   context: RowContext;
 }) {
   const t = useTranslations("chat");
+  const tReports = useTranslations("reports");
   const runtime = useOptionalChatRuntime();
   const toast = useToast();
   const refusal = useChangeErrorText();
@@ -112,6 +114,7 @@ export function MessageRow({
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
   // Checked when the menu renders; the server has the final word on the 15-minute window (§13.2).
   const [now, setNow] = useState(() => Date.now());
   const name = message.author?.display_name ?? t("deletedUser");
@@ -260,7 +263,22 @@ export function MessageRow({
                 : undefined,
             onEdit: own && context.canPost && runtime ? () => setEditing(true) : undefined,
             onDelete: own && runtime ? () => setConfirming(true) : undefined,
+            extra:
+              runtime && message.author?.id !== context.currentUser.id ? (
+                <MenuItem onSelect={() => setReporting(true)}>
+                  <Icon icon={Flag} />
+                  {tReports("action")}
+                </MenuItem>
+              ) : undefined,
           }}
+        />
+      ) : null}
+      {reporting ? (
+        <ReportDialog
+          open={reporting}
+          onOpenChange={setReporting}
+          targetType="message"
+          targetId={message.id}
         />
       ) : null}
       <ConfirmDialog

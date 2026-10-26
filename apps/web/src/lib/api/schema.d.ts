@@ -900,6 +900,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/moderation/reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Reports, newest first */
+    get: operations["listReports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/moderation/reports/{report_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Mark a report as actioned or dismissed (or open it again) */
+    patch: operations["setReportStatus"];
+    trace?: never;
+  };
+  "/api/v1/reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Report a message or a person (once per target) */
+    post: operations["createReport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/users/{user_id}/block": {
     parameters: {
       query?: never;
@@ -1169,7 +1220,9 @@ export interface components {
       | "event.published"
       | "event.edited"
       | "event.cancelled"
-      | "event.manual_check_in";
+      | "event.manual_check_in"
+      | "report.created"
+      | "report.handled";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -2194,6 +2247,94 @@ export interface components {
      * @enum {string}
      */
     RegistrationStatus: "going" | "cancelled";
+    /** ReportCreatedOut */
+    ReportCreatedOut: {
+      /** Duplicate */
+      duplicate: boolean;
+      /** Id */
+      id: string;
+      status: components["schemas"]["ReportStatus"];
+    };
+    /** ReportIn */
+    ReportIn: {
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+      reason: components["schemas"]["ReportReason"];
+      /** Target Id */
+      target_id: string;
+      target_type: components["schemas"]["ReportTarget"];
+    };
+    /** ReportOut */
+    ReportOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Handled At */
+      handled_at: string | null;
+      handled_by: components["schemas"]["AuthorOut"] | null;
+      /** Id */
+      id: string;
+      message: components["schemas"]["ReportedMessageOut"] | null;
+      /** Note */
+      note: string;
+      reason: components["schemas"]["ReportReason"];
+      reported_user: components["schemas"]["AuthorOut"] | null;
+      reporter: components["schemas"]["AuthorOut"] | null;
+      /** Reporters */
+      reporters: number;
+      status: components["schemas"]["ReportStatus"];
+      target_type: components["schemas"]["ReportTarget"];
+    };
+    /** ReportPageOut */
+    ReportPageOut: {
+      /** Items */
+      items: components["schemas"]["ReportOut"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * ReportReason
+     * @enum {string}
+     */
+    ReportReason: "spam" | "harassment" | "hate" | "exam_leak" | "privacy" | "other";
+    /**
+     * ReportStatus
+     * @enum {string}
+     */
+    ReportStatus: "open" | "actioned" | "dismissed";
+    /** ReportStatusIn */
+    ReportStatusIn: {
+      status: components["schemas"]["ReportStatus"];
+    };
+    /**
+     * ReportTarget
+     * @enum {string}
+     */
+    ReportTarget: "message" | "user";
+    /** ReportedMessageOut */
+    ReportedMessageOut: {
+      author: components["schemas"]["AuthorOut"] | null;
+      /** Body */
+      body: string;
+      /** Channel Id */
+      channel_id: string;
+      /** Channel Name */
+      channel_name: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Deleted */
+      deleted: boolean;
+      /** Id */
+      id: string;
+    };
     /** RoleAssignment */
     RoleAssignment: {
       /** Roles */
@@ -6778,6 +6919,224 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["TicketsOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listReports: {
+    parameters: {
+      query?: {
+        status?: components["schemas"]["ReportStatus"] | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setReportStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        report_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportStatusIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createReport: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportIn"];
+      };
+    };
+    responses: {
+      /** @description Reported before by this person */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportCreatedOut"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReportCreatedOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

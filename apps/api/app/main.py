@@ -33,6 +33,7 @@ from app.modules.events.router import router as events_router
 from app.modules.health.router import router as health_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.privacy.router import router as privacy_router
+from app.modules.reports.router import router as reports_router
 from app.modules.schedule.router import router as schedule_router
 from app.modules.users.router import router as users_router
 
@@ -130,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(audiences_router, prefix=API_PREFIX)
     app.include_router(events_router, prefix=API_PREFIX)
     app.include_router(chat_router, prefix=API_PREFIX)
+    app.include_router(reports_router, prefix=API_PREFIX)
     app.include_router(chat_socket_router)
     return app
 
