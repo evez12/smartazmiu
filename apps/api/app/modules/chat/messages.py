@@ -3,20 +3,22 @@
 import uuid
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import cast
 
 import structlog
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, case, exists, func, literal, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
 from app.core.time import utc_now
+from app.modules.academics.models import AcademicGroup, CourseOfferingTeacher
 from app.modules.chat.access import ChannelAccess
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
-from app.modules.chat.models import ChannelRead, ChannelTopic, Message, MessageClientId
+from app.modules.chat.models import Channel, ChannelRead, ChannelTopic, Message, MessageClientId
 from app.modules.chat.policy import Action, Decision, Reason
-from app.modules.chat.schemas import AuthorOut, MessageOut
+from app.modules.chat.schemas import AuthorOut, Badge, MessageOut
 from app.modules.chat.search import body_vector
 from app.modules.chat.snowflake import Snowflake, SnowflakeUnavailableError, created_at_of
 from app.modules.users.models import User
@@ -49,14 +51,18 @@ def deny(decision: Decision) -> AppError:
     return AppError(reason.value, status, details=details, headers=headers)
 
 
-def message_out(message: Message, author: User | None) -> MessageOut:
+def message_out(message: Message, author: User | None, badge: str | None = None) -> MessageOut:
     return MessageOut(
         id=str(message.id),
         channel_id=str(message.channel_id),
         topic_id=str(message.topic_id) if message.topic_id else None,
         parent_id=str(message.parent_id) if message.parent_id else None,
         author=AuthorOut(
-            id=str(author.id), display_name=author.display_name, photo_url=photo_url(author)
+            id=str(author.id),
+            display_name=author.display_name,
+            photo_url=photo_url(author),
+            # The query yields only these two literals or NULL.
+            badge=cast("Badge | None", badge),
         )
         if author is not None
         else None,
@@ -68,8 +74,24 @@ def message_out(message: Message, author: User | None) -> MessageOut:
     )
 
 
-def _with_authors() -> Select[Message, User]:
-    return select(Message, User).outerjoin(User, User.id == Message.author_id)
+def _with_authors() -> Select[Message, User, str | None]:
+    """Messages with their authors and the author's role in the channel (teacher or curator, §12.7)."""
+    channel = (
+        select(Channel.course_offering_id, Channel.academic_group_id)
+        .where(Channel.id == Message.channel_id)
+        .correlate(Message)
+    )
+    teaches = exists().where(
+        CourseOfferingTeacher.teacher_id == Message.author_id,
+        CourseOfferingTeacher.course_offering_id
+        == channel.with_only_columns(Channel.course_offering_id).scalar_subquery(),
+    )
+    curates = exists().where(
+        AcademicGroup.curator_id == Message.author_id,
+        AcademicGroup.id == channel.with_only_columns(Channel.academic_group_id).scalar_subquery(),
+    )
+    badge = case((teaches, literal("teacher")), (curates, literal("curator")), else_=None)
+    return select(Message, User, badge).outerjoin(User, User.id == Message.author_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,7 +239,7 @@ class MessageService:
         if row is None or row[0].author_id != user.id:
             # Someone else's client id: never hand out their message.
             raise AppError("chat.duplicate_client_id", 409)
-        return message_out(row[0], row[1])
+        return message_out(row[0], row[1], row[2])
 
     async def _topic_in_channel(self, topic_id: uuid.UUID, channel_id: uuid.UUID) -> bool:
         found = await self.session.scalar(
@@ -237,7 +259,7 @@ class MessageService:
             )
         )
         row = found.first()
-        return message_out(row[0], row[1]) if row else None
+        return message_out(row[0], row[1], row[2]) if row else None
 
     async def history(
         self,
@@ -289,7 +311,7 @@ class MessageService:
         rows = rows[:limit]
         if not ascending:
             rows.reverse()
-        return Page([message_out(message, author) for message, author in rows], has_more)
+        return Page([message_out(*row) for row in rows], has_more)
 
     async def mark_read(self, user: CurrentUser, channel_id: uuid.UUID, message_id: int) -> int:
         """Moves the read marker forward only (D-002) and tells the user's other tabs (§13.2)."""
