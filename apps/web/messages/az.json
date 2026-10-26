@@ -260,7 +260,8 @@
       "chat": "Çat",
       "reports": "Şikayətlər",
       "materials": "Materiallar",
-      "feedback": "Rəylər"
+      "feedback": "Rəylər",
+      "guides": "Bələdçilər"
     }
   },
   "roles": {
@@ -805,7 +806,13 @@
       "chatMention": "Sizi çatda qeyd etdilər",
       "chatReply": "Mesajınıza cavab yazdılar",
       "chatAttachmentRejected": "Fayl göstərilmir",
-      "materialVersionRejected": "Material versiyası qəbul olunmadı"
+      "materialVersionRejected": "Material versiyası qəbul olunmadı",
+      "mentorshipInvitation": "Bələdçi olmağa dəvət",
+      "mentorshipRequestReceived": "Yeni məsləhət sorğusu",
+      "mentorshipRequestAccepted": "Məsləhət sorğunuz qəbul edildi",
+      "mentorshipRequestDeclined": "Məsləhət sorğunuz qəbul edilmədi",
+      "mentorshipRequestExpired": "Məsləhət sorğunuzun vaxtı bitdi",
+      "mentorshipAdvicePost": "#məsləhət bölməsində yeni sual"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
@@ -826,7 +833,8 @@
         "announcements": "Elanlar",
         "events": "Tədbirlər",
         "schedule": "Dərs cədvəlində dəyişikliklər",
-        "chat": "Çatda qeyd olunmalar və cavablar"
+        "chat": "Çatda qeyd olunmalar və cavablar",
+        "mentorship": "Bələdçi dəvətləri və məsləhət sorğuları"
       },
       "quietTitle": "Sakit saatlar",
       "quietHint": "Bu saatlarda brauzer bildirişləri göndərilmir. Saytdakı bildirişlər və e-poçt dəyişmir. Vaxt Bakı vaxtı ilə göstərilir.",
@@ -1075,7 +1083,8 @@
     },
     "badges": {
       "teacher": "Müəllim",
-      "curator": "Kurator"
+      "curator": "Kurator",
+      "guide": "Bələdçi · {semester}"
     },
     "deletedUser": "Silinmiş istifadəçi",
     "you": "Siz",
@@ -1222,7 +1231,11 @@
         "generic": "Fayl əlavə olunmadı. Yenidən cəhd edin."
       }
     },
-    "externalLink": "(xarici keçid, yeni pəncərədə açılır)"
+    "externalLink": "(xarici keçid, yeni pəncərədə açılır)",
+    "topics": {
+      "label": "Mövzular",
+      "all": "Hamısı"
+    }
   },
   "reports": {
     "titleMessage": "Mesajdan şikayət",
@@ -1530,5 +1543,138 @@
       "updated": "Rəyin vəziyyəti dəyişdi.",
       "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
     }
+  },
+  "guides": {
+    "title": "Bələdçilər",
+    "description": "Fənni keçmiş tələbələrdən məsləhət alın və ya özünüz bələdçi olun.",
+    "disclaimer": "Tələbə məsləhətidir, rəsmi məlumat deyil",
+    "disclaimerBody": "Bələdçilər fənni əvvəllər keçmiş tələbələrdir. Rəsmi tələblər üçün müəllimə və dekanlığa müraciət edin.",
+    "findTitle": "Bələdçi tap",
+    "findDescription": "Fənlərinizdən birini seçin və onu keçmiş bələdçilərə baxın.",
+    "subjectsEmpty": "Bələdçi axtara biləcəyiniz fənn yoxdur. Fənlərinizə yazılış idxal olunduqdan sonra burada görünəcək.",
+    "becomeTitle": "Bələdçi olun",
+    "becomeDescription": "Keçmiş semestrlərdə uğurla bitirdiyiniz fənlər üzrə başqalarına kömək edə bilərsiniz.",
+    "becomeEmpty": "Hazırda bələdçi ola biləcəyiniz fənn yoxdur. Fənni keçmiş semestrdə uğurla bitirdikdən sonra burada görünəcək.",
+    "passedIn": "{semester} semestrində keçmisiniz",
+    "optIn": "Bələdçi olun",
+    "editProfile": "Profili dəyişin",
+    "myProfilesTitle": "Bələdçi profillərim",
+    "requestsLink": "Məsləhət sorğularına baxın",
+    "requestsTitle": "Məsləhət sorğuları",
+    "requestsDescription": "Göndərdiyiniz və sizə gələn sorğular.",
+    "requestsEmpty": "Hələ məsləhət sorğusu yoxdur. Bələdçi tapıb sorğu göndərin.",
+    "loadFailed": "Sorğuları yükləmək mümkün olmadı. Yenidən cəhd edin.",
+    "stats": {
+      "helped": "{count, plural, one {# nəfərə kömək edib} other {# nəfərə kömək edib}}",
+      "helpfulRate": "Faydalı rəylər: {percent}%",
+      "noRating": "Hələ rəy yoxdur",
+      "response": "Orta cavab müddəti: {minutes} dəq."
+    },
+    "availability": {
+      "label": "Vəziyyət",
+      "available": "Əlçatan",
+      "busy": "Məşğul",
+      "paused": "Fasilədə"
+    },
+    "gradeVisibility": {
+      "label": "Qiymətin göstərilməsi",
+      "hidden": "Gizli",
+      "range": "Aralıq (məsələn, 71–90)",
+      "exact": "Dəqiq qiymət",
+      "helper": "Standart olaraq qiymətiniz heç kimə göstərilmir."
+    },
+    "directory": {
+      "breadcrumb": "Bələdçi tap",
+      "description": "{code} · əlçatan bələdçilər",
+      "empty": "Bu fənn üzrə hazırda əlçatan bələdçi yoxdur. Sorğunu bütün bələdçilərə göndərin və ya sonra yenidən baxın.",
+      "filters": "Filtrlər",
+      "specialty": "İxtisas",
+      "semester": "Semestr",
+      "teacher": "Müəllim",
+      "all": "Hamısı",
+      "apply": "Tətbiq edin",
+      "askAny": "Bütün bələdçilərdən soruşun",
+      "ask": "Sorğu göndərin",
+      "sameTeacher": "Eyni müəllim",
+      "sameSpecialty": "Eyni ixtisas",
+      "takenWith": "Müəllim: {name}",
+      "grade": "Qiymət: {grade}",
+      "listLabel": "Bələdçilər",
+      "badge": "Bələdçi · {semester}"
+    },
+    "request": {
+      "title": "Məsləhət sorğusu",
+      "toGuide": "Bələdçi: {name}",
+      "toAny": "Sorğu bu fənnin bütün əlçatan bələdçilərinə göstəriləcək.",
+      "topic": "Mövzu",
+      "body": "Sualınız",
+      "bodyHelper": "Ən çox 2000 simvol. Qiymət, e-poçt və telefon nömrəsi yazmayın.",
+      "bodyRequired": "Sualınızı yazın.",
+      "send": "Göndərin",
+      "sent": "Sorğunuz göndərildi.",
+      "failed": "Sorğu göndərilmədi",
+      "topics": {
+        "exam": "İmtahan",
+        "workload": "Dərs yükü",
+        "materials": "Materiallar",
+        "teacher_expectations": "Müəllimin tələbləri",
+        "project": "Layihə",
+        "other": "Digər"
+      },
+      "status": {
+        "open": "Açıq",
+        "accepted": "Qəbul edilib",
+        "resolved": "Həll edilib",
+        "declined": "Qəbul edilməyib",
+        "expired": "Vaxtı bitib"
+      },
+      "from": "Soruşan: {name}",
+      "guide": "Bələdçi: {name}",
+      "anyGuide": "Bütün bələdçilərə",
+      "expires": "Cavab gözlənilir: {date} tarixinədək",
+      "accept": "Qəbul edin",
+      "decline": "İmtina edin",
+      "resolve": "Həll edildi kimi qeyd edin",
+      "openChat": "Söhbəti açın",
+      "actionFailed": "Əməliyyat alınmadı",
+      "feedbackTitle": "Məsləhət faydalı oldu?",
+      "helpful": "Faydalı oldu",
+      "notHelpful": "Faydalı olmadı",
+      "feedbackNote": "Şərh (yalnız administratorlar görür)",
+      "feedbackSend": "Rəyi göndərin",
+      "feedbackGiven": "Rəyiniz: {feedback}",
+      "cardLabel": "Məsləhət sorğusu: {subject}",
+      "incoming": "Sizə gələn",
+      "outgoing": "Göndərdikləriniz"
+    },
+    "optInPage": {
+      "title": "Bələdçi olun: {subject}",
+      "description": "{semester} semestrində bu fənni keçmisiniz. Bələdçi olsanız, fənn icmasında bələdçi nişanı ilə görünəcəksiniz.",
+      "editTitle": "Bələdçi profili: {subject}",
+      "consent": "Bələdçi olmağa razıyam",
+      "consentHelper": "Adınız, şəkliniz, bu fənni keçdiyiniz semestr və aşağıda seçdikləriniz fənnin tələbələrinə göstəriləcək. İstənilən vaxt fasilə verə bilərsiniz.",
+      "consentRequired": "Davam etmək üçün razılığınızı təsdiq edin.",
+      "showTeacher": "Fənni keçdiyim müəllimi göstərin",
+      "showTeacherHelper": "Müəllim: {name}",
+      "bio": "Qısa məlumat",
+      "bioHelper": "Ən çox 300 simvol. Necə kömək edə biləcəyinizi yazın.",
+      "maxOpen": "Eyni vaxtda ən çox açıq sorğu",
+      "save": "Yadda saxlayın",
+      "saved": "Bələdçi profiliniz yadda saxlanıldı.",
+      "failed": "Profil yadda saxlanılmadı",
+      "notEligible": "Bu fənn üzrə bələdçi ola bilməzsiniz: fənni keçmiş semestrdə uğurla bitirmiş olmalısınız və hazırda onu yenidən keçməməlisiniz."
+    },
+    "feedbackNotes": {
+      "tab": "Bələdçi rəyləri",
+      "empty": "Şərhli bələdçi rəyi yoxdur.",
+      "caption": "Bələdçilərə verilmiş şərhli rəylər, ən yenisi əvvəldə",
+      "subject": "Fənn",
+      "guide": "Bələdçi",
+      "feedback": "Rəy",
+      "note": "Şərh",
+      "date": "Tarix"
+    },
+    "materialsLink": "Fənnin materiallarına baxın",
+    "materialsHint": "Bu fənnin mühazirə və seminar faylları Materiallar bölməsindədir."
   }
 }

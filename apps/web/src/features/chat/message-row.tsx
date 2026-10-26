@@ -13,6 +13,8 @@ import { useToast } from "@/components/ui/toast";
 import { ReportDialog } from "@/features/reports/report-dialog";
 import { ApiRequestError } from "@/lib/api/browser";
 import { cn } from "@/lib/cn";
+
+import { AuthorBadge } from "./author-badge";
 import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 
 import { Composer } from "./composer";
@@ -162,9 +164,7 @@ export function MessageRow({
         {showHeader ? (
           <header className="flex flex-wrap items-baseline gap-x-2">
             <span className={cn("font-medium", !message.author && "text-muted")}>{name}</span>
-            {message.author?.badge ? (
-              <Tag tone="info">{t(`badges.${message.author.badge}`)}</Tag>
-            ) : null}
+            {message.author ? <AuthorBadge author={message.author} /> : null}
             <time
               dateTime={message.created_at}
               title={formatDateTime(message.created_at)}

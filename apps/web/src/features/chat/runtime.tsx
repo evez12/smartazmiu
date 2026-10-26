@@ -44,7 +44,13 @@ const READ_DEBOUNCE_MS = 800;
 export type ChatRuntime = {
   store: ChatStore;
   currentUserId: string;
-  send: (channelId: string, body: string, parentId?: string, attachmentIds?: string[]) => void;
+  send: (
+    channelId: string,
+    body: string,
+    parentId?: string,
+    attachmentIds?: string[],
+    topicId?: string,
+  ) => void;
   /** Resolve with notices the author should see (an ignored @channel); reject with `ApiRequestError`. */
   edit: (messageId: string, body: string) => Promise<string[]>;
   remove: (messageId: string) => Promise<void>;
@@ -166,6 +172,7 @@ export function ChatRuntimeProvider({
         body: pending.body,
         client_msg_id: pending.clientMsgId,
         ...(pending.parentId ? { parent_id: pending.parentId } : {}),
+        ...(pending.topicId ? { topic_id: pending.topicId } : {}),
         ...(pending.attachmentIds?.length ? { attachment_ids: pending.attachmentIds } : {}),
       };
       try {
@@ -214,11 +221,12 @@ export function ChatRuntimeProvider({
     const runtime: ChatRuntime = {
       store,
       currentUserId,
-      send: (channelId, body, parentId, attachmentIds) => {
+      send: (channelId, body, parentId, attachmentIds, topicId) => {
         const pending: PendingMessage = {
           clientMsgId: crypto.randomUUID(),
           channelId,
           ...(parentId ? { parentId } : {}),
+          ...(topicId ? { topicId } : {}),
           ...(attachmentIds?.length ? { attachmentIds } : {}),
           body,
           state: "queued",

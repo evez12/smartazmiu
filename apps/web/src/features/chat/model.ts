@@ -205,6 +205,8 @@ export type PendingMessage = {
   channelId: string;
   /** Set for a reply: the message shows in the thread panel, not in the channel. */
   parentId?: string;
+  /** Topic of a course or community channel (§5.1); none in other channels. */
+  topicId?: string;
   attachmentIds?: string[];
   body: string;
   state: PendingState;

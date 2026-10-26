@@ -675,6 +675,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/guides/eligible": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Subjects I may guide (past, passed, not retaking) */
+    get: operations["listGuideEligibility"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/guides/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My active guide profiles with their stats */
+    get: operations["listMyGuideProfiles"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/materials": {
     parameters: {
       query?: never;
@@ -1104,6 +1138,92 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/mentor-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My advice requests, as requester or guide; or those of one DM */
+    get: operations["listMentorRequests"];
+    put?: never;
+    /** Ask a guide, or any guide of the subject, for advice */
+    post: operations["createMentorRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/mentor-requests/{request_id}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accept a request and open the DM with the requester */
+    post: operations["acceptMentorRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/mentor-requests/{request_id}/decline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Decline a request addressed to me */
+    post: operations["declineMentorRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/mentor-requests/{request_id}/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rate a resolved request once (requester only) */
+    post: operations["giveMentorFeedback"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/mentor-requests/{request_id}/resolve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Mark an accepted request as resolved */
+    post: operations["resolveMentorRequest"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/moderation/material-reports": {
     parameters: {
       query?: never;
@@ -1136,6 +1256,23 @@ export interface paths {
     head?: never;
     /** Mark a material report as actioned or dismissed (or open it again) */
     patch: operations["setMaterialReportStatus"];
+    trace?: never;
+  };
+  "/api/v1/moderation/mentor-feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Private feedback notes on guides, newest first */
+    get: operations["listMentorFeedbackNotes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/moderation/reports": {
@@ -1187,6 +1324,42 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subjects/{subject_id}/guides": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Available guides of a subject, ranked (§5.2) */
+    get: operations["listSubjectGuides"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subjects/{subject_id}/guides/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My guide profile for a subject */
+    get: operations["getMyGuideProfile"];
+    put?: never;
+    /** Become a guide for a subject (eligibility and consent checked) */
+    post: operations["optInAsGuide"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Change my guide profile */
+    patch: operations["updateMyGuideProfile"];
     trace?: never;
   };
   "/api/v1/subjects/{subject_id}/materials": {
@@ -1519,14 +1692,21 @@ export interface components {
     /** AuthorOut */
     AuthorOut: {
       /** Badge */
-      badge?: ("teacher" | "curator") | null;
+      badge?: ("teacher" | "curator" | "guide") | null;
       /** Display Name */
       display_name: string;
+      /** Guide Semester */
+      guide_semester?: string | null;
       /** Id */
       id: string;
       /** Photo Url */
       photo_url: string | null;
     };
+    /**
+     * Availability
+     * @enum {string}
+     */
+    Availability: "available" | "busy" | "paused";
     /** Body_createImport */
     Body_createImport: {
       encoding?: components["schemas"]["FileEncoding"] | null;
@@ -1586,6 +1766,8 @@ export interface components {
       notify_level: components["schemas"]["NotifyLevel"];
       peer: components["schemas"]["AuthorOut"] | null;
       posting: components["schemas"]["PostingOut"];
+      /** Subject Id */
+      subject_id?: string | null;
       /** Topics */
       topics: components["schemas"]["TopicOut"][];
       type: components["schemas"]["ChannelType"];
@@ -1769,6 +1951,26 @@ export interface components {
       /** Notices */
       notices: "chat.channel_mention_not_allowed"[];
     };
+    /**
+     * EligibleSubjectOut
+     * @description A subject the signed-in person may guide, with their profile if they opted in.
+     */
+    EligibleSubjectOut: {
+      /** Grade */
+      grade: number | null;
+      /** Opted In */
+      opted_in: boolean;
+      /** Semester */
+      semester: string;
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
+      /** Teacher Name */
+      teacher_name: string | null;
+    };
     /** ErrorBody */
     ErrorBody: {
       /** Code */
@@ -1922,6 +2124,32 @@ export interface components {
        */
       page: string;
     };
+    /**
+     * FeedbackNoteOut
+     * @description Staff view of feedback with a private note (§5.2).
+     */
+    FeedbackNoteOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      feedback: components["schemas"]["RequestFeedback"];
+      mentor: components["schemas"]["MentorPersonOut"] | null;
+      /** Note */
+      note: string;
+      /** Request Id */
+      request_id: string;
+      /** Subject Name */
+      subject_name: string;
+    };
+    /** FeedbackNotePageOut */
+    FeedbackNotePageOut: {
+      /** Items */
+      items: components["schemas"]["FeedbackNoteOut"][];
+      /** Total */
+      total: number;
+    };
     /** FeedbackOut */
     FeedbackOut: {
       category: components["schemas"]["FeedbackCategory"];
@@ -1975,6 +2203,13 @@ export interface components {
      * @enum {string}
      */
     FileEncoding: "utf-8" | "windows-1254" | "windows-1251";
+    /** FilterOptionOut */
+    FilterOptionOut: {
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+    };
     /**
      * FloorPlanOut
      * @description One storey drawn in a ``width × height`` frame (decimetres); rooms are rectangles inside it.
@@ -1999,6 +2234,11 @@ export interface components {
       /** Name */
       name: string;
     };
+    /**
+     * GradeVisibility
+     * @enum {string}
+     */
+    GradeVisibility: "hidden" | "range" | "exact";
     /** GroupPlacementOut */
     GroupPlacementOut: {
       /** Admission Year */
@@ -2008,6 +2248,104 @@ export interface components {
       faculty: components["schemas"]["NamedCode"];
       language: components["schemas"]["InstructionLanguage"];
       specialty: components["schemas"]["NamedCode"];
+    };
+    /** GuideDirectoryOut */
+    GuideDirectoryOut: {
+      /** Guides */
+      guides: components["schemas"]["GuideOut"][];
+      /** I Am Guide */
+      i_am_guide: boolean;
+      /** Semesters */
+      semesters: components["schemas"]["FilterOptionOut"][];
+      /** Specialties */
+      specialties: components["schemas"]["FilterOptionOut"][];
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
+      /** Teachers */
+      teachers: components["schemas"]["FilterOptionOut"][];
+    };
+    /**
+     * GuideOut
+     * @description A guide in the directory: what the guide chose to show, never contact data (§5.4).
+     */
+    GuideOut: {
+      availability: components["schemas"]["Availability"];
+      /** Bio */
+      bio: string;
+      /** Grade Exact */
+      grade_exact: number | null;
+      /** Grade Range */
+      grade_range: ("51-70" | "71-90" | "91-100") | null;
+      /** Same Specialty */
+      same_specialty: boolean;
+      /** Same Teacher */
+      same_teacher: boolean;
+      /** Semester */
+      semester: string;
+      /** Semester Id */
+      semester_id: string;
+      /** Specialty Id */
+      specialty_id: string | null;
+      /** Specialty Name */
+      specialty_name: string | null;
+      stats: components["schemas"]["GuideStatsOut"];
+      /** Teacher Id */
+      teacher_id: string | null;
+      /** Teacher Name */
+      teacher_name: string | null;
+      user: components["schemas"]["MentorPersonOut"];
+    };
+    /** GuideProfileIn */
+    GuideProfileIn: {
+      /** @default available */
+      availability: components["schemas"]["Availability"];
+      /**
+       * Bio
+       * @default
+       */
+      bio: string;
+      /** Consent */
+      consent: boolean;
+      /** @default hidden */
+      grade_visibility: components["schemas"]["GradeVisibility"];
+      /**
+       * Max Open Requests
+       * @default 3
+       */
+      max_open_requests: number;
+      /**
+       * Show Teacher
+       * @default false
+       */
+      show_teacher: boolean;
+    };
+    /** GuideProfilePatch */
+    GuideProfilePatch: {
+      availability?: components["schemas"]["Availability"] | null;
+      /** Bio */
+      bio?: string | null;
+      grade_visibility?: components["schemas"]["GradeVisibility"] | null;
+      /** Max Open Requests */
+      max_open_requests?: number | null;
+      /** Show Teacher */
+      show_teacher?: boolean | null;
+    };
+    /** GuideStatsOut */
+    GuideStatsOut: {
+      /** Avg Response Minutes */
+      avg_response_minutes: number | null;
+      /** Helped Count */
+      helped_count: number;
+      /** Helpful Count */
+      helpful_count: number;
+      /** Helpful Rate */
+      helpful_rate: number | null;
+      /** Unhelpful Count */
+      unhelpful_count: number;
     };
     /** ImportCounts */
     ImportCounts: {
@@ -2424,6 +2762,77 @@ export interface components {
       /** Id */
       id: string;
     };
+    /** MentorFeedbackIn */
+    MentorFeedbackIn: {
+      feedback: components["schemas"]["RequestFeedback"];
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+    };
+    /** MentorPersonOut */
+    MentorPersonOut: {
+      /** Display Name */
+      display_name: string;
+      /** Id */
+      id: string;
+      /** Photo Url */
+      photo_url: string | null;
+    };
+    /** MentorRequestIn */
+    MentorRequestIn: {
+      /** Body */
+      body: string;
+      /** Mentor Id */
+      mentor_id?: string | null;
+      /** Subject Id */
+      subject_id: string;
+      topic: components["schemas"]["RequestTopic"];
+    };
+    /** MentorRequestListOut */
+    MentorRequestListOut: {
+      /** Items */
+      items: components["schemas"]["MentorRequestOut"][];
+    };
+    /** MentorRequestOut */
+    MentorRequestOut: {
+      /** Body */
+      body: string;
+      /** Can Accept */
+      can_accept: boolean;
+      /** Can Decline */
+      can_decline: boolean;
+      /** Can Give Feedback */
+      can_give_feedback: boolean;
+      /** Can Resolve */
+      can_resolve: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Dm Channel Id */
+      dm_channel_id: string | null;
+      /** Expires At */
+      expires_at: string | null;
+      feedback: components["schemas"]["RequestFeedback"] | null;
+      /** Id */
+      id: string;
+      mentor: components["schemas"]["MentorPersonOut"] | null;
+      requester: components["schemas"]["MentorPersonOut"];
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "requester" | "mentor" | "candidate";
+      status: components["schemas"]["RequestStatus"];
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
+      topic: components["schemas"]["RequestTopic"];
+    };
     /** MessageOut */
     MessageOut: {
       /** Attachments */
@@ -2513,6 +2922,26 @@ export interface components {
       /** Notice Version */
       notice_version: string;
     };
+    /** MyGuideProfileOut */
+    MyGuideProfileOut: {
+      /** Active */
+      active: boolean;
+      availability: components["schemas"]["Availability"];
+      /** Bio */
+      bio: string;
+      grade_visibility: components["schemas"]["GradeVisibility"];
+      /** Max Open Requests */
+      max_open_requests: number;
+      /** Semester */
+      semester: string;
+      /** Show Teacher */
+      show_teacher: boolean;
+      stats: components["schemas"]["GuideStatsOut"];
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
+    };
     /** MyRegistrationOut */
     MyRegistrationOut: {
       /** Checked In At */
@@ -2538,7 +2967,7 @@ export interface components {
      * @description What a user switches push and e-mail on or off for; chat and mentorship add theirs later.
      * @enum {string}
      */
-    NotificationCategory: "announcements" | "events" | "schedule" | "chat";
+    NotificationCategory: "announcements" | "events" | "schedule" | "chat" | "mentorship";
     /**
      * NotificationKind
      * @enum {string}
@@ -2552,7 +2981,13 @@ export interface components {
       | "chat.mention"
       | "chat.reply"
       | "chat.attachment_rejected"
-      | "material.version_rejected";
+      | "material.version_rejected"
+      | "mentorship.invitation"
+      | "mentorship.request_received"
+      | "mentorship.request_accepted"
+      | "mentorship.request_declined"
+      | "mentorship.request_expired"
+      | "mentorship.advice_post";
     /** NotificationOut */
     NotificationOut: {
       category: components["schemas"]["NotificationCategory"];
@@ -2899,6 +3334,21 @@ export interface components {
       /** Id */
       id: string;
     };
+    /**
+     * RequestFeedback
+     * @enum {string}
+     */
+    RequestFeedback: "helpful" | "not_helpful";
+    /**
+     * RequestStatus
+     * @enum {string}
+     */
+    RequestStatus: "open" | "accepted" | "resolved" | "declined" | "expired";
+    /**
+     * RequestTopic
+     * @enum {string}
+     */
+    RequestTopic: "exam" | "workload" | "materials" | "teacher_expectations" | "project" | "other";
     /** RoleAssignment */
     RoleAssignment: {
       /** Roles */
@@ -6455,6 +6905,136 @@ export interface operations {
       };
     };
   };
+  listGuideEligibility: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EligibleSubjectOut"][];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMyGuideProfiles: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyGuideProfileOut"][];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   createMaterial: {
     parameters: {
       query?: never;
@@ -8437,6 +9017,414 @@ export interface operations {
       };
     };
   };
+  listMentorRequests: {
+    parameters: {
+      query?: {
+        channel_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createMentorRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MentorRequestIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  acceptMentorRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  declineMentorRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  giveMentorFeedback: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MentorFeedbackIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  resolveMentorRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   listMaterialReports: {
     parameters: {
       query?: {
@@ -8527,6 +9515,74 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMentorFeedbackNotes: {
+    parameters: {
+      query?: {
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedbackNotePageOut"];
+        };
       };
       /** @description Missing, expired or invalid access token */
       401: {
@@ -8744,6 +9800,286 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReportCreatedOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listSubjectGuides: {
+    parameters: {
+      query?: {
+        specialty?: string | null;
+        semester?: string | null;
+        teacher?: string | null;
+      };
+      header?: never;
+      path: {
+        subject_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GuideDirectoryOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getMyGuideProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        subject_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyGuideProfileOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  optInAsGuide: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        subject_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GuideProfileIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyGuideProfileOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  updateMyGuideProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        subject_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GuideProfilePatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MyGuideProfileOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
