@@ -2995,6 +2995,10 @@
             "title": "Id",
             "type": "string"
           },
+          "onboarding_done": {
+            "title": "Onboarding Done",
+            "type": "boolean"
+          },
           "permissions": {
             "items": {
               "type": "string"
@@ -3032,7 +3036,8 @@
           "status",
           "roles",
           "permissions",
-          "photo_url"
+          "photo_url",
+          "onboarding_done"
         ],
         "title": "MeResponse",
         "type": "object"
@@ -3630,6 +3635,19 @@
         ],
         "title": "OccurrenceStatus",
         "type": "string"
+      },
+      "OnboardingIn": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "done"
+        ],
+        "title": "OnboardingIn",
+        "type": "object"
       },
       "OpenDmIn": {
         "properties": {
@@ -11141,6 +11159,85 @@
         "summary": "Mark one notification as read (idempotent)",
         "tags": [
           "notifications"
+        ]
+      }
+    },
+    "/api/v1/me/onboarding": {
+      "put": {
+        "operationId": "setMyOnboarding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Finish or dismiss the first-run tour, or show it again",
+        "tags": [
+          "users"
         ]
       }
     },

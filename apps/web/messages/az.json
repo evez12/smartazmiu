@@ -1363,7 +1363,7 @@
         "type": "Materialın növünü seçin.",
         "title": "Materialın adını yazın.",
         "file": "Faylı seçin.",
-        "fileType": "Bu fayl növü qəbul edilmir. PDF, DOCX, PPTX, ZIP və ya şəkil seçin.",
+        "fileType": "Bu fayl növü qəbul olunmur: PDF, DOCX, PPTX, ZIP və ya şəkil seçin.",
         "fileSize": "Fayl ən çox {max} ola bilər.",
         "consent": "Faylı paylaşmaq hüququnuzu təsdiq edin."
       },
@@ -1389,6 +1389,61 @@
       "tableCaption": "Material şikayətləri, ən yenisi əvvəldə",
       "material": "{subject} · {title}",
       "hiddenTag": "Gizlədilib"
+    }
+  },
+  "onboarding": {
+    "title": "SmartAzMİU ilə tanışlıq",
+    "progress": "Addım {step} / {total}",
+    "previous": "Əvvəlki",
+    "next": "Növbəti",
+    "finish": "Bitirin",
+    "dismiss": "Tanışlığı bağlayın",
+    "open": "Bölməyə keçin",
+    "failed": "Seçiminiz saxlanılmadı. Yenidən cəhd edin.",
+    "restartTitle": "Tanışlıq turu",
+    "restartHint": "Ana səhifədəki qısa tanışlıq turunu yenidən göstərə bilərsiniz.",
+    "restart": "Tanışlıq turunu yenidən göstərin",
+    "steps": {
+      "schedule": {
+        "title": "Dərs cədvəli",
+        "body": "Bugünkü və həftəlik dərsləriniz, otaqlar və cədvəl dəyişiklikləri burada görünür. Otağın üzərinə klikləsəniz, onu kampus xəritəsində göstəririk."
+      },
+      "chat": {
+        "title": "Fənn və qrup kanalları",
+        "body": "Hər fənn və qrup üçün kanallar avtomatik yaradılır; heç kimi əlavə etmək lazım deyil. Şəxsi mesajı kanalın üzvlər siyahısından başlada bilərsiniz."
+      },
+      "chatTeacher": {
+        "title": "Fənn kanalları",
+        "body": "Dərs dediyiniz hər fənn və qrup üçün kanal avtomatik yaradılır. @channel ilə kanalın bütün üzvlərinə bildiriş göndərə bilərsiniz."
+      },
+      "materials": {
+        "title": "Tədris materialları",
+        "body": "Fənlərinizin mühazirə və seminar materiallarını semestrlər üzrə tapın. Fayllar virus yoxlamasından keçdikdən sonra açılır."
+      },
+      "materialsTeacher": {
+        "title": "Materialların yüklənməsi",
+        "body": "Dərs dediyiniz fənlərə material yükləyin. Hər yeni fayl yeni versiya kimi saxlanılır, köhnə versiyalar silinmir."
+      },
+      "notifications": {
+        "title": "Bildirişlər",
+        "body": "Elanlar, cədvəl dəyişiklikləri və sizə ünvanlanmış mesajlar barədə bildirişlər burada toplanır. Kanal bildirişlərini çatda kanalın menyusundan tənzimləyin."
+      },
+      "imports": {
+        "title": "Məlumat idxalı",
+        "body": "Fakültə, qrup, fənn və yazılış siyahılarını CSV faylı ilə yükləyin. Fayl tətbiq olunmazdan əvvəl sətir-sətir yoxlanılır."
+      },
+      "announcements": {
+        "title": "Elanlar və tədbirlər",
+        "body": "Elan və tədbirləri fakültəyə, qrupa və ya fənn təyinatına ünvanlayın; yalnız aidiyyəti olan istifadəçilər onları görür."
+      },
+      "reports": {
+        "title": "Şikayətlər",
+        "body": "İstifadəçilərin mesaj, istifadəçi və materiallar barədə şikayətlərini nəzərdən keçirin və vəziyyətini qeyd edin."
+      },
+      "profile": {
+        "title": "Profil və məxfilik",
+        "body": "Şəklinizi və qısa məlumatınızı əlavə edin, sizə kimin yaza biləcəyini seçin. Şəxsi məlumatlarınızı istənilən vaxt yükləyə bilərsiniz."
+      }
     }
   }
 }

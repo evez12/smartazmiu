@@ -53,6 +53,7 @@ class DataExportService:
                 "person_type": user.person_type,
                 "status": user.status,
                 "created_at": user.created_at.isoformat(),
+                "onboarded_at": user.onboarded_at.isoformat() if user.onboarded_at else None,
             },
             "roles": await self._roles(user.id),
             "profile": {"bio": user.bio, "photo": await self._photo(user)},

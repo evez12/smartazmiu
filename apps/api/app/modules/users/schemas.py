@@ -27,6 +27,13 @@ class MeResponse(BaseModel):
     roles: list[str]
     permissions: list[str]
     photo_url: str | None
+    onboarding_done: bool
+    """False until the user finishes or dismisses the first-run tour."""
+
+
+class OnboardingIn(BaseModel):
+    done: bool
+    """True finishes the tour; false shows it again (from the profile page)."""
 
 
 class ProfileOut(BaseModel):
