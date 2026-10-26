@@ -945,3 +945,33 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     One code for both keeps a block from being inferred (§5.4).
 - **Consequences:** every API process receives every chat event; at the Phase 4 load target (200 msg/s) that is
   cheap, and per-channel subscriptions can replace the pattern later without changing the protocol.
+
+## D-063 · 2026-10-26 · Chat REST details: unread counts, members, DMs and blocks
+
+- **Context:** Sprint 5 needs the chat subset of §5.8. The spec does not say from when messages count as unread
+  for a new member, how "shared context" is measured, how a DM screen reaches people, or how the client learns
+  whom the user blocked.
+- **Decision:**
+  - `GET /chat/channels` returns the user's channels in sidebar order (courses, communities, group, faculty,
+    then DMs; open before archived; by name) with `unread_count` from one query: messages by others after the
+    later of the read marker and the time the user joined, capped at 100 (the UI shows "99+"). The id bound is
+    turned into a `created_at` bound, so only recent partitions are read. Each channel carries `posting`, the
+    ADR 0004 decision for sending, which the composer banner shows. Course channels carry `context`
+    (`765a2 · 2026 Payız`); DMs carry the other person as `peer` and as `name`.
+  - The response also lists `blocked_user_ids`, so the client can collapse those people's messages in shared
+    channels (§13.2) without a separate endpoint.
+  - `GET /chat/channels/{id}/members` (first 500 by name: id, name, photo, `teacher`/`curator` badge, no contact
+    data) is added for the DM start flow from a member list; §5.8 has no member endpoint. Message authors carry
+    the same badge.
+  - Read markers clamp to the newest message of the channel and only move forward (D-002).
+  - `POST /chat/dm` returns the existing DM (200) whatever the current policy or blocks, because a policy
+    changed later never closes a DM (§13.2); sending into it is then decided per message. Creating one (201) is
+    refused for blocks (`chat.user_blocked` for the blocker, `chat.dm_unavailable` for the blocked person) and
+    by `dm_policy`: `shared_context` means a common open group, course or community channel; until guides exist
+    (Sprint 7) `guides_and_teachers` admits teachers and staff only, who are always admitted (§5.4). The daily
+    limit of 30 new DMs (§5.5) arrives with the other new-account limits in Sprint 10.
+  - `PATCH /chat/channels/{id}/members/me` changes `notify_level` and the member's own snooze `muted_until`
+    (sending `null` ends it); the moderator mute is not reachable here (D-058).
+  - `POST /chat/channels/{id}/messages` answers 201 for a new message and 200 with `duplicate: true` for a
+    repeated `client_msg_id`. `POST`/`DELETE /users/{id}/block` are idempotent (204).
+- **Consequences:** non-members get the same 404 as for a channel that does not exist on every chat endpoint.

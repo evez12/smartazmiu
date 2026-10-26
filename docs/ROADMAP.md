@@ -545,8 +545,8 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [ ] Auto-provisioning job: on enrollment import create/sync `course_offering`, `subject_community`, `academic_group`, `faculty` channels and memberships; default topics. Must be idempotent and handle membership removal (dropped enrollment, group transfer).
 - [x] WebSocket gateway: ticket auth, subscribe, `message.send` (persist → publish), ack, error codes, heartbeat, reconnect + backfill, live membership revocation (§5.9).
 - [x] Redis pub/sub fan-out; presence; typing (throttled).
-- [ ] REST: channel list with unread counts, paginated history, read marker.
-- [ ] DM creation with `dm_policy` + block checks.
+- [x] REST: channel list with unread counts, paginated history, read marker.
+- [x] DM creation with `dm_policy` + block checks.
 - [ ] Frontend: channel sidebar (grouped: Fənlər / Fənn icmaları / Qrup / Şəxsi), message list (virtualized), composer, unread badges, presence dots — built to the chat UI rules in §12.7.
 - [x] Rate limiting (10 msg / 10 s).
 **Acceptance:** two browsers, two students of 765a2 → real-time messages in course channel and DM; reconnect after network drop loses nothing; teacher appears in course channel but not in subject community.
