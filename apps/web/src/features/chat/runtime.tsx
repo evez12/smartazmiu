@@ -112,21 +112,26 @@ export function useMembers(channelId: string) {
 
 type ChannelsData = Awaited<ReturnType<typeof fetchChannels>>;
 
+/** Applies `change` to a cached channel; false when the list does not contain it (yet). */
 function updateChannel(
   queryClient: QueryClient,
   channelId: string,
   change: (channel: Channel) => Channel,
-): void {
+): boolean {
+  let found = false;
   queryClient.setQueryData<ChannelsData>(chatKeys.channels, (data) =>
     data
       ? {
           ...data,
-          channels: data.channels.map((channel) =>
-            channel.id === channelId ? change(channel) : channel,
-          ),
+          channels: data.channels.map((channel) => {
+            if (channel.id !== channelId) return channel;
+            found = true;
+            return change(channel);
+          }),
         }
       : data,
   );
+  return found;
 }
 
 /**
@@ -364,11 +369,17 @@ export function ChatRuntimeProvider({
               message.mentions.some((mention) => mention.id === currentUserId)
                 ? 1
                 : 0;
-            updateChannel(queryClient, message.channel_id, (channel) => ({
+            const counted = updateChannel(queryClient, message.channel_id, (channel) => ({
               ...channel,
               unread_count: Math.min(channel.unread_count + unread, 100),
               mention_count: Math.min(channel.mention_count + mentioned, 100),
             }));
+            // The message is stored before its event is sent, so a fresh count includes it. Ask for one when
+            // the list does not know the channel yet (a new DM), or when a fetch already under way could
+            // answer with the count from before this message and overwrite the increment.
+            if (!counted || queryClient.isFetching({ queryKey: chatKeys.channels }) > 0) {
+              void queryClient.invalidateQueries({ queryKey: chatKeys.channels });
+            }
           }
           break;
         }
@@ -417,13 +428,7 @@ export function ChatRuntimeProvider({
           }
           void queryClient.invalidateQueries({ queryKey: chatKeys.channels });
           void queryClient.invalidateQueries({ queryKey: chatKeys.channel(channelId) });
-          if (data.added) {
-            // A message sent before the subscription is acknowledged reaches this tab neither live nor in the
-            // list fetched above; counting again afterwards closes that gap (a new DM's first message).
-            void subscribe([channelId], null)
-              .then(() => queryClient.invalidateQueries({ queryKey: chatKeys.channels }))
-              .catch(() => undefined);
-          }
+          if (data.added) void subscribe([channelId], null).catch(() => undefined);
           break;
         }
         case "notification":

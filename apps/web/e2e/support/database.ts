@@ -145,6 +145,11 @@ export class TestRecords {
       for (const table of ["message_client_ids", "message_reactions", "message_mentions"]) {
         await client.query(`DELETE FROM ${table} WHERE message_id IN (${written})`, [markers]);
       }
+      // Reports of the test's messages (D-070); their audit entries stay, like every audit entry.
+      await client.query(
+        `DELETE FROM reports WHERE target_type = 'message' AND target_id IN (SELECT id::text FROM (${written}) AS m)`,
+        [markers],
+      );
       // Files become abandoned uploads, which the worker purges with their objects (D-068).
       await client.query(
         `UPDATE message_attachments SET message_id = NULL, created_at = now() - interval '2 days' WHERE message_id IN (${written})`,

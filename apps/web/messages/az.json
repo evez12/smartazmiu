@@ -251,7 +251,8 @@
       "notifications": "Bildirişlər",
       "announcements": "Elanlar",
       "events": "Tədbirlər",
-      "chat": "Çat"
+      "chat": "Çat",
+      "reports": "Şikayətlər"
     }
   },
   "roles": {
@@ -639,7 +640,9 @@
         "event_published": "Tədbir dərc olundu",
         "event_edited": "Tədbir dəyişdirildi",
         "event_cancelled": "Tədbir ləğv edildi",
-        "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı"
+        "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı",
+        "report_created": "Şikayət göndərildi",
+        "report_handled": "Şikayətin vəziyyəti dəyişdi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -1203,5 +1206,67 @@
       }
     },
     "externalLink": "(xarici keçid, yeni pəncərədə açılır)"
+  },
+  "reports": {
+    "titleMessage": "Mesajdan şikayət",
+    "titleUser": "İstifadəçidən şikayət",
+    "description": "Şikayətinizi platformanın əməkdaşları nəzərdən keçirəcək. Kimin şikayət etdiyi digər istifadəçilərə göstərilmir.",
+    "reasonLegend": "Səbəb",
+    "reasons": {
+      "spam": "Spam və ya reklam",
+      "harassment": "Təhqir və ya təqib",
+      "hate": "Nifrət nitqi",
+      "exam_leak": "İmtahan suallarının yayılması",
+      "privacy": "Şəxsi məlumatların yayılması",
+      "other": "Digər"
+    },
+    "examLeakHint": "Cari semestrin imtahan sualları və ya cavabları paylaşılıb.",
+    "reasonRequired": "Səbəbi seçin.",
+    "note": "Əlavə məlumat (istəyə bağlı)",
+    "noteHelper": "Ən çox {max} simvol.",
+    "submit": "Şikayət göndərin",
+    "cancel": "Ləğv edin",
+    "sent": "Şikayətiniz qeydə alındı.",
+    "alreadyReported": "Bu barədə artıq şikayət etmisiniz.",
+    "failed": "Şikayət göndərilmədi",
+    "action": "Şikayət edin",
+    "admin": {
+      "title": "Şikayətlər",
+      "description": "İstifadəçilərin mesaj və istifadəçilər barədə göndərdiyi şikayətlər.",
+      "tableCaption": "Şikayətlər, ən yenisi əvvəldə",
+      "empty": "Bu siyahıda şikayət yoxdur.",
+      "filters": {
+        "open": "Açıq",
+        "actioned": "Tədbir görülüb",
+        "dismissed": "Rədd edilib",
+        "all": "Hamısı",
+        "apply": "Göstərin"
+      },
+      "status": {
+        "open": "Açıq",
+        "actioned": "Tədbir görülüb",
+        "dismissed": "Rədd edilib"
+      },
+      "columns": {
+        "time": "Vaxt",
+        "target": "Nədən",
+        "reason": "Səbəb",
+        "reporter": "Şikayətçi",
+        "status": "Vəziyyət",
+        "actions": "Əməliyyat"
+      },
+      "messageIn": "{channel} kanalında mesaj",
+      "deletedMessage": "Müəllif mesajı silib",
+      "person": "İstifadəçi",
+      "deletedAccount": "Silinmiş istifadəçi",
+      "reporters": "{count, plural, one {# şikayətçi} other {# şikayətçi}}",
+      "note": "Qeyd: {note}",
+      "markActioned": "Tədbir görülüb",
+      "dismiss": "Rədd edin",
+      "reopen": "Yenidən açın",
+      "handledBy": "{name}, {time}",
+      "updated": "Şikayətin vəziyyəti dəyişdi.",
+      "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
+    }
   }
 }
