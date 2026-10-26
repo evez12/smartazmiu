@@ -250,8 +250,11 @@ class MaterialService:
         editor = self._can_edit(user, access, material)
         uploaders = await self._people({v.uploader_id for v in versions})
         summary = (await self._materials_out(user, access, [material]))[0]
+        subject = await self.session.get(Subject, material.subject_id)
+        assert subject is not None
         return MaterialDetailOut(
             **summary.model_dump(),
+            subject_name=subject.name_az,
             versions=[
                 self._version_out(v, uploaders)
                 for v in versions

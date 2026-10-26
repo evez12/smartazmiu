@@ -2062,6 +2062,8 @@ export interface components {
       semester: components["schemas"]["SemesterOut"];
       /** Subject Id */
       subject_id: string;
+      /** Subject Name */
+      subject_name: string;
       /** Title */
       title: string;
       type: components["schemas"]["MaterialType"];

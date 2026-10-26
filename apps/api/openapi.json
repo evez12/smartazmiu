@@ -2513,6 +2513,10 @@
             "title": "Subject Id",
             "type": "string"
           },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -2546,6 +2550,7 @@
           "scanning",
           "hidden",
           "can_edit",
+          "subject_name",
           "versions"
         ],
         "title": "MaterialDetailOut",

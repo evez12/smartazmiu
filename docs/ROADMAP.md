@@ -556,7 +556,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Attachments: presigned upload, ClamAV scan, image & PDF preview, size/type limits.
 - [x] Markdown (sanitized) + KaTeX + code blocks; mute / notification level per channel.
 - [x] Report message (basic) + admin list.
-- [ ] Materials v1: catalog per subject/semester, upload with copyright consent, preview, download.
+- [x] Materials v1: catalog per subject/semester, upload with copyright consent, preview, download.
 - [ ] Onboarding tour, empty states, Azerbaijani copy review (tone rules in §12.8).
 - [ ] Load test (k6): 1 000 sockets, 50 msg/s. E2E Playwright suite for chat happy paths.
 - [ ] Pilot runbook, support channel, feedback form.

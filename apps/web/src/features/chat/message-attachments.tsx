@@ -13,7 +13,7 @@ import { unwrap } from "@/lib/api/browser";
 import { useOptionalApi } from "@/lib/api/provider";
 
 import type { ChatMessage } from "./model";
-import { formatSize } from "./uploads";
+import { formatSize } from "@/lib/uploads";
 
 export type Attachment = ChatMessage["attachments"][number];
 

@@ -8,7 +8,9 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 
 import { useAttachmentErrorText } from "./message-attachments";
-import { formatSize, type Upload } from "./uploads";
+import { formatSize } from "@/lib/uploads";
+
+import type { Upload } from "./uploads";
 
 /** Files picked in the composer, with progress and failure states (§12.7). */
 export function AttachmentChips({

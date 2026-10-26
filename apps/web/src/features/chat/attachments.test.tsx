@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/ui/toast";
+import { formatSize, uploadType } from "@/lib/uploads";
 import { renderWithIntl } from "@/test/render";
 
 import { Composer } from "./composer";
 import { MessageAttachments, type Attachment } from "./message-attachments";
-import { attachmentType, formatSize, localProblem } from "./uploads";
+import { localProblem } from "./uploads";
 
 function file(name: string, size = 10, type = ""): File {
   return new File([new Uint8Array(size)], name, { type });
@@ -29,7 +30,7 @@ function attachment(overrides: Partial<Attachment>): Attachment {
 
 describe("upload checks", () => {
   it("decides the type by extension and refuses SVG, unknown and oversized files", () => {
-    expect(attachmentType(file("Hesabat.DOCX"))).toBe(
+    expect(uploadType(file("Hesabat.DOCX"))).toBe(
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
     expect(localProblem(file("sxem.svg", 10, "image/svg+xml"))).toBe(

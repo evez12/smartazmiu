@@ -259,6 +259,7 @@ async def test_versions_scan_download_and_purge(
     await scan(db, storage)
     checked = (await client.get(f"{API}/materials/{material['id']}", headers=aysel.headers)).json()
     assert checked["current"]["version"] == 1
+    assert checked["subject_name"] == "Statistika"
     assert checked["current"]["previewable"] is True
     assert checked["current"]["uploaded_by"]["display_name"] == "Leyla Həsənova"
     assert checked["can_edit"] is False

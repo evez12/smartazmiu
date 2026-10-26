@@ -55,6 +55,9 @@ const SEED_TABLES: Record<string, string> = {
   "notifications (chat)": "SELECT count(*) FROM notifications WHERE category = 'chat'",
   "message_attachments (sent)":
     "SELECT count(*) FROM message_attachments WHERE message_id IS NOT NULL",
+  // Materials are test data in every run (D-071); one left behind is a cleanup gap.
+  materials: "SELECT count(*) FROM materials",
+  material_reports: "SELECT count(*) FROM material_reports",
 };
 
 export type RowCounts = Record<string, number>;
@@ -90,6 +93,7 @@ export class TestRecords {
   private readonly people: string[] = [];
   private readonly published = { events: [] as string[], announcements: [] as string[] };
   private readonly chat = { markers: [] as string[], people: [] as string[] };
+  private readonly materialMarkers: string[] = [];
   private readonly mailboxes: string[] = [];
   private readonly limited: { emails: string[]; rule: string }[] = [];
 
@@ -133,6 +137,13 @@ export class TestRecords {
    */
   rateLimit(rule: string, emails: string[]): void {
     this.limited.push({ rule, emails });
+  }
+
+  /** Materials whose title contains `marker`, with their versions and reports (D-071). */
+  materials(marker: string): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.materialMarkers.push(marker);
+    return marker;
   }
 
   event(id: string): void {
@@ -186,6 +197,18 @@ export class TestRecords {
         [markers],
       );
       await client.query(`DELETE FROM messages WHERE id IN (${written})`, [markers]);
+      const materials = "SELECT id FROM materials WHERE title LIKE ANY($1)";
+      const titles = this.materialMarkers.map((marker) => `%${marker}%`);
+      await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
+        titles,
+      ]);
+      // Versions become abandoned uploads, which the worker purges with their objects (D-071).
+      await client.query(
+        `UPDATE material_versions SET material_id = NULL, version = NULL, created_at = now() - interval '2 days'
+         WHERE material_id IN (${materials})`,
+        [titles],
+      );
+      await client.query(`DELETE FROM materials WHERE id IN (${materials})`, [titles]);
       const people = "SELECT id FROM users WHERE email = ANY($1)";
       // Topics, members, read markers and the rest of their messages cascade from the channel.
       await client.query(
@@ -253,6 +276,7 @@ export class TestRecords {
         this.published.announcements,
         this.chat.markers,
         this.chat.people,
+        this.materialMarkers,
       ]) {
         list.length = 0;
       }

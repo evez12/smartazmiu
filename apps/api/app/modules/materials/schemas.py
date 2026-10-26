@@ -51,6 +51,7 @@ class MaterialOut(BaseModel):
 
 
 class MaterialDetailOut(MaterialOut):
+    subject_name: str
     versions: list[VersionOut]
     """Newest first. Others see clean versions only; uploaders and editors also see checks and rejections."""
 

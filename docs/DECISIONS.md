@@ -1266,3 +1266,39 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     now resets those counters in Redis B for the people a test names (`records.rateLimit(rule, emails)`), and
     cleanup removes reports of the test's messages. The data check also counts `reports`.
 - **Consequences:** reports of tips, moderator actions and auto-hiding remain for Sprints 8 and 10.
+
+## D-071 · 2026-10-26 · Materials v1: access, versions, consent, scanning, reports
+
+- **Context:** Sprint 6 asks for a materials catalogue per subject and semester with upload, copyright consent,
+  preview and download; §6.1 adds versions, reports and ClamAV before download. The spec does not say who reads or
+  uploads, what a report leads to, or how scans run.
+- **Options:** per-offering catalogues (each group sees only its own offering) or per-subject catalogues with a
+  semester filter; a separate scan job and queue or the chat attachment job (D-068); deleting reported materials
+  or hiding them.
+- **Decision:**
+  - One catalogue per subject, filtered by the semesters with an offering of it. **Readers:** anyone with a
+    not-dropped enrollment in any offering of the subject (past students too) and its teachers, for every
+    semester; staff (new permission `materials.manage` for `staff` and `admin`, migration 0017) read every
+    subject that has materials. **Uploaders:** teachers for the semesters in which they teach the subject; staff
+    everywhere. Unreadable and unknown subjects are the same `404 materials.subject_not_found` (§14). Editors of a
+    material (staff, its creator, teachers of its semester) add versions.
+  - Uploads reuse the presigned flow of D-068 with the same file types (the type table moved to
+    `app/core/uploads.py`), 50 MB per file (nginx body limit raised to 60 MB for the proxied PUT), 30 uploads per
+    hour per person. A presigned upload is a `material_versions` row without a material until the form is saved;
+    saving needs `copyright_confirmed: true`, and each version stores when consent was given and which consent
+    text (`CONSENT_TEXT_VERSION`) was shown. A new upload is always the next version; old ones stay.
+  - Versions are pending until the worker checks type and size and ClamAV scans them; the existing
+    `scan_attachments` job (wake-up after each save, minute cron) also scans material versions, and
+    `purge_attachments` also deletes the objects of rejected versions and of uploads never saved after a day.
+    Others see clean versions only; uploaders and editors also see pending and rejected ones. Materials show the
+    result on the next page load; no live event or notification in v1.
+  - Reports: once per person and material (reasons copyright, wrong content, inappropriate, other; optional note),
+    10 per hour, audited as `material.reported` without the note. Staff see them on `/admin/reports` under a
+    "Materiallar" tab (permissions `admin.reports.read` / `.handle`) and can hide a material
+    (`material.hidden` / `material.shown`): hidden materials disappear from catalogues and detail pages for
+    everyone except `materials.manage` holders; nothing is deleted (no hard delete without the product owner).
+  - Web: "Materiallar" in the main navigation (`/materials`, subject list), `/materials/[subject]` with semester
+    tabs and the table, detail page with versions, preview (PDF in a frame, images) and download through one-minute
+    links, upload and new-version forms with inline validation and the consent checkbox.
+- **Consequences:** materials are not linked from course channels or `#materiallar` yet (Sprint 7 community UX).
+  Every E2E run uploads and removes its own material; the data check counts `materials` and `material_reports`.
