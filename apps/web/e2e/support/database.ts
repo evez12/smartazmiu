@@ -215,6 +215,12 @@ export class TestRecords {
       await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
         titles,
       ]);
+      // A rejected version notifies its uploader, a seeded teacher (D-079).
+      await client.query(
+        `DELETE FROM notifications WHERE kind = 'material.version_rejected'
+         AND subject_id IN (SELECT id FROM material_versions WHERE material_id IN (${materials}))`,
+        [titles],
+      );
       // Versions become abandoned uploads, which the worker purges with their objects (D-071).
       await client.query(
         `UPDATE material_versions SET material_id = NULL, version = NULL, created_at = now() - interval '2 days'

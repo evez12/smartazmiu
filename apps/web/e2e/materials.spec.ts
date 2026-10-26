@@ -52,10 +52,13 @@ test("a teacher's upload is scanned, then previewed and reported by a student", 
   await follow(teacher, "Material yükləyin");
   await teacher.getByRole("button", { name: "Yükləyin" }).click();
   await expect(teacher.getByText("Faylı paylaşmaq hüququnuzu təsdiq edin.")).toBeVisible();
-  await teacher.getByLabel(/^Semestr/).selectOption({ label: "2026 Payız" });
-  await teacher.getByLabel(/^Növ/).selectOption("lecture");
-  await teacher.getByLabel(/^Ad/).fill(title);
-  await teacher.locator('input[type="file"]').setInputFiles({
+  await teacher
+    .getByLabel(/^Semestr/)
+    .filter({ visible: true })
+    .selectOption({ label: "2026 Payız" });
+  await teacher.getByLabel(/^Növ/).filter({ visible: true }).selectOption("lecture");
+  await teacher.getByLabel(/^Ad/).filter({ visible: true }).fill(title);
+  await teacher.locator('input[type="file"]').first().setInputFiles({
     name: "Mühazirə 1.pdf",
     mimeType: "application/pdf",
     buffer: SMALL_PDF,
@@ -102,7 +105,7 @@ test("a teacher's upload is scanned, then previewed and reported by a student", 
 });
 
 async function uploadFile(page: Page, file: { name: string; mimeType: string; buffer: Buffer }) {
-  await page.locator('input[type="file"]').setInputFiles(file);
+  await page.locator('input[type="file"]').first().setInputFiles(file);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Yükləyin" }).click();
 }
@@ -137,9 +140,12 @@ test("a second version becomes current, an infected one is blocked, outsiders se
   await signIn(teacher, LEYLA.username, "/materials");
   await openStatistika(teacher);
   await follow(teacher, "Material yükləyin");
-  await teacher.getByLabel(/^Semestr/).selectOption({ label: "2026 Payız" });
-  await teacher.getByLabel(/^Növ/).selectOption("seminar");
-  await teacher.getByLabel(/^Ad/).fill(title);
+  await teacher
+    .getByLabel(/^Semestr/)
+    .filter({ visible: true })
+    .selectOption({ label: "2026 Payız" });
+  await teacher.getByLabel(/^Növ/).filter({ visible: true }).selectOption("seminar");
+  await teacher.getByLabel(/^Ad/).filter({ visible: true }).fill(title);
   await uploadFile(teacher, {
     name: "Seminar 1.pdf",
     mimeType: "application/pdf",
@@ -195,8 +201,9 @@ test("a second version becomes current, an infected one is blocked, outsiders se
   await signIn(
     page,
     await accounts.create("student", { givenName: "Səbinə", familyName: "Rəsulova" }),
-    materialUrl,
   );
+  // The not-found page is static: no hydration mark to wait for.
+  await page.goto(materialUrl);
   await expect(page.getByRole("heading", { name: title })).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1, name: "Səhifə tapılmadı" })).toBeVisible();
   await openPage(page, "/materials");

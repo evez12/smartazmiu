@@ -104,7 +104,9 @@ test.describe("the support page", () => {
     );
     await expect(page.getByRole("link", { name: "Dəstək kanalını açın" })).toHaveCount(0);
     await expect(
-      page.getByText(/Dəstək kanalı registrdə olan tələbə və müəllimlər üçündür/),
+      page
+        .getByRole("region", { name: "Dəstək kanalı" })
+        .getByText(/Dəstək kanalı registrdə olan tələbə və müəllimlər üçündür/),
     ).toBeVisible();
     await page.getByRole("button", { name: "Rəy bildirin" }).click();
     await expect(page.getByRole("dialog", { name: "Rəy bildirin" })).toBeVisible();
