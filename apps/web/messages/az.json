@@ -784,7 +784,8 @@
       "eventCancelled": "Tədbir ləğv edildi",
       "scheduleChanged": "Dərs cədvəlində dəyişiklik",
       "chatMention": "Sizi çatda qeyd etdilər",
-      "chatReply": "Mesajınıza cavab yazdılar"
+      "chatReply": "Mesajınıza cavab yazdılar",
+      "chatAttachmentRejected": "Fayl göstərilmir"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
@@ -1110,7 +1111,8 @@
       "changeWindowExpired": "Mesajı yalnız göndərildikdən sonra 15 dəqiqə ərzində dəyişmək və ya silmək olar.",
       "messageNotFound": "Mesaj tapılmadı. Ola bilsin ki, silinib.",
       "parentNotFound": "Cavab yazdığınız mesaj silinib.",
-      "reactionNotAllowed": "Bu reaksiya mövcud deyil."
+      "reactionNotAllowed": "Bu reaksiya mövcud deyil.",
+      "attachmentsNotAllowed": "Yeni hesablar ilk 24 saat fənn icmalarına fayl əlavə edə bilməz."
     },
     "user": {
       "message": "Mesaj yazın",
@@ -1169,6 +1171,36 @@
       "muted": "Susdurulub",
       "saved": "Bildiriş ayarı yadda saxlanıldı.",
       "failed": "Ayar yadda saxlanılmadı. Yenidən cəhd edin."
+    },
+    "attach": "Fayl əlavə edin",
+    "attachments": {
+      "picked": "Əlavə olunan fayllar",
+      "uploading": "{name} yüklənir",
+      "ready": "yükləndi",
+      "remove": "{name} faylını çıxarın",
+      "scanning": "Fayl yoxlanılır…",
+      "infected": "Faylda virus aşkarlandı. Fayl göstərilmir və silinəcək.",
+      "rejected": "Fayl növü məzmununa uyğun deyil. Fayl göstərilmir və silinəcək.",
+      "preview": "Baxın",
+      "pdfTitle": "{name} sənədinə baxış",
+      "imageAlt": "Şəkil: {name}",
+      "loading": "Yüklənir…",
+      "previewFailed": "Önizləmə alınmadı.",
+      "download": "{name} faylını yükləyin",
+      "downloadFailed": "Fayl yüklənmədi. Yenidən cəhd edin.",
+      "errors": {
+        "typeNotAllowed": "Bu fayl növü qəbul olunmur: şəkil, PDF, DOCX, PPTX və ya ZIP seçin.",
+        "tooLarge": "Fayl ən çox 25 MB ola bilər.",
+        "notAllowed": "Yeni hesablar ilk 24 saat fənn icmalarına fayl əlavə edə bilməz.",
+        "unavailable": "Fayl yükləmə müvəqqəti işləmir. Mətn mesajı göndərə bilərsiniz.",
+        "tooMany": "Bir mesaja ən çox 10 fayl əlavə etmək olar.",
+        "notFound": "Fayl tapılmadı. Yenidən əlavə edin.",
+        "notUploaded": "Fayl yüklənməyib. Yenidən əlavə edin.",
+        "sizeMismatch": "Fayl tam yüklənməyib. Yenidən əlavə edin.",
+        "examMode": "İmtahan zamanı fayl əlavə etmək olmur.",
+        "rateLimited": "Bir saatda ən çox 20 fayl əlavə etmək olar. Bir az sonra yenidən cəhd edin.",
+        "generic": "Fayl əlavə olunmadı. Yenidən cəhd edin."
+      }
     }
   }
 }

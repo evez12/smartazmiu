@@ -27,6 +27,10 @@ TEST_QUEUE_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/15
 # Web sessions (D-037) use their own database so API cache flushes never sign anyone out.
 SESSION_REDIS_URL ?= redis://127.0.0.1:$(REDIS_PORT)/1
 S3_ENDPOINT_URL ?= http://127.0.0.1:$(S3_PORT)
+# Natively the browser uploads straight to the store; the web dev server allows its origin in the CSP.
+S3_PUBLIC_URL ?= http://localhost:$(S3_PORT)
+STORAGE_PUBLIC_URL ?= $(S3_PUBLIC_URL)
+CLAMAV_HOST ?= 127.0.0.1
 KEYCLOAK_URL ?= http://127.0.0.1:$(KEYCLOAK_PORT)
 OIDC_ISSUER ?= $(OIDC_PUBLIC_URL)/realms/$(KEYCLOAK_REALM)
 OIDC_INTERNAL_URL ?= $(OIDC_ISSUER)
@@ -66,7 +70,7 @@ install: .env ## Install backend and frontend dependencies and git hooks
 # --- Docker -----------------------------------------------------------------
 
 .PHONY: infra
-infra: .env ## Start infrastructure services (postgres, redis, s3, keycloak, mailpit)
+infra: .env ## Start infrastructure services (postgres, redis, s3, clamav, keycloak, mailpit)
 	$(COMPOSE) up -d --wait
 
 .PHONY: up
@@ -155,7 +159,7 @@ test: test-api test-web ## Run all unit and integration tests
 
 .PHONY: test-deps
 test-deps: .env
-	$(COMPOSE) up -d --wait postgres redis redis-cache s3
+	$(COMPOSE) up -d --wait postgres redis redis-cache s3 clamav
 
 .PHONY: test-api
 test-api: test-deps ## Run backend tests with coverage

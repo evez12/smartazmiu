@@ -12,13 +12,15 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.core.jobs import JobQueue
 from app.core.time import utc_now
 from app.modules.chat.access import ChannelAccess, deny
+from app.modules.chat.attachments import AttachmentService
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
 from app.modules.chat.lookup import find_message
 from app.modules.chat.mentions import MentionService, ParsedMentions, parse
 from app.modules.chat.models import ChannelRead, ChannelTopic, Message, MessageClientId
-from app.modules.chat.payloads import enrich, with_authors
+from app.modules.chat.payloads import enrich, message_payload, with_authors
 from app.modules.chat.policy import Action, Reason
 from app.modules.chat.schemas import MessageOut, Notice
 from app.modules.chat.search import body_vector
@@ -58,8 +60,9 @@ class Thread:
     has_more: bool
 
 
-def _check_body(body: str) -> None:
-    if not body.strip():
+def _check_body(body: str, *, attachments: bool = False) -> None:
+    # A message may consist of attachments only.
+    if not body.strip() and not attachments:
         raise AppError("chat.message_empty", 422)
     if len(body) > MAX_BODY_LENGTH:
         raise AppError("chat.message_too_long", 422, details={"max_length": MAX_BODY_LENGTH})
@@ -67,12 +70,20 @@ def _check_body(body: str) -> None:
 
 class MessageService:
     def __init__(
-        self, session: AsyncSession, access: ChannelAccess, snowflake: Snowflake, bus: ChatBus
+        self,
+        session: AsyncSession,
+        access: ChannelAccess,
+        snowflake: Snowflake,
+        bus: ChatBus,
+        attachments: AttachmentService | None = None,
+        jobs: JobQueue | None = None,
     ) -> None:
         self.session = session
         self.access = access
         self.snowflake = snowflake
         self.bus = bus
+        self.attachments = attachments
+        self.jobs = jobs
 
     async def send(
         self,
@@ -82,13 +93,21 @@ class MessageService:
         client_msg_id: uuid.UUID,
         topic_id: uuid.UUID | None = None,
         parent_id: int | None = None,
+        attachment_ids: list[uuid.UUID] | None = None,
     ) -> SendOutcome:
         """Persists the message, then publishes it; a retried client id returns the original (§13.2)."""
-        _check_body(body)
+        attachment_ids = list(dict.fromkeys(attachment_ids or []))
+        _check_body(body, attachments=bool(attachment_ids))
         earlier = await self._sent_before(user, channel_id, client_msg_id)
         if earlier is not None:
             return SendOutcome(earlier, created=False)
 
+        if attachment_ids:
+            if self.attachments is None:
+                raise AppError("chat.attachments_unavailable", 503)
+            attaching = await self.access.decide(user, channel_id, Action.SEND_ATTACHMENT)
+            if not attaching.allowed:
+                raise deny(attaching)
         decision = await self.access.claim_send(user, channel_id)
         if not decision.allowed:
             raise deny(decision)
@@ -113,6 +132,7 @@ class MessageService:
                     topic_id,
                     parent,
                     parsed,
+                    attachment_ids,
                 )
             except IntegrityError:
                 # A duplicate snowflake is the primary key's to catch; one retry with a fresh id (ADR 0002).
@@ -131,6 +151,16 @@ class MessageService:
         await self.bus.publish(
             channel_topic(channel_id), "message.created", message.model_dump(mode="json")
         )
+        if attachment_ids:
+            # The author's tabs also show the files being scanned, which nobody else sees yet (D-068).
+            own = await self.message(channel_id, message_id, user.id)
+            assert own is not None
+            await self.bus.publish(
+                user_topic(user.id), "message.updated", own.model_dump(mode="json")
+            )
+            if self.jobs is not None:
+                await self.jobs.scan_attachments()
+            return SendOutcome(own, created=True, notices=notices)
         return SendOutcome(message, created=True, notices=notices)
 
     async def _mentions(
@@ -165,6 +195,7 @@ class MessageService:
         topic_id: uuid.UUID | None,
         parent: Message | None,
         parsed: ParsedMentions,
+        attachment_ids: list[uuid.UUID],
     ) -> bool:
         """One transaction: claim the client id, insert the message and its mentions, create the notifications.
         False if a concurrent send won the claim."""
@@ -210,6 +241,13 @@ class MessageService:
                     mentions_channel=message.mentions_channel,
                 )
             )
+            if attachment_ids:
+                assert self.attachments is not None
+                try:
+                    await self.attachments.claim(user, channel_id, attachment_ids, message_id)
+                except AppError:
+                    await self.session.rollback()
+                    raise
             mentions = MentionService(self.session)
             mentioned = await mentions.record(message, parsed)
             await mentions.notify(
@@ -264,16 +302,8 @@ class MessageService:
     async def message(
         self, channel_id: uuid.UUID, message_id: int, viewer: uuid.UUID | None = None
     ) -> MessageOut | None:
-        found = await self.session.execute(
-            with_authors().where(
-                Message.channel_id == channel_id,
-                Message.id == message_id,
-                # The id fixes the partition (ADR 0002).
-                Message.created_at == created_at_of(message_id),
-            )
-        )
-        row = found.first()
-        return (await enrich(self.session, [(row[0], row[1], row[2])], viewer))[0] if row else None
+        out = await message_payload(self.session, message_id, viewer)
+        return out if out is not None and out.channel_id == str(channel_id) else None
 
     async def _own_message(self, user: CurrentUser, message_id: int, action: Action) -> Message:
         """The user's own message, if the policy and the 15-minute window allow ``action`` (§13.2)."""

@@ -183,7 +183,10 @@ export function ThreadPanel({
           disabled={!context.canPost}
           members={context.members}
           currentUserId={context.currentUser.id}
-          onSend={(body) => runtime.send(thread.root.channel_id, body, rootId)}
+          attachTo={thread.root.channel_id}
+          onSend={(body, attachmentIds) =>
+            runtime.send(thread.root.channel_id, body, rootId, attachmentIds)
+          }
           onTyping={() => runtime.typing(thread.root.channel_id)}
         />
       ) : null}

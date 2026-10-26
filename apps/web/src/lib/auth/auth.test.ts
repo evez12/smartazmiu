@@ -76,6 +76,21 @@ describe("contentSecurityPolicy", () => {
     expect(socketUrlFor("https://smartazmiu.example")).toBe("wss://smartazmiu.example/ws");
     expect(socketUrlFor("http://localhost")).toBe("ws://localhost/ws");
   });
+
+  it("adds an attachment storage origin only when one is configured (D-068)", () => {
+    const sameOrigin = contentSecurityPolicy({ nonce: "abc", isDev: false, isHttps: true });
+    expect(sameOrigin).toContain("img-src 'self' blob: data:;");
+    expect(sameOrigin).toContain("frame-src 'self';");
+    const native = contentSecurityPolicy({
+      nonce: "abc",
+      isDev: true,
+      isHttps: false,
+      storageUrl: "http://localhost:8333",
+    });
+    expect(native).toContain("img-src 'self' blob: data: http://localhost:8333;");
+    expect(native).toContain("connect-src 'self' http://localhost:8333");
+    expect(native).toContain("frame-src 'self' http://localhost:8333;");
+  });
 });
 
 describe("scrubEvent", () => {

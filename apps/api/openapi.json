@@ -387,6 +387,67 @@
         "title": "AssignableRole",
         "type": "string"
       },
+      "AttachmentOut": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mime": {
+            "title": "Mime",
+            "type": "string"
+          },
+          "previewable": {
+            "title": "Previewable",
+            "type": "boolean"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScanStatus"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime",
+          "size_bytes",
+          "width",
+          "height",
+          "status",
+          "previewable"
+        ],
+        "title": "AttachmentOut",
+        "type": "object"
+      },
       "AttendeeOut": {
         "properties": {
           "check_in_method": {
@@ -1410,6 +1471,25 @@
         ],
         "title": "DmPolicy",
         "type": "string"
+      },
+      "DownloadOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "DownloadOut",
+        "type": "object"
       },
       "EditMessageIn": {
         "properties": {
@@ -2463,6 +2543,13 @@
       },
       "MessageOut": {
         "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/AttachmentOut"
+            },
+            "title": "Attachments",
+            "type": "array"
+          },
           "author": {
             "anyOf": [
               {
@@ -2613,7 +2700,8 @@
           "reactions",
           "my_reactions",
           "mentions",
-          "mentions_channel"
+          "mentions_channel",
+          "attachments"
         ],
         "title": "MessageOut",
         "type": "object"
@@ -2822,7 +2910,8 @@
           "event.cancelled",
           "schedule.changed",
           "chat.mention",
-          "chat.reply"
+          "chat.reply",
+          "chat.attachment_rejected"
         ],
         "title": "NotificationKind",
         "type": "string"
@@ -3077,6 +3166,77 @@
           "allowed"
         ],
         "title": "PostingOut",
+        "type": "object"
+      },
+      "PresignIn": {
+        "properties": {
+          "channel_id": {
+            "format": "uuid",
+            "title": "Channel Id",
+            "type": "string"
+          },
+          "filename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "mime": {
+            "maxLength": 127,
+            "minLength": 1,
+            "title": "Mime",
+            "type": "string"
+          },
+          "size": {
+            "minimum": 1.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "channel_id",
+          "filename",
+          "mime",
+          "size"
+        ],
+        "title": "PresignIn",
+        "type": "object"
+      },
+      "PresignOut": {
+        "properties": {
+          "attachment_id": {
+            "title": "Attachment Id",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
+          },
+          "object_key": {
+            "title": "Object Key",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attachment_id",
+          "url",
+          "object_key",
+          "expires_at",
+          "headers"
+        ],
+        "title": "PresignOut",
         "type": "object"
       },
       "ProfileOut": {
@@ -3396,6 +3556,7 @@
           "chat.muted",
           "chat.slow_mode",
           "chat.rate_limited",
+          "chat.attachments_not_allowed",
           "chat.channel_mention_not_allowed"
         ],
         "title": "Reason",
@@ -3534,6 +3695,16 @@
           "service"
         ],
         "title": "RoomType",
+        "type": "string"
+      },
+      "ScanStatus": {
+        "enum": [
+          "pending",
+          "clean",
+          "infected",
+          "failed"
+        ],
+        "title": "ScanStatus",
         "type": "string"
       },
       "ScheduleDayOut": {
@@ -3682,6 +3853,15 @@
       },
       "SendMessageIn": {
         "properties": {
+          "attachment_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "title": "Attachment Ids",
+            "type": "array"
+          },
           "body": {
             "maxLength": 100000,
             "title": "Body",
@@ -5966,6 +6146,190 @@
         "summary": "Room",
         "tags": [
           "campus"
+        ]
+      }
+    },
+    "/api/v1/chat/attachments/presign": {
+      "post": {
+        "operationId": "presignAttachment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reserve an upload: a five-minute URL to PUT one file to (images, PDF, DOCX, PPTX, ZIP, 25 MB)",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/attachments/{attachment_id}/download": {
+      "get": {
+        "operationId": "downloadAttachment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attachment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inline",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Inline",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A one-minute link to a clean attachment of a message I can read",
+        "tags": [
+          "chat"
         ]
       }
     },

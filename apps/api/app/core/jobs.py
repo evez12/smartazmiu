@@ -12,6 +12,7 @@ logger = structlog.get_logger(__name__)
 DISPATCH_NOTIFICATIONS = "dispatch_notifications"
 SYNC_AUDIENCES = "sync_audiences"
 PROVISION_CHANNELS = "provision_channels"
+SCAN_ATTACHMENTS = "scan_attachments"
 
 
 class JobQueue(Protocol):
@@ -20,6 +21,8 @@ class JobQueue(Protocol):
     async def sync_audiences(self) -> None: ...
 
     async def provision_channels(self) -> None: ...
+
+    async def scan_attachments(self) -> None: ...
 
 
 class ArqQueue:
@@ -41,6 +44,9 @@ class ArqQueue:
 
     async def provision_channels(self) -> None:
         await self._enqueue(PROVISION_CHANNELS)
+
+    async def scan_attachments(self) -> None:
+        await self._enqueue(SCAN_ATTACHMENTS)
 
     async def close(self) -> None:
         await self.redis.aclose()

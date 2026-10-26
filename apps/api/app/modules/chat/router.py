@@ -11,13 +11,20 @@ from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep
 from app.core.security import TokenClaims
 from app.modules.chat import tickets
-from app.modules.chat.deps import ChannelsDep, DurableRedisDep, MessagesDep, ReactionsDep
+from app.modules.chat.deps import (
+    AttachmentsDep,
+    ChannelsDep,
+    DurableRedisDep,
+    MessagesDep,
+    ReactionsDep,
+)
 from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MAX_PAGE_SIZE, PAGE_SIZE
 from app.modules.chat.schemas import (
     ChannelDetailOut,
     ChannelListOut,
     ChannelOut,
+    DownloadOut,
     EditMessageIn,
     EditResultOut,
     MembershipUpdateIn,
@@ -25,6 +32,8 @@ from app.modules.chat.schemas import (
     MessageOut,
     MessagePageOut,
     OpenDmIn,
+    PresignIn,
+    PresignOut,
     ReactionIn,
     ReactionResultOut,
     ReadMarkerIn,
@@ -147,6 +156,7 @@ async def send_channel_message(
         body.client_msg_id,
         body.topic_id,
         parse_message_id(body.parent_id) if body.parent_id else None,
+        body.attachment_ids,
     )
     if not outcome.created:
         response.status_code = 200
@@ -309,3 +319,38 @@ async def block_user(user: CurrentUserDep, channels: ChannelsDep, user_id: uuid.
 )
 async def unblock_user(user: CurrentUserDep, channels: ChannelsDep, user_id: uuid.UUID) -> None:
     await channels.unblock(user, user_id)
+
+
+@router.post(
+    "/chat/attachments/presign",
+    response_model=PresignOut,
+    operation_id="presignAttachment",
+    summary="Reserve an upload: a five-minute URL to PUT one file to (images, PDF, DOCX, PPTX, ZIP, 25 MB)",
+)
+async def presign_attachment(
+    user: CurrentUserDep, attachments: AttachmentsDep, body: PresignIn
+) -> PresignOut:
+    upload = await attachments.presign(user, body.channel_id, body.filename, body.mime, body.size)
+    return PresignOut(
+        attachment_id=str(upload.attachment.id),
+        url=upload.url,
+        object_key=upload.attachment.object_key,
+        expires_at=upload.expires_at,
+        headers={"Content-Type": upload.attachment.mime},
+    )
+
+
+@router.get(
+    "/chat/attachments/{attachment_id}/download",
+    response_model=DownloadOut,
+    operation_id="downloadAttachment",
+    summary="A one-minute link to a clean attachment of a message I can read",
+)
+async def download_attachment(
+    user: CurrentUserDep,
+    attachments: AttachmentsDep,
+    attachment_id: uuid.UUID,
+    inline: bool = False,
+) -> DownloadOut:
+    link = await attachments.download(user, attachment_id, inline=inline)
+    return DownloadOut(url=link.url, expires_at=link.expires_at)

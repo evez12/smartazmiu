@@ -296,6 +296,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/chat/attachments/presign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reserve an upload: a five-minute URL to PUT one file to (images, PDF, DOCX, PPTX, ZIP, 25 MB) */
+    post: operations["presignAttachment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/chat/attachments/{attachment_id}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A one-minute link to a clean attachment of a message I can read */
+    get: operations["downloadAttachment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/chat/channels": {
     parameters: {
       query?: never;
@@ -1041,6 +1075,24 @@ export interface components {
      * @enum {string}
      */
     AssignableRole: "student" | "teacher" | "staff" | "moderator" | "admin";
+    /** AttachmentOut */
+    AttachmentOut: {
+      /** Filename */
+      filename: string;
+      /** Height */
+      height: number | null;
+      /** Id */
+      id: string;
+      /** Mime */
+      mime: string;
+      /** Previewable */
+      previewable: boolean;
+      /** Size Bytes */
+      size_bytes: number;
+      status: components["schemas"]["ScanStatus"];
+      /** Width */
+      width: number | null;
+    };
     /** AttendeeOut */
     AttendeeOut: {
       check_in_method: components["schemas"]["CheckInMethod"] | null;
@@ -1380,6 +1432,16 @@ export interface components {
      * @enum {string}
      */
     DmPolicy: "everyone" | "shared_context" | "guides_and_teachers" | "nobody";
+    /** DownloadOut */
+    DownloadOut: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Url */
+      url: string;
+    };
     /** EditMessageIn */
     EditMessageIn: {
       /** Body */
@@ -1760,6 +1822,8 @@ export interface components {
     };
     /** MessageOut */
     MessageOut: {
+      /** Attachments */
+      attachments: components["schemas"]["AttachmentOut"][];
       author: components["schemas"]["AuthorOut"] | null;
       /** Body */
       body: string;
@@ -1882,7 +1946,8 @@ export interface components {
       | "event.cancelled"
       | "schedule.changed"
       | "chat.mention"
-      | "chat.reply";
+      | "chat.reply"
+      | "chat.attachment_rejected";
     /** NotificationOut */
     NotificationOut: {
       category: components["schemas"]["NotificationCategory"];
@@ -1972,6 +2037,38 @@ export interface components {
       retry_after_seconds?: number | null;
       /** Until */
       until?: string | null;
+    };
+    /** PresignIn */
+    PresignIn: {
+      /**
+       * Channel Id
+       * Format: uuid
+       */
+      channel_id: string;
+      /** Filename */
+      filename: string;
+      /** Mime */
+      mime: string;
+      /** Size */
+      size: number;
+    };
+    /** PresignOut */
+    PresignOut: {
+      /** Attachment Id */
+      attachment_id: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Headers */
+      headers: {
+        [key: string]: string;
+      };
+      /** Object Key */
+      object_key: string;
+      /** Url */
+      url: string;
     };
     /**
      * ProfileOut
@@ -2090,6 +2187,7 @@ export interface components {
       | "chat.muted"
       | "chat.slow_mode"
       | "chat.rate_limited"
+      | "chat.attachments_not_allowed"
       | "chat.channel_mention_not_allowed";
     /**
      * RegistrationStatus
@@ -2144,6 +2242,11 @@ export interface components {
       | "library"
       | "office"
       | "service";
+    /**
+     * ScanStatus
+     * @enum {string}
+     */
+    ScanStatus: "pending" | "clean" | "infected" | "failed";
     /** ScheduleDayOut */
     ScheduleDayOut: {
       /** Classes */
@@ -2207,6 +2310,8 @@ export interface components {
     SemesterTerm: "fall" | "spring" | "summer";
     /** SendMessageIn */
     SendMessageIn: {
+      /** Attachment Ids */
+      attachment_ids?: string[];
       /** Body */
       body: string;
       /**
@@ -3641,6 +3746,144 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["RoomOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  presignAttachment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PresignIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PresignOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  downloadAttachment: {
+    parameters: {
+      query?: {
+        inline?: boolean;
+      };
+      header?: never;
+      path: {
+        attachment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DownloadOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

@@ -59,6 +59,7 @@ function message(id: string, at: string, author: ChatMessage["author"], body: st
     my_reactions: [],
     mentions: [],
     mentions_channel: false,
+    attachments: [],
   };
 }
 
@@ -120,7 +121,31 @@ const TIMELINE: TimelineItem[] = [
     kind: "message",
     key: "3",
     showHeader: true,
-    message: message("3", "2026-11-02T07:05:00Z", RAMIN, "Tapşırıq neçənci səhifədən başlayır?"),
+    message: {
+      ...message("3", "2026-11-02T07:05:00Z", RAMIN, "Tapşırıq neçənci səhifədən başlayır?"),
+      attachments: [
+        {
+          id: "a1",
+          filename: "Ehtimal nəzəriyyəsi — mühazirə 4.pdf",
+          mime: "application/pdf",
+          size_bytes: 1_572_864,
+          width: null,
+          height: null,
+          status: "clean",
+          previewable: true,
+        },
+        {
+          id: "a2",
+          filename: "Tapşırıqlar.docx",
+          mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          size_bytes: 48_128,
+          width: null,
+          height: null,
+          status: "pending",
+          previewable: false,
+        },
+      ],
+    },
   },
   {
     kind: "message",

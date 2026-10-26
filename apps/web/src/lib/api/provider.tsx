@@ -25,6 +25,11 @@ export function ApiProvider({ csrfToken, children }: { csrfToken: string; childr
   );
 }
 
+/** For parts also rendered without a signed-in app (the design-system specimen). */
+export function useOptionalApi(): BrowserApi | null {
+  return useContext(ApiContext);
+}
+
 export function useApi(): BrowserApi {
   const api = useContext(ApiContext);
   if (!api) throw new Error("useApi must be used inside <ApiProvider>");

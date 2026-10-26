@@ -553,7 +553,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 
 #### Sprint 6 (02-08 → 02-19) — Chat UX + Materials v1 + Pilot hardening
 - [x] Threads (side panel), replies, reactions, @mentions (+ notifications), edit (15 min) / soft delete.
-- [ ] Attachments: presigned upload, ClamAV scan, image & PDF preview, size/type limits.
+- [x] Attachments: presigned upload, ClamAV scan, image & PDF preview, size/type limits.
 - [ ] Markdown (sanitized) + KaTeX + code blocks; mute / notification level per channel.
 - [ ] Report message (basic) + admin list.
 - [ ] Materials v1: catalog per subject/semester, upload with copyright consent, preview, download.

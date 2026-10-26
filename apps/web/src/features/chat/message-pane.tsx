@@ -321,9 +321,10 @@ export function MessagePane({
         disabled={!channel?.posting.allowed}
         members={members.data}
         currentUserId={runtime.currentUserId}
-        onSend={(body) => {
+        attachTo={channelId}
+        onSend={(body, attachmentIds) => {
           atBottom.current = true;
-          runtime.send(channelId, body);
+          runtime.send(channelId, body, undefined, attachmentIds);
         }}
         onTyping={() => runtime.typing(channelId)}
       />

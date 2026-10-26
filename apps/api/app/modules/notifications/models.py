@@ -44,6 +44,7 @@ class NotificationKind(StrEnum):
     SCHEDULE_CHANGED = "schedule.changed"
     CHAT_MENTION = "chat.mention"
     CHAT_REPLY = "chat.reply"
+    CHAT_ATTACHMENT_REJECTED = "chat.attachment_rejected"
 
 
 class DeliveryChannel(StrEnum):

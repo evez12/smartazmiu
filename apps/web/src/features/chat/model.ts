@@ -140,6 +140,7 @@ export const REASON_KEYS = {
   "chat.slow_mode": "slowMode",
   "chat.rate_limited": "rateLimited",
   "chat.channel_mention_not_allowed": "channelMention",
+  "chat.attachments_not_allowed": "attachmentsNotAllowed",
 } as const satisfies Record<PostingReason, string>;
 
 /** Refusals of edits, deletes and reactions that are not policy reasons. */
@@ -203,6 +204,7 @@ export type PendingMessage = {
   channelId: string;
   /** Set for a reply: the message shows in the thread panel, not in the channel. */
   parentId?: string;
+  attachmentIds?: string[];
   body: string;
   state: PendingState;
   createdAt: number;

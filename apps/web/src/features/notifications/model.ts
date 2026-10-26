@@ -14,6 +14,7 @@ export const KIND_KEYS = {
   "schedule.changed": "scheduleChanged",
   "chat.mention": "chatMention",
   "chat.reply": "chatReply",
+  "chat.attachment_rejected": "chatAttachmentRejected",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Query keys shared by the bell and the notifications page, so marking read updates both. */

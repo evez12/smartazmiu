@@ -17,7 +17,7 @@ make up        # builds and starts the full stack at http://localhost
 For day-to-day work run the infrastructure in Docker and the apps natively:
 
 ```bash
-make infra     # postgres, two redis instances, s3, keycloak, mailpit
+make infra     # postgres, two redis instances, s3, clamav, keycloak, mailpit
 make migrate && make seed      # schema, sample groups 764a1/765a1/765a2, campus and timetable
 make dev-api                   # http://localhost:8000
 make dev-web                   # http://localhost:3000 (second terminal)
@@ -89,6 +89,12 @@ membership changes and bell updates; without it the app sends through REST and p
 snowflakes and `messages` is partitioned by month (ADR 0002); who may post is decided by one function with reason
 codes (ADR 0004). Try it with Aysel and Ramin in two browsers.
 
+Messages can be edited or deleted for 15 minutes, answered in a thread (the third pane, `?thread=<id>`), reacted to
+with eight fixed reactions and can mention members (`@` suggests them) or, for teachers and staff, `@channel`; the
+bell header menu sets each channel's notification level and snooze (D-067). Files (images, PDF, DOCX, PPTX, ZIP up
+to 25 MB) upload straight to object storage and become visible to others only after the worker has checked their
+type and ClamAV has scanned them (D-068); ClamAV needs a minute or two and about 1.5 GB of memory to start.
+
 ## Architecture
 
 A modular monolith: one FastAPI app and one Next.js app.
@@ -96,13 +102,14 @@ A modular monolith: one FastAPI app and one Next.js app.
 | Path | Contents |
 |---|---|
 | `apps/api` | FastAPI, SQLAlchemy 2 (async), Alembic. Domain code lives in `app/modules/<module>/`. |
-| `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync, chat channel provisioning, message partitions. |
+| `apps/api/app/workers` | ARQ worker (same image as the API): notification delivery, audience sync, chat channel provisioning, message partitions, attachment scans and purges. |
 | `apps/api/app/modules/chat` | Chat: provisioning, the authorisation policy, messages, the WebSocket gateway (`ws.py`, `hub.py`). |
 | `apps/web` | Next.js (App Router), TypeScript, Tailwind. Design tokens in `src/styles/tokens.css`. |
 | `infra/` | nginx, Keycloak realm and login theme, Postgres init scripts, object-storage entrypoint. |
 | `docs/` | Spec, decision log, ADRs. |
 
 Local services: Keycloak `http://localhost:8080`, Mailpit `http://localhost:8025`, S3 API `http://localhost:8333`,
+ClamAV `localhost:3310`,
 Postgres `localhost:5433`, Redis A (sessions, job queue, snowflake leases, WebSocket tickets) `localhost:6379`, Redis B
 (cache, rate limits, presence, chat pub/sub) `localhost:6380` (D-053).
 

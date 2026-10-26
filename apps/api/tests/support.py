@@ -3,6 +3,7 @@
 import time
 import uuid
 from collections.abc import Iterable
+from datetime import timedelta
 from typing import Any
 
 import jwt
@@ -81,6 +82,7 @@ class MemoryStorage:
     def __init__(self) -> None:
         self.objects: dict[str, tuple[bytes, str]] = {}
         self.available = True
+        self.last_download: dict[str, str] = {}
 
     def _check(self) -> None:
         if not self.available:
@@ -98,6 +100,22 @@ class MemoryStorage:
     async def delete(self, key: str) -> None:
         self._check()
         self.objects.pop(key, None)
+
+    async def head(self, key: str) -> int | None:
+        self._check()
+        stored = self.objects.get(key)
+        return len(stored[0]) if stored else None
+
+    async def presign_put(self, key: str, content_type: str, expires: timedelta) -> str:
+        # S3Storage makes sure the bucket exists first, so an outage fails here too.
+        self._check()
+        return f"https://storage.test/upload/{key}?type={content_type}&ttl={int(expires.total_seconds())}"
+
+    async def presign_get(
+        self, key: str, *, content_type: str, disposition: str, expires: timedelta
+    ) -> str:
+        self.last_download = {"key": key, "content_type": content_type, "disposition": disposition}
+        return f"https://storage.test/download/{key}?ttl={int(expires.total_seconds())}"
 
 
 class FakeIdentityAdmin:
@@ -131,6 +149,7 @@ class FakeJobs:
         self.dispatches = 0
         self.syncs = 0
         self.provisions = 0
+        self.scans = 0
 
     async def dispatch_notifications(self) -> None:
         self.dispatches += 1
@@ -140,6 +159,9 @@ class FakeJobs:
 
     async def provision_channels(self) -> None:
         self.provisions += 1
+
+    async def scan_attachments(self) -> None:
+        self.scans += 1
 
     async def close(self) -> None:
         return None

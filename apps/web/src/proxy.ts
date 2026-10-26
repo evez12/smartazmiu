@@ -50,6 +50,7 @@ export async function proxy(request: NextRequest) {
     isDev: process.env.NODE_ENV === "development",
     isHttps: env.isHttps,
     socketUrl: env.socketUrl,
+    storageUrl: env.storageUrl,
   });
 
   const update = await refreshIfNeeded(request);

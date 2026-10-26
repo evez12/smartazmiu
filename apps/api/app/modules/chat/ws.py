@@ -26,6 +26,7 @@ from app.core.errors import AppError
 from app.core.time import utc_now
 from app.modules.chat import tickets
 from app.modules.chat.access import ChannelAccess
+from app.modules.chat.attachments import AttachmentService
 from app.modules.chat.bus import ChatBus, channel_topic, encode
 from app.modules.chat.hub import Close, CloseCode, Connection, Hub
 from app.modules.chat.lookup import parse_message_id
@@ -66,6 +67,7 @@ class SendIn(BaseModel):
     client_msg_id: uuid.UUID
     topic_id: uuid.UUID | None = None
     parent_id: str | None = Field(default=None, pattern=MESSAGE_ID_PATTERN)
+    attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
 
 
 class EditIn(BaseModel):
@@ -256,8 +258,15 @@ class SocketSession:
 
     def _services(self, session: Any) -> tuple[ChannelAccess, MessageService]:
         access = ChannelAccess(session, self.gateway.hub.cache, self.gateway.exams)
+        # Read at call time: tests replace the storage and queue on the running app.
+        state = self.connection.websocket.app.state
         messages = MessageService(
-            session, access, self.gateway.snowflake, ChatBus(self.gateway.hub.cache)
+            session,
+            access,
+            self.gateway.snowflake,
+            ChatBus(self.gateway.hub.cache),
+            AttachmentService(session, access, state.storage),
+            state.jobs,
         )
         return access, messages
 
@@ -326,6 +335,7 @@ class SocketSession:
                 request.client_msg_id,
                 request.topic_id,
                 parse_message_id(request.parent_id) if request.parent_id else None,
+                request.attachment_ids,
             )
         self.connection.send(
             "ack",

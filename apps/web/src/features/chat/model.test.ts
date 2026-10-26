@@ -37,6 +37,7 @@ function message(id: string, at: string, author = AYSEL, body = "Salam"): ChatMe
     my_reactions: [],
     mentions: [],
     mentions_channel: false,
+    attachments: [],
   };
 }
 

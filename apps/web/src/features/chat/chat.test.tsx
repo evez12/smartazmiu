@@ -76,7 +76,7 @@ describe("Composer", () => {
     expect(onSend).not.toHaveBeenCalled();
     await userEvent.clear(field);
     await userEvent.type(field, "Birinci sətir{Shift>}{Enter}{/Shift}ikinci sətir{Enter}");
-    expect(onSend).toHaveBeenCalledWith("Birinci sətir\nikinci sətir");
+    expect(onSend).toHaveBeenCalledWith("Birinci sətir\nikinci sətir", []);
     expect(field).toHaveValue("");
   });
 
@@ -126,7 +126,7 @@ describe("Composer", () => {
     await userEvent.keyboard("{ArrowDown}{Enter}");
     expect(field).toHaveValue("Salam @Rauf Səfərov ");
     await userEvent.type(field, "baxın{Enter}");
-    expect(onSend).toHaveBeenCalledWith("Salam <@r-2> baxın");
+    expect(onSend).toHaveBeenCalledWith("Salam <@r-2> baxın", []);
   });
 
   it("is disabled when the channel does not accept posts", () => {

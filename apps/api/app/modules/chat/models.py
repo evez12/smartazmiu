@@ -74,6 +74,7 @@ class ScanStatus(StrEnum):
     CLEAN = "clean"
     INFECTED = "infected"
     FAILED = "failed"
+    """The content did not match its declared type, or the uploaded object was missing (D-068)."""
 
 
 class Channel(Base):
@@ -248,12 +249,33 @@ class MessageClientId(Base):
 
 
 class MessageAttachment(Base):
+    """An upload: created when the upload is presigned, bound to a message when sent, visible to others once
+    clean (D-068)."""
+
     __tablename__ = "message_attachments"
-    __table_args__ = (Index("ix_message_attachments_message_id", "message_id"),)
+    __table_args__ = (
+        Index("ix_message_attachments_message_id", "message_id"),
+        Index(
+            "ix_message_attachments_pending",
+            "scan_after",
+            postgresql_where=text("scan_status = 'pending' AND message_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_message_attachments_unsent",
+            "created_at",
+            postgresql_where=text("message_id IS NULL"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    message_id: Mapped[int] = mapped_column(BigInteger)
+    # NULL until the message is sent; no foreign key to the partitioned table (ADR 0002).
+    message_id: Mapped[int | None] = mapped_column(BigInteger)
+    uploader_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
     object_key: Mapped[str] = mapped_column(String(300))
+    filename: Mapped[str] = mapped_column(String(255), default="", server_default="")
     mime: Mapped[str] = mapped_column(String(127))
     size_bytes: Mapped[int] = mapped_column(BigInteger)
     width: Mapped[int | None] = mapped_column(Integer)
@@ -263,6 +285,12 @@ class MessageAttachment(Base):
         default=ScanStatus.PENDING,
         server_default=ScanStatus.PENDING.value,
     )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    attached_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    scan_attempts: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    scan_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class MessageReaction(Base):

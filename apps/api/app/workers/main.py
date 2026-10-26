@@ -8,14 +8,24 @@ from arq import cron
 from arq.connections import RedisSettings
 from redis.asyncio import Redis
 
+from app.core.antivirus import ClamdScanner
 from app.core.config import get_settings
 from app.core.db import Database
-from app.core.jobs import DISPATCH_NOTIFICATIONS, PROVISION_CHANNELS, SYNC_AUDIENCES
+from app.core.jobs import (
+    DISPATCH_NOTIFICATIONS,
+    PROVISION_CHANNELS,
+    SCAN_ATTACHMENTS,
+    SYNC_AUDIENCES,
+)
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
+from app.core.storage import S3Storage
 from app.modules.announcements import service as announcements
 from app.modules.chat import consistency, mentions, partitions
-from app.modules.chat.bus import ChatBus
+from app.modules.chat.attachments import AttachmentScanner
+from app.modules.chat.bus import ChatBus, channel_topic, user_topic
+from app.modules.chat.models import ScanStatus
+from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
@@ -62,6 +72,14 @@ async def startup(ctx: dict[str, Any]) -> None:
         mail_window=timedelta(seconds=settings.mail_batch_interval_seconds),
     )
     ctx["mail_interval"] = settings.mail_batch_interval_seconds
+    ctx["storage"] = S3Storage(
+        endpoint_url=settings.s3_endpoint_url,
+        access_key=settings.s3_access_key,
+        secret_key=settings.s3_secret_key,
+        bucket=settings.s3_bucket,
+        region=settings.s3_region,
+    )
+    ctx["scanner"] = ClamdScanner(settings.clamav_host, settings.clamav_port)
     # A worker started after a long outage must not wait for the nightly run to create this month.
     async with database.sessionmaker() as session:
         await partitions.ensure_partitions(session)
@@ -124,6 +142,39 @@ async def purge_message_client_ids(ctx: dict[str, Any]) -> int:
         return await partitions.purge_client_ids(session)
 
 
+async def scan_attachments(ctx: dict[str, Any]) -> int:
+    """Checks sent attachments (type, ClamAV) and tells the channel or the uploader (§13.2, D-068)."""
+    database: Database = ctx["database"]
+    bus = ChatBus(ctx["cache_redis"])
+    async with database.sessionmaker() as session:
+        report, changed = await AttachmentScanner(
+            session, ctx["storage"], ctx["scanner"]
+        ).scan_pending()
+        for attachment in changed:
+            assert attachment.message_id is not None
+            if attachment.scan_status is ScanStatus.CLEAN:
+                # Now visible to every member.
+                payload = await message_payload(session, attachment.message_id, None)
+                topic = channel_topic(attachment.channel_id)
+            elif attachment.uploader_id is not None:
+                payload = await message_payload(
+                    session, attachment.message_id, attachment.uploader_id
+                )
+                topic = user_topic(attachment.uploader_id)
+            else:
+                continue
+            if payload is not None:
+                await bus.publish(topic, "message.updated", payload.model_dump(mode="json"))
+    return report.clean + report.rejected
+
+
+async def purge_attachments(ctx: dict[str, Any]) -> int:
+    """Deletes the objects of rejected and abandoned uploads (§13.2)."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        return await AttachmentScanner(session, ctx["storage"], ctx["scanner"]).purge()
+
+
 async def remove_chat_orphans(ctx: dict[str, Any]) -> int:
     """Removes reactions, mentions and attachments whose message no longer exists (§5.7)."""
     database: Database = ctx["database"]
@@ -133,7 +184,12 @@ async def remove_chat_orphans(ctx: dict[str, Any]) -> int:
 
 
 class WorkerSettings:
-    functions: ClassVar = [dispatch_notifications, sync_audiences, provision_channels]
+    functions: ClassVar = [
+        dispatch_notifications,
+        sync_audiences,
+        provision_channels,
+        scan_attachments,
+    ]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
     cron_jobs: ClassVar = [
         cron(dispatch_notifications, name=f"{DISPATCH_NOTIFICATIONS}_cron"),
@@ -141,6 +197,9 @@ class WorkerSettings:
         cron(sync_audiences, name=f"{SYNC_AUDIENCES}_cron", minute=set(range(0, 60, 5))),
         # Every minute: picks up wake-ups lost in a Redis outage and changes made outside imports.
         cron(provision_channels, name=f"{PROVISION_CHANNELS}_cron"),
+        # Wake-ups come with every sent attachment; the minute tick retries deferred scans.
+        cron(scan_attachments, name=f"{SCAN_ATTACHMENTS}_cron"),
+        cron(purge_attachments, minute={5, 35}),
         # Daily, at night in Baku (UTC+4); both are idempotent, so a retried or doubled run is harmless.
         cron(ensure_message_partitions, hour={22}, minute={10}),
         cron(purge_message_client_ids, hour={22}, minute={20}),

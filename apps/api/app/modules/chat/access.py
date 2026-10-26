@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import structlog
 from redis.asyncio import Redis
@@ -33,6 +33,8 @@ logger = structlog.get_logger(__name__)
 SEND_LIMIT = RateLimit("chat_send", limit=10, window_seconds=10)
 # Teachers and staff can always write to someone, even when that person accepts no messages (§5.4).
 ALWAYS_REACHES = frozenset({RoleCode.TEACHER.value, RoleCode.STAFF.value})
+# Accounts younger than this cannot attach files in subject communities (§5.5).
+NEW_ACCOUNT_AGE = timedelta(hours=24)
 # Besides the offering's teachers and channel moderators, these global roles may use @channel (§5.3, D-067).
 MENTION_CHANNEL_ROLES = frozenset({RoleCode.TEACHER.value, RoleCode.STAFF.value})
 
@@ -110,6 +112,8 @@ class ChannelAccess:
                 exam_until[window.channel_id] = max(
                     window.ends_at, exam_until.get(window.channel_id, window.ends_at)
                 )
+        created_at = await self.session.scalar(select(User.created_at).where(User.id == user.id))
+        new_account = created_at is not None and now - created_at < NEW_ACCOUNT_AGE
         reaches_everyone = bool(user.roles & ALWAYS_REACHES)
         announces = bool(user.roles & MENTION_CHANNEL_ROLES)
         states: dict[uuid.UUID, ChannelState] = {}
@@ -143,6 +147,7 @@ class ChannelAccess:
                 slow_mode_seconds=slow_seconds,
                 slow_mode_exempt=privileged,
                 can_mention_channel=privileged or announces,
+                attachments_restricted=new_account and kind is ChannelType.SUBJECT_COMMUNITY,
             )
         return states
 
