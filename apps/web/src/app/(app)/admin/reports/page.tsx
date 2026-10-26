@@ -87,7 +87,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             href={listHref("/admin/reports", { kind: value })}
             aria-current={value === kind ? "page" : undefined}
             className={cn(
-              "-mb-px flex h-10 items-center border-b-2 font-medium whitespace-nowrap",
+              "-mb-px flex h-10 items-center border-b-2 font-medium whitespace-nowrap pointer-coarse:h-11",
               value === kind
                 ? "border-primary text-text"
                 : "border-transparent text-muted hover:text-text",

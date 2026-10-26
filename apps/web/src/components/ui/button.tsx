@@ -6,13 +6,13 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
 import { Icon } from "./icon";
+import { touchTarget } from "./touch-target";
 
 export const buttonVariants = cva(
   [
-    "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap",
+    "inline-flex shrink-0 items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap",
     "transition-colors select-none disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-progress",
-    // Expands the hit area to ≥ 44 px on touch screens without changing the visual size (§12.6).
-    "after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] pointer-fine:after:hidden",
+    touchTarget,
   ],
   {
     variants: {
@@ -26,9 +26,9 @@ export const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-4 text-base",
-        dense: "h-8 px-3 text-sm after:-inset-y-1.5",
+        dense: "h-8 px-3 text-sm",
         icon: "size-9 p-0",
-        "icon-dense": "size-8 p-0 after:-inset-1.5",
+        "icon-dense": "size-8 p-0",
       },
     },
     defaultVariants: { variant: "secondary", size: "default" },

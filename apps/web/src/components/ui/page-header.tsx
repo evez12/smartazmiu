@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { HydrationMark } from "@/lib/hydration-mark";
 
 import { Icon } from "./icon";
+import { touchTarget } from "./touch-target";
 
 export type BreadcrumbItem = { label: string; href?: string };
 
@@ -23,7 +24,10 @@ export function Breadcrumb({ items, className }: { items: BreadcrumbItem[]; clas
               {item.href && !isCurrent ? (
                 <Link
                   href={item.href}
-                  className="text-muted underline-offset-2 hover:text-text hover:underline"
+                  className={cn(
+                    "text-muted underline-offset-2 hover:text-text hover:underline",
+                    touchTarget,
+                  )}
                 >
                   {item.label}
                 </Link>

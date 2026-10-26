@@ -130,9 +130,9 @@ function FileRow({ attachment }: { attachment: Attachment }) {
           ? Presentation
           : FileText;
   return (
-    <div className="flex items-center gap-3 rounded-control border border-border px-3 py-2">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-control border border-border px-3 py-2">
       <Icon icon={icon} size={20} className={clean || pending ? "text-muted" : "text-danger"} />
-      <span className="flex min-w-0 flex-1 flex-col">
+      <span className="flex min-w-32 flex-1 flex-col">
         <span className="truncate" title={attachment.filename}>
           {attachment.filename}
         </span>

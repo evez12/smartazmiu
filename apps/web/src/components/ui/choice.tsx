@@ -11,12 +11,12 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 import { Icon } from "./icon";
+import { touchTarget } from "./touch-target";
 
 const boxClasses = [
-  "relative flex size-4 shrink-0 items-center justify-center border border-border-control bg-surface",
+  "flex size-4 shrink-0 items-center justify-center border border-border-control bg-surface",
   "transition-colors disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-danger",
-  // 44 px touch target around the 16 px box.
-  "after:absolute after:-inset-3.5 after:content-[''] pointer-fine:after:-inset-1",
+  touchTarget,
 ].join(" ");
 
 /** Descriptions are linked to their control, so screen readers announce them with the label. */
@@ -136,10 +136,10 @@ export function Switch({ label, description, id, className, disabled, ...rest }:
         disabled={disabled}
         aria-describedby={description ? descriptionId(controlId) : undefined}
         className={cn(
-          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-control border border-border-control bg-bg-subtle p-0.5",
+          "inline-flex h-5 w-9 shrink-0 items-center rounded-control border border-border-control bg-bg-subtle p-0.5",
           "transition-colors disabled:cursor-not-allowed disabled:opacity-60",
           "data-[state=checked]:border-primary data-[state=checked]:bg-primary",
-          "after:absolute after:-inset-3 after:content-[''] pointer-fine:after:hidden",
+          touchTarget,
           className,
         )}
         {...rest}

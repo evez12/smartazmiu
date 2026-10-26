@@ -91,7 +91,7 @@ export function ReactionChips({
               })}
               onClick={() => onToggle(reaction.emoji, !pressed)}
               className={cn(
-                "inline-flex h-7 items-center gap-1 rounded-control border px-1.5 text-sm tabular hover:bg-bg-subtle disabled:cursor-not-allowed pointer-coarse:h-9",
+                "inline-flex h-7 items-center gap-1 rounded-control border px-1.5 text-sm tabular hover:bg-bg-subtle disabled:cursor-not-allowed pointer-coarse:h-11",
                 pressed ? "border-primary bg-bg-subtle font-medium" : "border-border",
               )}
             >

@@ -25,7 +25,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 
-import { Section } from "./specimens";
+import { Section } from "./section";
 
 export function InteractiveSpecimens() {
   const t = useTranslations("designSystem");

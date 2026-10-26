@@ -17,6 +17,7 @@ import { Wordmark } from "@/components/brand/wordmark";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { touchTarget } from "@/components/ui/touch-target";
 import {
   Menu,
   MenuContent,
@@ -105,7 +106,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
         >
           <Icon icon={collapsed ? PanelLeftOpen : PanelLeftClose} size={20} />
         </Button>
-        <Link href="/" className="rounded-control px-1">
+        <Link href="/" className={cn("rounded-control px-1", touchTarget)}>
           <Wordmark />
         </Link>
         <div className="flex-1" />
@@ -271,7 +272,10 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
         <MenuTrigger asChild>
           <button
             type="button"
-            className="flex h-10 items-center gap-2 rounded-control px-1.5 text-left hover:bg-bg-subtle"
+            className={cn(
+              "flex h-10 items-center gap-2 rounded-control px-1.5 text-left hover:bg-bg-subtle",
+              touchTarget,
+            )}
           >
             <Avatar name={user.displayName} src={user.photoUrl ?? undefined} size={32} decorative />
             {/* Visible text is part of the accessible name (WCAG 2.5.3); on phones it is read but not shown. */}

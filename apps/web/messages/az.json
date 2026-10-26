@@ -45,7 +45,12 @@
       "overlays": "Dialoqlar, menyular və ipucları",
       "navigation": "Naviqasiya və avatar",
       "states": "Yüklənmə, boş, xəta və giriş qadağası vəziyyətləri",
-      "chat": "Çat"
+      "chat": "Çat",
+      "tour": "Tanışlıq turu",
+      "materials": "Materiallar",
+      "materialReports": "Material şikayətləri",
+      "feedbackList": "Rəylər",
+      "reportList": "Mesaj şikayətləri"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
