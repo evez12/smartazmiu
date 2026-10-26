@@ -624,6 +624,142 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/materials": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Save an uploaded file as a new material (copyright confirmation required) */
+    post: operations["createMaterial"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/subjects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Subjects whose materials I can read, with the number of visible materials */
+    get: operations["listMaterialSubjects"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/uploads/presign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reserve an upload: a ten-minute URL to PUT one file to (PDF, DOCX, PPTX, ZIP, images, 50 MB) */
+    post: operations["presignMaterialUpload"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/versions/{version_id}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A one-minute link to a clean version of a material I can read */
+    get: operations["downloadMaterialVersion"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/{material_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A material with its versions */
+    get: operations["getMaterial"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/{material_id}/reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Report a material (once per person) */
+    post: operations["reportMaterial"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/{material_id}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Save an uploaded file as the next version; older versions stay */
+    post: operations["addMaterialVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/materials/{material_id}/visibility": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Hide a material from the catalogue or show it again (staff) */
+    patch: operations["setMaterialVisibility"];
+    trace?: never;
+  };
   "/api/v1/me": {
     parameters: {
       query?: never;
@@ -900,6 +1036,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/moderation/material-reports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Material reports, newest first */
+    get: operations["listMaterialReports"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/moderation/material-reports/{report_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Mark a material report as actioned or dismissed (or open it again) */
+    patch: operations["setMaterialReportStatus"];
+    trace?: never;
+  };
   "/api/v1/moderation/reports": {
     parameters: {
       query?: never;
@@ -945,6 +1115,23 @@ export interface paths {
     put?: never;
     /** Report a message or a person (once per target) */
     post: operations["createReport"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/subjects/{subject_id}/materials": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A subject's materials, optionally for one semester */
+    get: operations["getSubjectMaterials"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1222,7 +1409,11 @@ export interface components {
       | "event.cancelled"
       | "event.manual_check_in"
       | "report.created"
-      | "report.handled";
+      | "report.handled"
+      | "material.reported"
+      | "material.report_handled"
+      | "material.hidden"
+      | "material.shown";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -1831,6 +2022,216 @@ export interface components {
       /** Total */
       total: number;
     };
+    /** MaterialCreateIn */
+    MaterialCreateIn: {
+      /** Copyright Confirmed */
+      copyright_confirmed: boolean;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /** Title */
+      title: string;
+      type: components["schemas"]["MaterialType"];
+      /**
+       * Upload Id
+       * Format: uuid
+       */
+      upload_id: string;
+    };
+    /** MaterialDetailOut */
+    MaterialDetailOut: {
+      /** Can Edit */
+      can_edit: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by: components["schemas"]["PersonOut"] | null;
+      current: components["schemas"]["VersionOut"] | null;
+      /** Description */
+      description: string;
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
+      id: string;
+      /** Scanning */
+      scanning: boolean;
+      semester: components["schemas"]["SemesterOut"];
+      /** Subject Id */
+      subject_id: string;
+      /** Title */
+      title: string;
+      type: components["schemas"]["MaterialType"];
+      /** Version Count */
+      version_count: number;
+      /** Versions */
+      versions: components["schemas"]["VersionOut"][];
+    };
+    /** MaterialDownloadOut */
+    MaterialDownloadOut: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Url */
+      url: string;
+    };
+    /** MaterialOut */
+    MaterialOut: {
+      /** Can Edit */
+      can_edit: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by: components["schemas"]["PersonOut"] | null;
+      current: components["schemas"]["VersionOut"] | null;
+      /** Description */
+      description: string;
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
+      id: string;
+      /** Scanning */
+      scanning: boolean;
+      semester: components["schemas"]["SemesterOut"];
+      /** Subject Id */
+      subject_id: string;
+      /** Title */
+      title: string;
+      type: components["schemas"]["MaterialType"];
+      /** Version Count */
+      version_count: number;
+    };
+    /** MaterialPresignIn */
+    MaterialPresignIn: {
+      /** Filename */
+      filename: string;
+      /** Mime */
+      mime: string;
+      /**
+       * Semester Id
+       * Format: uuid
+       */
+      semester_id: string;
+      /** Size */
+      size: number;
+      /**
+       * Subject Id
+       * Format: uuid
+       */
+      subject_id: string;
+    };
+    /** MaterialPresignOut */
+    MaterialPresignOut: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Headers */
+      headers: {
+        [key: string]: string;
+      };
+      /** Object Key */
+      object_key: string;
+      /** Upload Id */
+      upload_id: string;
+      /** Url */
+      url: string;
+    };
+    /** MaterialReportCreatedOut */
+    MaterialReportCreatedOut: {
+      /** Duplicate */
+      duplicate: boolean;
+      /** Id */
+      id: string;
+      status: components["schemas"]["MaterialReportStatus"];
+    };
+    /** MaterialReportIn */
+    MaterialReportIn: {
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+      reason: components["schemas"]["MaterialReportReason"];
+    };
+    /** MaterialReportOut */
+    MaterialReportOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Handled At */
+      handled_at: string | null;
+      handled_by: components["schemas"]["PersonOut"] | null;
+      /** Id */
+      id: string;
+      /** Material Hidden */
+      material_hidden: boolean;
+      /** Material Id */
+      material_id: string;
+      /** Material Title */
+      material_title: string;
+      /** Note */
+      note: string;
+      reason: components["schemas"]["MaterialReportReason"];
+      reporter: components["schemas"]["PersonOut"] | null;
+      status: components["schemas"]["MaterialReportStatus"];
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
+    };
+    /** MaterialReportPageOut */
+    MaterialReportPageOut: {
+      /** Items */
+      items: components["schemas"]["MaterialReportOut"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * MaterialReportReason
+     * @enum {string}
+     */
+    MaterialReportReason: "copyright" | "wrong_content" | "inappropriate" | "other";
+    /**
+     * MaterialReportStatus
+     * @enum {string}
+     */
+    MaterialReportStatus: "open" | "actioned" | "dismissed";
+    /** MaterialReportStatusIn */
+    MaterialReportStatusIn: {
+      status: components["schemas"]["MaterialReportStatus"];
+    };
+    /** MaterialSubjectListOut */
+    MaterialSubjectListOut: {
+      /** Items */
+      items: components["schemas"]["MaterialSubjectOut"][];
+    };
+    /** MaterialSubjectOut */
+    MaterialSubjectOut: {
+      /** Code */
+      code: string;
+      /** Id */
+      id: string;
+      /** Materials */
+      materials: number;
+      /** Name */
+      name: string;
+    };
+    /**
+     * MaterialType
+     * @enum {string}
+     */
+    MaterialType: "lecture" | "seminar" | "lab" | "syllabus" | "exam_prep" | "other";
     /**
      * MeResponse
      * @description The signed-in user's own account. Contact details are omitted until a screen needs them.
@@ -2065,6 +2466,13 @@ export interface components {
      * @enum {string}
      */
     Period: "upcoming" | "past";
+    /** PersonOut */
+    PersonOut: {
+      /** Display Name */
+      display_name: string;
+      /** Id */
+      id: string;
+    };
     /** PersonRef */
     PersonRef: {
       /** Display Name */
@@ -2438,6 +2846,15 @@ export interface components {
       /** Name */
       name: string;
     };
+    /** SemesterOut */
+    SemesterOut: {
+      /** Can Upload */
+      can_upload: boolean;
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+    };
     /** SemesterRef */
     SemesterRef: {
       term: components["schemas"]["SemesterTerm"];
@@ -2472,6 +2889,23 @@ export interface components {
       message: components["schemas"]["MessageOut"];
       /** Notices */
       notices: "chat.channel_mention_not_allowed"[];
+    };
+    /** SubjectCatalogOut */
+    SubjectCatalogOut: {
+      /** Can Manage */
+      can_manage: boolean;
+      /** Can Upload */
+      can_upload: boolean;
+      /** Materials */
+      materials: components["schemas"]["MaterialOut"][];
+      /** Semesters */
+      semesters: components["schemas"]["SemesterOut"][];
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
     };
     /** SubjectRef */
     SubjectRef: {
@@ -2539,6 +2973,50 @@ export interface components {
      * @enum {string}
      */
     UserStatus: "active" | "inactive";
+    /** VersionCreateIn */
+    VersionCreateIn: {
+      /** Copyright Confirmed */
+      copyright_confirmed: boolean;
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+      /**
+       * Upload Id
+       * Format: uuid
+       */
+      upload_id: string;
+    };
+    /** VersionOut */
+    VersionOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Filename */
+      filename: string;
+      /** Id */
+      id: string;
+      /** Mime */
+      mime: string;
+      /** Note */
+      note: string;
+      /** Previewable */
+      previewable: boolean;
+      /** Size Bytes */
+      size_bytes: number;
+      status: components["schemas"]["ScanStatus"];
+      uploaded_by: components["schemas"]["PersonOut"] | null;
+      /** Version */
+      version: number;
+    };
+    /** VisibilityIn */
+    VisibilityIn: {
+      /** Hidden */
+      hidden: boolean;
+    };
   };
   responses: never;
   parameters: never;
@@ -5612,6 +6090,565 @@ export interface operations {
       };
     };
   };
+  createMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MaterialCreateIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMaterialSubjects: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialSubjectListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  presignMaterialUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MaterialPresignIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialPresignOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  downloadMaterialVersion: {
+    parameters: {
+      query?: {
+        inline?: boolean;
+      };
+      header?: never;
+      path: {
+        version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialDownloadOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        material_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reportMaterial: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        material_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MaterialReportIn"];
+      };
+    };
+    responses: {
+      /** @description Reported before by this person */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialReportCreatedOut"];
+        };
+      };
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialReportCreatedOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  addMaterialVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        material_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VersionCreateIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setMaterialVisibility: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        material_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VisibilityIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   readMe: {
     parameters: {
       query?: never;
@@ -6968,6 +8005,144 @@ export interface operations {
       };
     };
   };
+  listMaterialReports: {
+    parameters: {
+      query?: {
+        status?: components["schemas"]["MaterialReportStatus"] | null;
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MaterialReportPageOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setMaterialReportStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        report_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MaterialReportStatusIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   listReports: {
     parameters: {
       query?: {
@@ -7137,6 +8312,75 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReportCreatedOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getSubjectMaterials: {
+    parameters: {
+      query?: {
+        semester_id?: string | null;
+      };
+      header?: never;
+      path: {
+        subject_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SubjectCatalogOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

@@ -13,6 +13,7 @@ from typing import cast
 from sqlalchemy import Select, case, exists, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.uploads import PREVIEWABLE
 from app.modules.academics.models import AcademicGroup, CourseOfferingTeacher
 from app.modules.chat.models import (
     Channel,
@@ -36,9 +37,6 @@ from app.modules.users.models import User
 from app.modules.users.profile import photo_url
 
 AuthoredRow = tuple[Message, User | None, str | None]
-
-# Images and PDFs are previewed inline (§5.3); the attachment service accepts nothing else as previewable.
-PREVIEWABLE = frozenset({"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"})
 
 
 def with_authors() -> Select[Message, User, str | None]:

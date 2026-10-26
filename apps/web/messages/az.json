@@ -642,7 +642,11 @@
         "event_cancelled": "Tədbir ləğv edildi",
         "event_manual_check_in": "İştirakçı siyahıdan qeydiyyata alındı",
         "report_created": "Şikayət göndərildi",
-        "report_handled": "Şikayətin vəziyyəti dəyişdi"
+        "report_handled": "Şikayətin vəziyyəti dəyişdi",
+        "material_reported": "Materialdan şikayət edildi",
+        "material_report_handled": "Material şikayətinin vəziyyəti dəyişdi",
+        "material_hidden": "Material gizlədildi",
+        "material_shown": "Material yenidən göstərildi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",

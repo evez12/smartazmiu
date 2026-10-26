@@ -335,6 +335,58 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Şikayət tapılmadı.",
         "en": "The report was not found.",
     },
+    "materials.subject_not_found": {
+        "az": "Fənn tapılmadı və ya onun materiallarına baxmaq icazəniz yoxdur.",
+        "en": "The subject was not found or you cannot view its materials.",
+    },
+    "materials.upload_not_allowed": {
+        "az": "Bu fənn və semestr üçün material yükləmək icazəniz yoxdur.",
+        "en": "You cannot upload materials for this subject and semester.",
+    },
+    "materials.type_not_allowed": {
+        "az": "Bu fayl növü qəbul edilmir. PDF, DOCX, PPTX, ZIP və ya şəkil yükləyin.",
+        "en": "This file type is not accepted. Upload a PDF, DOCX, PPTX, ZIP or image.",
+    },
+    "materials.too_large": {
+        "az": "Fayl ən çox 50 MB ola bilər.",
+        "en": "Files can be at most 50 MB.",
+    },
+    "materials.storage_unavailable": {
+        "az": "Fayl xidməti müvəqqəti işləmir. Bir az sonra yenidən cəhd edin.",
+        "en": "File storage is temporarily unavailable. Try again shortly.",
+    },
+    "materials.upload_not_found": {
+        "az": "Yüklənən fayl tapılmadı. Faylı yenidən seçin.",
+        "en": "The uploaded file was not found. Choose the file again.",
+    },
+    "materials.upload_missing": {
+        "az": "Fayl hələ yüklənməyib. Yükləmə bitənə qədər gözləyin və ya faylı yenidən seçin.",
+        "en": "The file has not been uploaded yet. Wait for the upload to finish or choose the file again.",
+    },
+    "materials.upload_size_mismatch": {
+        "az": "Yüklənən fayl gözlənilən ölçüdə deyil. Faylı yenidən seçin.",
+        "en": "The uploaded file does not have the expected size. Choose the file again.",
+    },
+    "materials.copyright_required": {
+        "az": "Faylı paylaşmaq hüququnuzu təsdiq edin.",
+        "en": "Confirm that you have the right to share the file.",
+    },
+    "materials.title_required": {
+        "az": "Materialın adını yazın.",
+        "en": "Enter a title for the material.",
+    },
+    "materials.not_found": {
+        "az": "Material tapılmadı.",
+        "en": "The material was not found.",
+    },
+    "materials.not_available": {
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "en": "The file is still being checked or did not pass the check.",
+    },
+    "materials.report_not_found": {
+        "az": "Şikayət tapılmadı.",
+        "en": "The report was not found.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

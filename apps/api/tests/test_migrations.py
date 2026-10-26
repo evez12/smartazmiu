@@ -45,6 +45,10 @@ APP_TABLES = {
     "message_reactions",
     "message_mentions",
     "user_blocks",
+    "reports",
+    "materials",
+    "material_versions",
+    "material_reports",
 }
 APP_ENUMS = (
     "user_status",
@@ -70,6 +74,12 @@ APP_ENUMS = (
     "channel_member_role",
     "notify_level",
     "scan_status",
+    "report_target",
+    "report_reason",
+    "report_status",
+    "material_type",
+    "material_report_reason",
+    "material_report_status",
 )
 
 
@@ -100,6 +110,9 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
             "announcements.publish",
             "events.manage",
             "events.check_in",
+            "admin.reports.read",
+            "admin.reports.handle",
+            "materials.manage",
         ):
             holders = await connection.scalars(
                 text(
