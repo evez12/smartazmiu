@@ -10,6 +10,7 @@ from app.modules.chat.bus import ChatBus
 from app.modules.chat.channels import ChannelService
 from app.modules.chat.curation import CurationService
 from app.modules.chat.messages import MessageService
+from app.modules.chat.policy import DatabaseExamWindows
 from app.modules.chat.reactions import ReactionService
 
 
@@ -19,7 +20,7 @@ def get_durable_redis(request: Request) -> Redis:
 
 
 def get_access(request: Request, session: SessionDep, cache: RedisDep) -> ChannelAccess:
-    return ChannelAccess(session, cache, request.app.state.exam_windows)
+    return ChannelAccess(session, cache, DatabaseExamWindows(session))
 
 
 AccessDep = Annotated[ChannelAccess, Depends(get_access)]

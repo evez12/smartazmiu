@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.modules.chat.models import BlockedTermAction
+from app.modules.chat.models import BlockedTermAction, ModerationActionKind
 from app.modules.chat.schemas import AuthorOut
 from app.modules.reports.models import ReportReason, ReportStatus, ReportTarget
 
@@ -55,6 +55,8 @@ class ReportOut(BaseModel):
     handled_at: datetime | None
     reporters: int
     """How many different people reported the same target."""
+    sla_due_at: datetime
+    sla_breached: bool
 
 
 class ReportPageOut(BaseModel):
@@ -79,3 +81,18 @@ class BlockedTermOut(BaseModel):
     is_regex: bool
     action: BlockedTermAction
     lang: str
+
+
+class ModerationActionIn(BaseModel):
+    action: ModerationActionKind
+    channel_id: str | None = None
+    message_id: str | None = Field(default=None, pattern=r"^[0-9]{1,19}$")
+    target_user_id: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0, le=604800)
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class ModerationActionOut(BaseModel):
+    id: str
+    action: ModerationActionKind
+    created_at: datetime

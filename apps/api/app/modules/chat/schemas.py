@@ -243,6 +243,21 @@ class MessagePageOut(BaseModel):
     """More messages exist beyond this page in the direction it was read."""
 
 
+class MessageSearchResultOut(BaseModel):
+    message: MessageOut
+    rank: float
+
+
+class MessageSearchOut(BaseModel):
+    items: list[MessageSearchResultOut]
+
+
+class LinkPreviewOut(BaseModel):
+    url: str
+    title: str
+    description: str
+
+
 class MembersOut(BaseModel):
     members: list[AuthorOut]
 

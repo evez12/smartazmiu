@@ -247,6 +247,42 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Bloklama qaydası tapılmadı. Siyahını yeniləyin.",
         "en": "The blocked-term rule was not found. Refresh the list.",
     },
+    "chat.thread_locked": {
+        "az": "Bu mövzu kilidlənib. Yeni cavab yazmaq mümkün deyil.",
+        "en": "This thread is locked. New replies are not allowed.",
+    },
+    "moderation.forbidden": {
+        "az": "Bu moderator əməliyyatı üçün icazəniz yoxdur.",
+        "en": "You do not have permission for this moderation action.",
+    },
+    "moderation.channel_not_found": {
+        "az": "Kanal tapılmadı və ya bu kanalı idarə etmək icazəniz yoxdur.",
+        "en": "The channel was not found or you cannot moderate it.",
+    },
+    "moderation.message_not_found": {
+        "az": "Mesaj tapılmadı. Siyahını yeniləyin.",
+        "en": "The message was not found. Refresh the list.",
+    },
+    "moderation.protected_target": {
+        "az": "Bu istifadəçi barədə həmin əməliyyatı tətbiq etmək olmaz.",
+        "en": "That action cannot be applied to this user.",
+    },
+    "moderation.reason_required": {
+        "az": "Qərarın səbəbini yazın.",
+        "en": "Give a reason for the decision.",
+    },
+    "moderation.invalid_duration": {
+        "az": "Seçilmiş müddət qəbul edilmir.",
+        "en": "The selected duration is not allowed.",
+    },
+    "moderation.target_required": {
+        "az": "Əməliyyat üçün istifadəçi seçilməyib.",
+        "en": "No user was selected for the action.",
+    },
+    "moderation.thread_not_found": {
+        "az": "Yalnız əsas mesajın mövzusunu kilidləmək olar.",
+        "en": "Only a root message thread can be locked.",
+    },
     "chat.message_too_long": {
         "az": "Mesaj çox uzundur. Ən çox 4000 simvol yaza bilərsiniz.",
         "en": "The message is too long. You can write at most 4,000 characters.",

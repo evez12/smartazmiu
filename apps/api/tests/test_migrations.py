@@ -118,6 +118,7 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
             "materials.manage",
             "admin.feedback.read",
             "admin.feedback.handle",
+            "chat.moderate",
         ):
             holders = await connection.scalars(
                 text(
@@ -127,7 +128,14 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
                 ),
                 {"code": permission},
             )
-            assert list(holders) == ["admin", "staff"], permission
+            expected = (
+                ["admin", "moderator", "staff"]
+                if permission in {"admin.reports.read", "admin.reports.handle"}
+                else ["moderator"]
+                if permission == "chat.moderate"
+                else ["admin", "staff"]
+            )
+            assert list(holders) == expected, permission
         # The SQL UUIDv7 generator: version 7, RFC variant, time-ordered.
         first, second = (
             await connection.scalar(text("SELECT uuid7()")),

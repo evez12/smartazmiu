@@ -112,6 +112,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     );
   }
   const canHandle = me.status === "ok" && me.user.permissions.includes("admin.reports.handle");
+  const canGlobalBan = me.status === "ok" && me.user.roles.includes("admin");
   const filter = status ?? "all";
 
   return (
@@ -289,6 +290,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                   items={messageReports.data.items}
                   caption={t("tableCaption")}
                   canHandle={canHandle}
+                  canGlobalBan={canGlobalBan}
                 />
               ) : null}
               {materialReports?.status === "ok" ? (

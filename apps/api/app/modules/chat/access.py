@@ -16,7 +16,15 @@ from app.core.errors import AppError
 from app.core.ratelimit import RateLimit, consume
 from app.core.time import utc_now
 from app.modules.academics.models import CourseOfferingTeacher
-from app.modules.chat.models import Channel, ChannelMember, ChannelType, MemberRole, UserBlock
+from app.modules.chat.models import (
+    Channel,
+    ChannelBan,
+    ChannelMember,
+    ChannelType,
+    GlobalChatBan,
+    MemberRole,
+    UserBlock,
+)
 from app.modules.chat.policy import (
     Action,
     ChannelState,
@@ -71,6 +79,10 @@ def _states_query() -> Select[tuple[Any, ...]]:
     )
     i_blocked = exists().where(UserBlock.blocker_id == user_id, UserBlock.blocked_id == peer_id)
     blocked_me = exists().where(UserBlock.blocker_id == peer_id, UserBlock.blocked_id == user_id)
+    channel_banned = exists().where(
+        ChannelBan.channel_id == Channel.id, ChannelBan.user_id == user_id
+    )
+    global_banned = exists().where(GlobalChatBan.user_id == user_id)
     return (
         select(
             Channel.id,
@@ -78,7 +90,7 @@ def _states_query() -> Select[tuple[Any, ...]]:
             Channel.is_archived,
             Channel.is_readonly,
             Channel.slow_mode_seconds,
-            member.user_id.is_not(None),
+            member.user_id.is_not(None) & ~channel_banned & ~global_banned,
             member.role,
             member.posting_muted_until,
             Channel.course_offering_id.is_not(None) & teaches,

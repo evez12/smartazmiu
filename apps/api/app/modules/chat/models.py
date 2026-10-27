@@ -47,6 +47,16 @@ class ChannelType(StrEnum):
     """The one platform-wide support channel of the pilot (D-074)."""
 
 
+class ExamSlot(Base):
+    __tablename__ = "exam_slots"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 # Channels whose membership the provisioning job derives from the registry (§5.1).
 PROVISIONED_TYPES = frozenset(
     {
@@ -89,6 +99,17 @@ class MessageModeration(StrEnum):
     VISIBLE = "visible"
     HELD = "held"
     HIDDEN = "hidden"
+
+
+class ModerationActionKind(StrEnum):
+    DELETE_MESSAGE = "delete_message"
+    MUTE = "mute"
+    KICK = "kick"
+    BAN = "ban"
+    GLOBAL_BAN = "global_ban"
+    LOCK_THREAD = "lock_thread"
+    SLOW_MODE = "slow_mode"
+    RESTORE_MESSAGE = "restore_message"
 
 
 class BlockedTerm(Base):
@@ -206,6 +227,60 @@ class ChannelMember(Base):
     muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # A moderator's mute (§5.5): the member cannot post until then. Set only by moderation actions (D-058).
     posting_muted_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ChannelBan(Base):
+    __tablename__ = "channel_bans"
+
+    channel_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("channels.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    banned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class GlobalChatBan(Base):
+    __tablename__ = "global_chat_bans"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    banned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ThreadLock(Base):
+    __tablename__ = "thread_locks"
+
+    message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
+    locked_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ModerationAction(Base):
+    __tablename__ = "moderation_actions"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    moderator_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    action: Mapped[ModerationActionKind] = mapped_column(
+        _enum(ModerationActionKind, "moderation_action_kind")
+    )
+    target_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    channel_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("channels.id", ondelete="SET NULL")
+    )
+    message_id: Mapped[int | None] = mapped_column(BigInteger)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    reason: Mapped[str] = mapped_column(String(500), default="", server_default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class ChannelRead(Base):

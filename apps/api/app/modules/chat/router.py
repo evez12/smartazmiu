@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request, Response
 from redis.exceptions import RedisError
 
-from app.core.deps import RedisDep
+from app.core.deps import RedisDep, SessionDep
 from app.core.errors import COMMON_ERROR_RESPONSES, AppError
 from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep
@@ -20,8 +20,10 @@ from app.modules.chat.deps import (
     MessagesDep,
     ReactionsDep,
 )
+from app.modules.chat.link_previews import LinkPreviewService
 from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MAX_PAGE_SIZE, PAGE_SIZE
+from app.modules.chat.payloads import message_payload
 from app.modules.chat.schemas import (
     AuthorOut,
     ChannelDetailOut,
@@ -30,10 +32,13 @@ from app.modules.chat.schemas import (
     DownloadOut,
     EditMessageIn,
     EditResultOut,
+    LinkPreviewOut,
     MembershipUpdateIn,
     MembersOut,
     MessageOut,
     MessagePageOut,
+    MessageSearchOut,
+    MessageSearchResultOut,
     OpenDmIn,
     PinsOut,
     PollIn,
@@ -51,6 +56,7 @@ from app.modules.chat.schemas import (
     TicketOut,
     VoteIn,
 )
+from app.modules.chat.search import MessageSearchService
 from app.modules.health.metrics import MESSAGES_SENT, counting_send
 
 # A broken client retrying in a loop cannot fill Redis A with tickets (ADR 0003).
@@ -59,6 +65,45 @@ TICKET_ISSUES = RateLimit("ws_ticket", limit=30, window_seconds=60)
 MESSAGE_ID = r"^[0-9]{1,19}$"
 
 router = APIRouter(responses=COMMON_ERROR_RESPONSES, tags=["chat"])
+
+
+@router.get(
+    "/chat/search",
+    response_model=MessageSearchOut,
+    operation_id="searchMessages",
+    summary="Search messages in channels the user can read",
+)
+async def search_messages(
+    user: CurrentUserDep,
+    session: SessionDep,
+    q: Annotated[str, Query(min_length=1, max_length=200)],
+    channel_id: uuid.UUID | None = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 25,
+) -> MessageSearchOut:
+    found = await MessageSearchService(session).search(user, q, channel_id, limit)
+    items: list[MessageSearchResultOut] = []
+    for message, rank in found:
+        payload = await message_payload(session, message.id, user.id)
+        if payload is not None:
+            items.append(MessageSearchResultOut(message=payload, rank=float(rank or 0)))
+    return MessageSearchOut(items=items)
+
+
+@router.get(
+    "/chat/link-preview",
+    response_model=LinkPreviewOut,
+    operation_id="fetchLinkPreview",
+    summary="Fetch a safe preview for an allowlisted link",
+)
+async def fetch_link_preview(
+    request: Request,
+    _user: CurrentUserDep,
+    url: Annotated[str, Query(max_length=2048)],
+) -> LinkPreviewOut:
+    preview = await LinkPreviewService(
+        request.app.state.http, set(request.app.state.settings.link_preview_domains)
+    ).fetch(url)
+    return LinkPreviewOut(**preview)
 
 
 @router.post(

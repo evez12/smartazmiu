@@ -666,6 +666,7 @@
         "blocked_term_added": "Bloklama qaydası əlavə edildi",
         "blocked_term_removed": "Bloklama qaydası silindi",
         "message_auto_hidden": "Mesaj şikayətlərdən sonra gizlədildi",
+        "moderation_action": "Moderasiya tədbiri tətbiq edildi",
         "tip_reviewed": "Fənn kartı yoxlanıldı"
       },
       "rolesAdded": "Əlavə: {roles}",
@@ -1150,7 +1151,8 @@
       "messageNotFound": "Mesaj tapılmadı. Ola bilsin ki, silinib.",
       "parentNotFound": "Cavab yazdığınız mesaj silinib.",
       "reactionNotAllowed": "Bu reaksiya mövcud deyil.",
-      "attachmentsNotAllowed": "Yeni hesablar ilk 24 saat fənn icmalarına fayl əlavə edə bilməz."
+      "attachmentsNotAllowed": "Yeni hesablar ilk 24 saat fənn icmalarına fayl əlavə edə bilməz.",
+      "linksNotAllowed": "Yeni hesablar ilk 24 saat fənn icmalarında keçid paylaşa bilməz."
     },
     "user": {
       "message": "Mesaj yazın",
@@ -1349,7 +1351,26 @@
       "handledBy": "{name}, {time}",
       "updated": "Şikayətin vəziyyəti dəyişdi.",
       "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin.",
-      "tipIn": "Fənn kartı: {subject}"
+      "tipIn": "Fənn kartı: {subject}",
+      "slaDue": "12 saatlıq müddət: {time}",
+      "slaBreached": "12 saatlıq müddət keçib",
+      "moderationAction": "Moderator əməliyyatı",
+      "duration": "Müddət",
+      "reasonLabel": "Qərarın səbəbi",
+      "applyAction": "Tətbiq edin",
+      "actionDone": "Moderator əməliyyatı tətbiq edildi.",
+      "actionFailed": "Əməliyyat tətbiq edilmədi. Səlahiyyəti və məlumatları yoxlayın.",
+      "seconds": "{count, plural, =0 {Söndürün} one {# saniyə} other {# saniyə}}",
+      "actions": {
+        "delete_message": "Mesajı silin",
+        "restore_message": "Mesajı göstərin",
+        "mute": "Yazmağı məhdudlaşdırın",
+        "kick": "Kanaldan çıxarın",
+        "ban": "Kanaldan uzaqlaşdırın",
+        "global_ban": "Çatdan uzaqlaşdırın",
+        "lock_thread": "Mövzunu kilidləyin",
+        "slow_mode": "Yavaş rejimi dəyişin"
+      }
     }
   },
   "materials": {
@@ -1817,5 +1838,26 @@
     "open": "Kanalda açın",
     "loadFailed": "Saxlanılanları yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "savedAt": "Saxlanılıb: {date}"
+  },
+  "community": {
+    "feedTitle": "Lent",
+    "feedDescription": "Universitet icmasının faydalı paylaşımları.",
+    "forumTitle": "Sual-cavab",
+    "forumDescription": "Suallar verin, cavabları paylaşın və faydalı bilikləri tapın.",
+    "questionTitle": "Sual",
+    "tagTitle": "Etiket",
+    "empty": "Hələ heç bir paylaşım yoxdur.",
+    "error": "Məlumatları yükləmək mümkün olmadı.",
+    "retry": "Yenidən cəhd edin",
+    "loadMore": "Daha çox göstərin",
+    "useful": "faydalı",
+    "comments": "şərh",
+    "votes": "səs",
+    "answers": "cavab",
+    "accepted": "Qəbul edilmiş cavab",
+    "teacherVerified": "Müəllim təsdiqləyib",
+    "promoteFromChat": "Çat mövzusunu suala çevirin",
+    "promoteHint": "Çat mövzusunu sual kimi dərc etmək üçün çatda mövzunu seçin.",
+    "user": "İstifadəçi"
   }
 }

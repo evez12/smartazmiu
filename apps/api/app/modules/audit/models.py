@@ -40,6 +40,7 @@ class AuditAction(StrEnum):
     BLOCKED_TERM_ADDED = "blocked_term.added"
     BLOCKED_TERM_REMOVED = "blocked_term.removed"
     MESSAGE_AUTO_HIDDEN = "message.auto_hidden"
+    MODERATION_ACTION = "moderation.action"
     TIP_REVIEWED = "tip.reviewed"
 
 

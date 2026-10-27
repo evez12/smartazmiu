@@ -594,11 +594,11 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 
 #### Sprint 10 (04-05 → 04-16) — Moderation, Search, Exam Mode
 - [x] Blocked-terms engine (hold/reject) using `normalize_az`, auto-hide after 3 reports.
-- [ ] Moderator console: report queue with SLA, actions (delete, mute 1h/24h/7d, kick, ban, slow mode, lock thread), audit.
-- [ ] Message search: channel + global, Postgres FTS (`simple`) + trigram, permission-filtered **inside the SQL query**.
-- [ ] Exam mode from `exam_slots` (read-only + no attachments, −15 min → end), `channel.updated` WS event, banner UI.
-- [ ] New-account restrictions; DM daily limit.
-- [ ] Link previews (allowlist, SSRF-safe).
+- [x] Moderator console: report queue with SLA, actions (delete, mute 1h/24h/7d, kick, ban, slow mode, lock thread), audit.
+- [x] Message search: channel + global, Postgres FTS (`simple`) + trigram, permission-filtered **inside the SQL query**.
+- [x] Exam mode from `exam_slots` (read-only + no attachments, −15 min → end), `channel.updated` WS event, banner UI.
+- [x] New-account restrictions; DM daily limit.
+- [x] Link previews (allowlist, SSRF-safe).
 **Acceptance:** M3. Exam slot simulation flips channel to read-only on time; search never returns messages from channels the user isn't in.
 
 ---
@@ -612,9 +612,9 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** 1 GB lecture uploads, plays adaptively; progress persists.
 
 #### Sprint 12 (05-03 → 05-14) — Feed & Q&A Forum
-- [ ] Feed: posts, tags, "faydalı" reaction, comments, report.
-- [ ] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
-- [ ] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
+- [x] Feed: posts, tags, "faydalı" reaction, comments, report.
+- [x] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
+- [x] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
 
 #### Sprint 13 (05-17 → 05-28) — Assignments & Quizzes
 - [ ] Assignments: create, deadline, file submission, late policy, grading + feedback.

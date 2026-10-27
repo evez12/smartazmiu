@@ -48,7 +48,7 @@ async def test_first_request_provisions_the_user(
         "family_name": "Məmmədova",
         "status": "active",
         "roles": ["moderator", "student"],
-        "permissions": [],
+        "permissions": ["admin.reports.handle", "admin.reports.read", "chat.moderate"],
         "photo_url": None,
         "onboarding_done": False,
     }

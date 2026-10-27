@@ -7,12 +7,16 @@ from app.core.deps import RedisDep, SessionDep
 from app.core.errors import COMMON_ERROR_RESPONSES, AppError
 from app.core.rbac import CurrentUserDep, require_permission
 from app.modules.chat.blocked_terms import BlockedTermService
+from app.modules.chat.bus import ChatBus
 from app.modules.chat.deps import AccessDep
 from app.modules.chat.models import BlockedTerm
 from app.modules.reports.models import ReportStatus
+from app.modules.reports.moderation import ModerationService
 from app.modules.reports.schemas import (
     BlockedTermIn,
     BlockedTermOut,
+    ModerationActionIn,
+    ModerationActionOut,
     ReportCreatedOut,
     ReportIn,
     ReportOut,
@@ -64,13 +68,15 @@ async def create_report(
     summary="Reports, newest first",
 )
 async def list_reports(
-    _: ReportReader,
+    actor: CurrentUserDep,
     reports: ReportsDep,
     status: ReportStatus | None = None,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 25,
 ) -> ReportPageOut:
-    page = await reports.page(status, offset, limit)
+    if not actor.has_permission(REPORTS_READ) and RoleCode.MODERATOR.value not in actor.roles:
+        raise AppError("auth.forbidden", 403)
+    page = await reports.page(actor, status, offset, limit)
     return ReportPageOut(items=page.items, total=page.total)
 
 
@@ -81,9 +87,39 @@ async def list_reports(
     summary="Mark a report as actioned or dismissed (or open it again)",
 )
 async def set_report_status(
-    actor: ReportHandler, reports: ReportsDep, report_id: uuid.UUID, body: ReportStatusIn
+    actor: CurrentUserDep, reports: ReportsDep, report_id: uuid.UUID, body: ReportStatusIn
 ) -> ReportOut:
+    if not actor.has_permission(REPORTS_HANDLE) and RoleCode.MODERATOR.value not in actor.roles:
+        raise AppError("auth.forbidden", 403)
     return await reports.set_status(actor, report_id, body.status)
+
+
+@router.post(
+    "/moderation/actions",
+    response_model=ModerationActionOut,
+    status_code=201,
+    operation_id="createModerationAction",
+)
+async def create_moderation_action(
+    actor: CurrentUserDep, session: SessionDep, cache: RedisDep, body: ModerationActionIn
+) -> ModerationActionOut:
+    if not actor.has_permission(REPORTS_HANDLE) and RoleCode.MODERATOR.value not in actor.roles:
+        raise AppError("auth.forbidden", 403)
+    try:
+        channel_id = uuid.UUID(body.channel_id) if body.channel_id else None
+        target_id = uuid.UUID(body.target_user_id) if body.target_user_id else None
+    except ValueError as exc:
+        raise AppError("request.validation_failed", 422) from exc
+    entry = await ModerationService(session, ChatBus(cache)).act(
+        actor,
+        body.action,
+        channel_id=channel_id,
+        message_id=int(body.message_id) if body.message_id else None,
+        target_user_id=target_id,
+        duration_seconds=body.duration_seconds,
+        reason=body.reason,
+    )
+    return ModerationActionOut(id=str(entry.id), action=entry.action, created_at=entry.created_at)
 
 
 def _admin(actor: CurrentUser) -> None:
