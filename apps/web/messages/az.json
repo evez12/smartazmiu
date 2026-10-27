@@ -1838,5 +1838,26 @@
     "open": "Kanalda açın",
     "loadFailed": "Saxlanılanları yükləmək mümkün olmadı. Yenidən cəhd edin.",
     "savedAt": "Saxlanılıb: {date}"
+  },
+  "community": {
+    "feedTitle": "Lent",
+    "feedDescription": "Universitet icmasının faydalı paylaşımları.",
+    "forumTitle": "Sual-cavab",
+    "forumDescription": "Suallar verin, cavabları paylaşın və faydalı bilikləri tapın.",
+    "questionTitle": "Sual",
+    "tagTitle": "Etiket",
+    "empty": "Hələ heç bir paylaşım yoxdur.",
+    "error": "Məlumatları yükləmək mümkün olmadı.",
+    "retry": "Yenidən cəhd edin",
+    "loadMore": "Daha çox göstərin",
+    "useful": "faydalı",
+    "comments": "şərh",
+    "votes": "səs",
+    "answers": "cavab",
+    "accepted": "Qəbul edilmiş cavab",
+    "teacherVerified": "Müəllim təsdiqləyib",
+    "promoteFromChat": "Çat mövzusunu suala çevirin",
+    "promoteHint": "Çat mövzusunu sual kimi dərc etmək üçün çatda mövzunu seçin.",
+    "user": "İstifadəçi"
   }
 }

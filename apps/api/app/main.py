@@ -29,6 +29,7 @@ from app.modules.chat.router import router as chat_router
 from app.modules.chat.snowflake import Snowflake, WorkerLease
 from app.modules.chat.ws import Gateway
 from app.modules.chat.ws import router as chat_socket_router
+from app.modules.community.router import router as community_router
 from app.modules.events.router import router as events_router
 from app.modules.feedback.router import router as feedback_router
 from app.modules.health.metrics import mark_process_dead
@@ -144,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(feedback_router, prefix=API_PREFIX)
     app.include_router(mentorship_router, prefix=API_PREFIX)
     app.include_router(knowledge_router, prefix=API_PREFIX)
+    app.include_router(community_router, prefix=API_PREFIX)
     app.include_router(chat_socket_router)
     return app
 
