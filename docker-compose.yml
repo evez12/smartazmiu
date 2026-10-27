@@ -117,7 +117,7 @@ services:
   # Virus scanning for uploads (§14). The image carries its signature database; loading it takes a minute or two
   # and about 1.5 GB of memory. Signatures are refreshed by freshclam inside the container.
   clamav:
-    image: clamav/clamav:1.4.3
+    image: clamav/clamav:1.5.3
     ports:
       - "${CLAMAV_PORT:-3310}:3310"
     volumes:
