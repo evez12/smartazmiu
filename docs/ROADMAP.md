@@ -584,12 +584,12 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** first-year student requests advice → guide accepts → DM opens → resolved → feedback recorded; stats visible.
 
 #### Sprint 9 (03-22 → 04-02) — Knowledge in channels
-- [ ] Subject Guide card (`course_tips`): end-of-semester prompt, form, moderation queue, aggregated subject page (difficulty, workload, top tips, upvotes).
-- [ ] Pinned messages, channel "Faydalı" (useful) collection.
-- [ ] Polls.
-- [ ] Anonymous questions in `#suallar` (moderator-visible identity, logged).
-- [ ] Verified answer (teacher in course channel, guide in community) + "my question answered" notification.
-- [ ] Saved messages.
+- [x] Subject Guide card (`course_tips`): end-of-semester prompt, form, moderation queue, aggregated subject page (difficulty, workload, top tips, upvotes).
+- [x] Pinned messages, channel "Faydalı" (useful) collection.
+- [x] Polls.
+- [x] Anonymous questions in `#suallar` (moderator-visible identity, logged).
+- [x] Verified answer (teacher in course channel, guide in community) + "my question answered" notification.
+- [x] Saved messages.
 **Acceptance:** subject page shows aggregated tips from ≥ 3 past students; anonymous question shows "Anonim" to students and real author to moderator.
 
 #### Sprint 10 (04-05 → 04-16) — Moderation, Search, Exam Mode
