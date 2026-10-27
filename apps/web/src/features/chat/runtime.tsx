@@ -50,6 +50,7 @@ export type ChatRuntime = {
     parentId?: string,
     attachmentIds?: string[],
     topicId?: string,
+    isAnonymous?: boolean,
   ) => void;
   /** Resolve with notices the author should see (an ignored @channel); reject with `ApiRequestError`. */
   edit: (messageId: string, body: string) => Promise<string[]>;
@@ -173,6 +174,7 @@ export function ChatRuntimeProvider({
         client_msg_id: pending.clientMsgId,
         ...(pending.parentId ? { parent_id: pending.parentId } : {}),
         ...(pending.topicId ? { topic_id: pending.topicId } : {}),
+        is_anonymous: pending.isAnonymous ?? false,
         ...(pending.attachmentIds?.length ? { attachment_ids: pending.attachmentIds } : {}),
       };
       try {
@@ -221,12 +223,13 @@ export function ChatRuntimeProvider({
     const runtime: ChatRuntime = {
       store,
       currentUserId,
-      send: (channelId, body, parentId, attachmentIds, topicId) => {
+      send: (channelId, body, parentId, attachmentIds, topicId, isAnonymous) => {
         const pending: PendingMessage = {
           clientMsgId: crypto.randomUUID(),
           channelId,
           ...(parentId ? { parentId } : {}),
           ...(topicId ? { topicId } : {}),
+          ...(isAnonymous ? { isAnonymous } : {}),
           ...(attachmentIds?.length ? { attachmentIds } : {}),
           body,
           state: "queued",

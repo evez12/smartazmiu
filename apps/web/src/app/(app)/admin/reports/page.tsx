@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listHref } from "@/features/admin/model";
+import { TipReview } from "@/features/knowledge/tip-review";
 import { MaterialReportTable } from "@/features/materials/material-report-table";
 import { ReportTable } from "@/features/reports/report-table";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
@@ -53,7 +54,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       ? undefined
       : (STATUSES.find((value) => value === params.status) ?? "open");
   const kind =
-    params.kind === "materials" ? "materials" : params.kind === "guides" ? "guides" : "messages";
+    params.kind === "materials"
+      ? "materials"
+      : params.kind === "guides"
+        ? "guides"
+        : params.kind === "tips"
+          ? "tips"
+          : "messages";
+  const tTips = await getTranslations("guides.tipModeration");
+  const tTipText = await getTranslations("guides.tips");
   const tGuides = await getTranslations("guides.feedbackNotes");
   const tRequest = await getTranslations("guides.request");
   const page = pageFromParam(params.page);
@@ -76,7 +85,17 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           })
           .then(loaded)
       : null;
-  const result = (messageReports ?? materialReports ?? guideNotes)!;
+  const TIP_STATUSES = ["pending", "published", "rejected", "hidden"] as const;
+  const tipStatus = TIP_STATUSES.find((value) => value === params.status) ?? "pending";
+  const tipQueue =
+    kind === "tips"
+      ? await api
+          .GET("/api/v1/moderation/tips", {
+            params: { query: { status: tipStatus, offset: query.offset, limit: query.limit } },
+          })
+          .then(loaded)
+      : null;
+  const result = (messageReports ?? materialReports ?? guideNotes ?? tipQueue)!;
   const header = (
     <PageHeader
       title={t("title")}
@@ -102,7 +121,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         aria-label={tMaterials("admin.tabsLabel")}
         className="mb-4 flex gap-4 overflow-x-auto border-b border-border"
       >
-        {(["messages", "materials", "guides"] as const).map((value) => (
+        {(["messages", "materials", "guides", "tips"] as const).map((value) => (
           <Link
             key={value}
             href={listHref("/admin/reports", { kind: value })}
@@ -114,13 +133,81 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 : "border-transparent text-muted hover:text-text",
             )}
           >
-            {value === "guides"
-              ? tGuides("tab")
-              : tMaterials(value === "messages" ? "admin.tabMessages" : "admin.tabMaterials")}
+            {value === "tips"
+              ? tTips("tab")
+              : value === "guides"
+                ? tGuides("tab")
+                : tMaterials(value === "messages" ? "admin.tabMessages" : "admin.tabMaterials")}
           </Link>
         ))}
       </nav>
-      {guideNotes?.status === "ok" ? (
+      {tipQueue?.status === "ok" ? (
+        <Panel>
+          <form
+            method="get"
+            className="grid gap-4 border-b border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          >
+            <input type="hidden" name="kind" value="tips" />
+            <Field label={tTips("filter")}>
+              <Select name="status" defaultValue={tipStatus}>
+                {TIP_STATUSES.map((value) => (
+                  <option key={value} value={value}>
+                    {tTipText(`status.${value}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div>
+              <Button type="submit">{tTips("apply")}</Button>
+            </div>
+          </form>
+          {tipQueue.data.items.length === 0 ? (
+            <PanelBody>
+              <EmptyState className="py-0" icon={Flag} message={tTips("empty")} />
+            </PanelBody>
+          ) : (
+            <div className="flex flex-col gap-4 p-4">
+              <ul aria-label={tTips("caption")} className="flex flex-col gap-4">
+                {tipQueue.data.items.map((tip) => (
+                  <li
+                    key={tip.id}
+                    className="flex flex-col gap-2 rounded-control border border-border p-4"
+                  >
+                    <p className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="font-medium">{tip.subject_name}</span>
+                      <span className="text-muted">{tip.semester}</span>
+                      <span className="text-muted">
+                        {tTips("author", { name: tip.author_name ?? "—" })}
+                      </span>
+                      {tip.reports ? (
+                        <span className="text-danger">
+                          {tTips("reports", { count: tip.reports })}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-sm">
+                      {tTipText("difficulty", { value: String(tip.difficulty) })} ·{" "}
+                      {tTipText(`hours.${tip.weekly_hours}`)}
+                    </p>
+                    <p className="break-words whitespace-pre-wrap">{tip.key_topics}</p>
+                    <p className="break-words whitespace-pre-wrap">{tip.exam_advice}</p>
+                    <p className="break-words whitespace-pre-wrap">{tip.retrospective}</p>
+                    {canHandle ? <TipReview tipId={tip.id} status={tip.status} /> : null}
+                  </li>
+                ))}
+              </ul>
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={tipQueue.data.total}
+                href={(target) =>
+                  listHref("/admin/reports", { kind, status: tipStatus, page: target })
+                }
+              />
+            </div>
+          )}
+        </Panel>
+      ) : guideNotes?.status === "ok" ? (
         <Panel>
           {guideNotes.data.items.length === 0 ? (
             <PanelBody>

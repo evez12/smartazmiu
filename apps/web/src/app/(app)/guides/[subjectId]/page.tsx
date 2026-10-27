@@ -1,5 +1,6 @@
 import { Compass } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { Avatar } from "@/components/ui/avatar";
@@ -77,7 +78,17 @@ export default async function GuideDirectoryPage({ params, searchParams }: Direc
         title={directory.subject_name}
         description={t("directory.description", { code: directory.subject_code })}
         breadcrumb={[{ label: t("title"), href: "/guides" }, { label: directory.subject_name }]}
-        actions={<RequestButton subjectId={directory.subject_id} variant="primary" />}
+        actions={
+          <>
+            <Link
+              href={`/guides/${directory.subject_id}/tips`}
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              {t("tips.link")}
+            </Link>
+            <RequestButton subjectId={directory.subject_id} variant="primary" />
+          </>
+        }
       />
       <div className="flex flex-col gap-6">
         <StudentAdviceDisclaimer />

@@ -207,6 +207,8 @@ export type PendingMessage = {
   parentId?: string;
   /** Topic of a course or community channel (§5.1); none in other channels. */
   topicId?: string;
+  /** An anonymous #suallar question (§5.3). */
+  isAnonymous?: boolean;
   attachmentIds?: string[];
   body: string;
   state: PendingState;

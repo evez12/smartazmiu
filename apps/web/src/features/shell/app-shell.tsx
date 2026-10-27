@@ -3,6 +3,7 @@
 import {
   LogOut,
   Menu as MenuIcon,
+  Bookmark,
   LifeBuoy,
   MessageSquareText,
   Signpost,
@@ -306,6 +307,12 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
             </MenuRadioGroup>
           </MenuGroup>
           <MenuSeparator />
+          <MenuItem asChild>
+            <Link href="/saved">
+              <Icon icon={Bookmark} />
+              {t("saved")}
+            </Link>
+          </MenuItem>
           <MenuItem asChild>
             <Link href="/support">
               <Icon icon={LifeBuoy} />
