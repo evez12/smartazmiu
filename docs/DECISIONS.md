@@ -1782,3 +1782,14 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     can no longer read shows neither content nor channel name, only "no longer available" and a remove button.
 - **Consequences:** reputation and helpful-answer XP stay in Sprint 17. A moderator console (Sprint 10) can reuse the
   anonymous-author lookup and the pin endpoints. Card prompts are in-app only.
+
+## D-085 · 2026-10-27 · Anonymous-question author controls backlog
+
+- **Context:** D-084 hides authors in all anonymous-question REST and WebSocket payloads. The web client cannot
+  safely identify the author's own posts, so their edit and soft-delete controls are unavailable.
+- **Options:** retain the limitation for review; add viewer-specific ownership or capabilities with privacy tests.
+- **Decision:** record author editing and soft deletion as an unscheduled backlog item. Keep Sprint 9 behaviour;
+  do not expose author identities or infer ownership from shared broadcasts or local send history.
+- **Consequences:** authors currently cannot edit or delete their anonymous questions through the UI. Any future
+  fix needs a privacy review and REST/WS tests for authors, other members and moderators, including reconnects
+  and the existing change window. This entry does not start Sprint 10.

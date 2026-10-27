@@ -23,7 +23,7 @@ import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
 import { ReportDialog } from "@/features/reports/report-dialog";
 import { ApiRequestError, unwrap } from "@/lib/api/browser";
-import { useApi } from "@/lib/api/provider";
+import { useOptionalApi } from "@/lib/api/provider";
 import { cn } from "@/lib/cn";
 
 import { AuthorBadge } from "./author-badge";
@@ -134,7 +134,7 @@ export function MessageRow({
   const [reporting, setReporting] = useState(false);
   // Checked when the menu renders; the server has the final word on the 15-minute window (§13.2).
   const [now, setNow] = useState(() => Date.now());
-  const api = useApi();
+  const api = useOptionalApi();
   const name = message.is_anonymous
     ? t("anonymous")
     : (message.author?.display_name ?? t("deletedUser"));
@@ -175,7 +175,7 @@ export function MessageRow({
   };
   const messagePath = { params: { path: { message_id: message.id } } };
   const pinPath = { params: { path: { channel_id: message.channel_id, message_id: message.id } } };
-  const curationItems = (
+  const curationItems = api && (
     <>
       <MenuItem
         onSelect={() =>
