@@ -18,16 +18,19 @@ from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.chat.access import ChannelAccess, deny
 from app.modules.chat.attachments import AttachmentService
+from app.modules.chat.blocked_terms import BlockedTermService
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
 from app.modules.chat.lookup import find_message
 from app.modules.chat.mentions import MentionService, ParsedMentions, parse
 from app.modules.chat.models import (
+    BlockedTermAction,
     Channel,
     ChannelRead,
     ChannelTopic,
     ChannelType,
     Message,
     MessageClientId,
+    MessageModeration,
 )
 from app.modules.chat.payloads import enrich, message_payload, with_authors
 from app.modules.chat.policy import Action, Reason
@@ -129,6 +132,14 @@ class MessageService:
         if is_anonymous:
             await self._check_anonymous(channel_id, topic_id, parent)
         parsed, notices = await self._mentions(user, channel_id, body)
+        term_action = await BlockedTermService(self.session).check(body)
+        if term_action is BlockedTermAction.REJECT:
+            raise AppError("chat.message_blocked", 422)
+        moderation = (
+            MessageModeration.HELD
+            if term_action is BlockedTermAction.HOLD
+            else MessageModeration.VISIBLE
+        )
         if is_anonymous:
             # Mentions would notify people in the author's name, so an anonymous question names nobody.
             parsed = ParsedMentions([], False)
@@ -151,6 +162,7 @@ class MessageService:
                     parsed,
                     attachment_ids,
                     is_anonymous,
+                    moderation,
                 )
             except IntegrityError:
                 # A duplicate snowflake is the primary key's to catch; one retry with a fresh id (ADR 0002).
@@ -164,10 +176,14 @@ class MessageService:
             assert again is not None
             return SendOutcome(again, created=False)
 
-        message = await self.message(channel_id, message_id)
+        message = await self.message(channel_id, message_id, user.id)
         assert message is not None
         await self.bus.publish(
-            channel_topic(channel_id), "message.created", message.model_dump(mode="json")
+            user_topic(user.id)
+            if moderation is MessageModeration.HELD
+            else channel_topic(channel_id),
+            "message.created",
+            message.model_dump(mode="json"),
         )
         if attachment_ids:
             # The author's tabs also show the files being scanned, which nobody else sees yet (D-068).
@@ -215,6 +231,7 @@ class MessageService:
         parsed: ParsedMentions,
         attachment_ids: list[uuid.UUID],
         is_anonymous: bool = False,
+        moderation: MessageModeration = MessageModeration.VISIBLE,
     ) -> bool:
         """One transaction: claim the client id, insert the message and its mentions, create the notifications.
         False if a concurrent send won the claim."""
@@ -255,7 +272,8 @@ class MessageService:
                     author_id=message.author_id,
                     parent_id=message.parent_id,
                     body=message.body,
-                    body_tsv=body_vector(body),
+                    body_tsv=body_vector(body) if moderation is MessageModeration.VISIBLE else None,
+                    moderation=moderation,
                     client_msg_id=message.client_msg_id,
                     mentions_channel=message.mentions_channel,
                     is_anonymous=is_anonymous,
@@ -280,13 +298,14 @@ class MessageService:
                     raise
             mentions = MentionService(self.session)
             mentioned = await mentions.record(message, parsed)
-            await mentions.notify(
-                message,
-                user,
-                mentioned=mentioned,
-                channel_wide=parsed.channel,
-                reply_to=parent.author_id if parent is not None else None,
-            )
+            if moderation is MessageModeration.VISIBLE:
+                await mentions.notify(
+                    message,
+                    user,
+                    mentioned=mentioned,
+                    channel_wide=parsed.channel,
+                    reply_to=parent.author_id if parent is not None else None,
+                )
             await self.session.commit()
         except DBAPIError as exc:
             if "no partition" not in str(exc.orig):
@@ -379,6 +398,17 @@ class MessageService:
         """Replaces the body within the window; a verified answer loses its mark, reactions stay (§13.2)."""
         _check_body(body)
         message = await self._own_message(user, message_id, Action.EDIT)
+        was_held = message.moderation is MessageModeration.HELD
+        term_action = await BlockedTermService(self.session).check(body)
+        if term_action is BlockedTermAction.REJECT:
+            raise AppError("chat.message_blocked", 422)
+        moderation = (
+            MessageModeration.HIDDEN
+            if message.moderation is MessageModeration.HIDDEN
+            else MessageModeration.HELD
+            if term_action is BlockedTermAction.HOLD
+            else MessageModeration.VISIBLE
+        )
         parsed, notices = await self._mentions(user, message.channel_id, body)
         # The channel flag is sticky: once @channel was sent, everyone was already told.
         parsed = ParsedMentions(parsed.user_ids, parsed.channel or message.mentions_channel)
@@ -387,7 +417,8 @@ class MessageService:
             .where(Message.id == message.id, Message.created_at == message.created_at)
             .values(
                 body=body,
-                body_tsv=body_vector(body),
+                body_tsv=body_vector(body) if moderation is MessageModeration.VISIBLE else None,
+                moderation=moderation,
                 edited_at=utc_now(),
                 is_verified_answer=False,
                 verified_by=None,
@@ -399,15 +430,35 @@ class MessageService:
         mentions = MentionService(self.session)
         added = await mentions.record(message, parsed)
         # Only people newly named are notified; the per-message key stops repeats (§5.6).
-        await mentions.notify(
-            message,
-            user,
-            mentioned=added,
-            channel_wide=parsed.channel,
-            reply_to=None,
-        )
+        if moderation is MessageModeration.VISIBLE:
+            reply_to = None
+            if was_held and message.parent_id is not None:
+                parent = await find_message(self.session, message.parent_id)
+                reply_to = parent.author_id if parent is not None else None
+            await mentions.notify(
+                message,
+                user,
+                mentioned=set(parsed.user_ids) if was_held else added,
+                channel_wide=parsed.channel,
+                reply_to=reply_to,
+            )
         await self.session.commit()
-        await self.publish_update(message.channel_id, message.id)
+        if was_held and moderation is MessageModeration.VISIBLE:
+            released = await self.message(message.channel_id, message.id)
+            assert released is not None
+            await self.bus.publish(
+                channel_topic(message.channel_id),
+                "message.created",
+                released.model_dump(mode="json"),
+            )
+        else:
+            await self.publish_update(message.channel_id, message.id)
+        if moderation is not MessageModeration.VISIBLE:
+            own = await self.message(message.channel_id, message.id, user.id)
+            assert own is not None
+            await self.bus.publish(
+                user_topic(user.id), "message.updated", own.model_dump(mode="json")
+            )
         out = await self.message(message.channel_id, message.id, user.id)
         assert out is not None
         return SendOutcome(out, created=True, notices=notices)

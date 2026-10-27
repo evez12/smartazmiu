@@ -52,6 +52,7 @@ function message(id: string, at: string, author: ChatMessage["author"], body: st
     created_at: at,
     edited_at: null,
     deleted_at: null,
+    moderation: "visible",
     is_verified_answer: false,
     verified_by_name: null,
     is_anonymous: false,

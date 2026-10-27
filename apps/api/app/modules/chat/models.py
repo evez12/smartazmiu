@@ -80,6 +80,30 @@ class ScanStatus(StrEnum):
     """The content did not match its declared type, or the uploaded object was missing (D-068)."""
 
 
+class BlockedTermAction(StrEnum):
+    HOLD = "hold"
+    REJECT = "reject"
+
+
+class MessageModeration(StrEnum):
+    VISIBLE = "visible"
+    HELD = "held"
+    HIDDEN = "hidden"
+
+
+class BlockedTerm(Base):
+    __tablename__ = "blocked_terms"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    pattern: Mapped[str] = mapped_column(String(128))
+    is_regex: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    action: Mapped[BlockedTermAction] = mapped_column(
+        _enum(BlockedTermAction, "blocked_term_action")
+    )
+    lang: Mapped[str] = mapped_column(String(2))
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Channel(Base):
     __tablename__ = "channels"
     __table_args__ = (
@@ -234,6 +258,11 @@ class Message(Base):
     client_msg_id: Mapped[uuid.UUID] = mapped_column(Uuid)
     edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    moderation: Mapped[MessageModeration] = mapped_column(
+        _enum(MessageModeration, "message_moderation"),
+        default=MessageModeration.VISIBLE,
+        server_default=MessageModeration.VISIBLE.value,
+    )
 
 
 class MessageClientId(Base):

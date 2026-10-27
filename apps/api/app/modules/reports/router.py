@@ -4,11 +4,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response
 
 from app.core.deps import RedisDep, SessionDep
-from app.core.errors import COMMON_ERROR_RESPONSES
+from app.core.errors import COMMON_ERROR_RESPONSES, AppError
 from app.core.rbac import CurrentUserDep, require_permission
+from app.modules.chat.blocked_terms import BlockedTermService
 from app.modules.chat.deps import AccessDep
+from app.modules.chat.models import BlockedTerm
 from app.modules.reports.models import ReportStatus
 from app.modules.reports.schemas import (
+    BlockedTermIn,
+    BlockedTermOut,
     ReportCreatedOut,
     ReportIn,
     ReportOut,
@@ -16,6 +20,7 @@ from app.modules.reports.schemas import (
     ReportStatusIn,
 )
 from app.modules.reports.service import ReportService
+from app.modules.users.models import RoleCode
 from app.modules.users.service import CurrentUser
 
 REPORTS_READ = "admin.reports.read"
@@ -79,3 +84,54 @@ async def set_report_status(
     actor: ReportHandler, reports: ReportsDep, report_id: uuid.UUID, body: ReportStatusIn
 ) -> ReportOut:
     return await reports.set_status(actor, report_id, body.status)
+
+
+def _admin(actor: CurrentUser) -> None:
+    if RoleCode.ADMIN.value not in actor.roles:
+        raise AppError("auth.forbidden", 403)
+
+
+def _term_out(term: BlockedTerm) -> BlockedTermOut:
+    return BlockedTermOut(
+        id=str(term.id),
+        pattern=term.pattern,
+        is_regex=term.is_regex,
+        action=term.action,
+        lang=term.lang,
+    )
+
+
+@router.get(
+    "/moderation/blocked-terms",
+    response_model=list[BlockedTermOut],
+    operation_id="listBlockedTerms",
+)
+async def list_blocked_terms(actor: CurrentUserDep, session: SessionDep) -> list[BlockedTermOut]:
+    _admin(actor)
+    return [_term_out(term) for term in await BlockedTermService(session).list()]
+
+
+@router.post(
+    "/moderation/blocked-terms",
+    response_model=BlockedTermOut,
+    status_code=201,
+    operation_id="addBlockedTerm",
+)
+async def add_blocked_term(
+    actor: CurrentUserDep, session: SessionDep, body: BlockedTermIn
+) -> BlockedTermOut:
+    _admin(actor)
+    term = await BlockedTermService(session).add(
+        actor, body.pattern, body.is_regex, body.action, body.lang
+    )
+    return _term_out(term)
+
+
+@router.delete(
+    "/moderation/blocked-terms/{term_id}", status_code=204, operation_id="removeBlockedTerm"
+)
+async def remove_blocked_term(
+    actor: CurrentUserDep, session: SessionDep, term_id: uuid.UUID
+) -> None:
+    _admin(actor)
+    await BlockedTermService(session).remove(actor, term_id)

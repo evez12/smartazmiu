@@ -235,6 +235,18 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Mesaj boşdur. Mətn yazıb yenidən göndərin.",
         "en": "The message is empty. Write some text and send again.",
     },
+    "chat.message_blocked": {
+        "az": "Mesaj qaydalara uyğun deyil. Mətni dəyişib yenidən göndərin.",
+        "en": "The message does not meet the rules. Edit it and try again.",
+    },
+    "chat.blocked_term_invalid": {
+        "az": "Bloklama qaydası düzgün deyil. İfadəni yoxlayın.",
+        "en": "The blocked-term rule is invalid. Check the pattern.",
+    },
+    "chat.blocked_term_not_found": {
+        "az": "Bloklama qaydası tapılmadı. Siyahını yeniləyin.",
+        "en": "The blocked-term rule was not found. Refresh the list.",
+    },
     "chat.message_too_long": {
         "az": "Mesaj çox uzundur. Ən çox 4000 simvol yaza bilərsiniz.",
         "en": "The message is too long. You can write at most 4,000 characters.",

@@ -26,7 +26,13 @@ from app.core.errors import AppError
 from app.core.time import utc_now
 from app.core.uploads import content_disposition, content_matches, safe_filename
 from app.modules.chat.attachments import AttachmentScanner, file_type
-from app.modules.chat.models import ChannelType, MessageAttachment, ScanStatus
+from app.modules.chat.models import (
+    ChannelType,
+    Message,
+    MessageAttachment,
+    MessageModeration,
+    ScanStatus,
+)
 from app.modules.notifications.models import Notification, NotificationKind
 from app.modules.users.models import User
 from app.workers import main as worker
@@ -371,6 +377,18 @@ async def test_downloads_are_short_lived_typed_and_for_members_only(
             404,
             "chat.attachment_not_found",
         )
+    await db.execute(
+        update(Message)
+        .where(Message.id == int(message["id"]))
+        .values(moderation=MessageModeration.HIDDEN)
+    )
+    await db.commit()
+    assert (
+        await client.get(f"{API}/chat/attachments/{pdf}/download", headers=ramin.headers)
+    ).status_code == 404
+    assert (
+        await client.get(f"{API}/chat/attachments/{pdf}/download", headers=aysel.headers)
+    ).status_code == 200
     await client.delete(f"{API}/chat/messages/{message['id']}", headers=aysel.headers)
     gone = await client.get(f"{API}/chat/attachments/{pdf}/download", headers=ramin.headers)
     assert gone.status_code == 404

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.modules.chat.models import BlockedTermAction
 from app.modules.chat.schemas import AuthorOut
 from app.modules.reports.models import ReportReason, ReportStatus, ReportTarget
 
@@ -63,3 +64,18 @@ class ReportPageOut(BaseModel):
 
 class ReportStatusIn(BaseModel):
     status: ReportStatus
+
+
+class BlockedTermIn(BaseModel):
+    pattern: str = Field(min_length=1, max_length=128)
+    is_regex: bool = False
+    action: BlockedTermAction
+    lang: str = Field(pattern="^(az|en|ru)$")
+
+
+class BlockedTermOut(BaseModel):
+    id: str
+    pattern: str
+    is_regex: bool
+    action: BlockedTermAction
+    lang: str

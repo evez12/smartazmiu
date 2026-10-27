@@ -17,9 +17,12 @@ from app.core.uploads import PREVIEWABLE
 from app.modules.academics.models import AcademicGroup, CourseOfferingTeacher
 from app.modules.chat.models import (
     Channel,
+    ChannelMember,
+    MemberRole,
     Message,
     MessageAttachment,
     MessageMention,
+    MessageModeration,
     MessageReaction,
     PinnedMessage,
     Poll,
@@ -89,6 +92,7 @@ def message_out(message: Message, author: User | None, badge: str | None = None)
         created_at=message.created_at,
         edited_at=message.edited_at,
         deleted_at=message.deleted_at,
+        moderation=message.moderation,
         is_verified_answer=message.is_verified_answer and not deleted,
         is_anonymous=message.is_anonymous,
         mentions_channel=message.mentions_channel and not deleted,
@@ -165,6 +169,17 @@ async def enrich(
             attached[attachment.message_id].append(attachment_out(attachment))
 
     extras = await curation(session, messages, viewer)
+    moderator_channels: set[uuid.UUID] = set()
+    if viewer is not None:
+        moderator_channels = set(
+            await session.scalars(
+                select(ChannelMember.channel_id).where(
+                    ChannelMember.user_id == viewer,
+                    ChannelMember.channel_id.in_({message.channel_id for message in messages}),
+                    ChannelMember.role.in_([MemberRole.MODERATOR, MemberRole.OWNER]),
+                )
+            )
+        )
     # Teacher and curator badges come from the query; guides only matter in subject communities (§5.2).
     guides = await guide_terms(
         session,
@@ -198,6 +213,14 @@ async def enrich(
                 out.my_reactions = sorted(mine[message.id], key=order.__getitem__)
         elif viewer is not None:
             out.my_reactions = []
+        if message.moderation is not MessageModeration.VISIBLE and not (
+            viewer is not None
+            and (viewer == message.author_id or message.channel_id in moderator_channels)
+        ):
+            out.body = ""
+            out.attachments = []
+            out.mentions = []
+            out.poll = None
         result.append(out)
     return result
 

@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 
 from redis.asyncio import Redis
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -16,8 +16,16 @@ from app.modules.academics.models import Subject
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.chat.access import ChannelAccess
+from app.modules.chat.bus import ChatBus, channel_topic, user_topic
 from app.modules.chat.lookup import MAX_MESSAGE_ID, find_message
-from app.modules.chat.models import Channel, Message
+from app.modules.chat.models import (
+    Channel,
+    ChannelMember,
+    MemberRole,
+    Message,
+    MessageModeration,
+)
+from app.modules.chat.payloads import message_payload
 from app.modules.chat.policy import Action
 from app.modules.chat.schemas import AuthorOut
 from app.modules.knowledge.models import CourseTip, TipStatus
@@ -99,7 +107,70 @@ class ReportService:
             target_id=report_id,
             details={"target_type": target_type.value, "reason": reason.value},
         )
+        hidden_message: Message | None = None
+        if target_type is ReportTarget.MESSAGE:
+            message = await find_message(self.session, int(normalized), lock=True)
+            assert message is not None
+            distinct = await self.session.scalar(
+                select(func.count(func.distinct(Report.reporter_id))).where(
+                    Report.target_type == ReportTarget.MESSAGE,
+                    Report.target_id == normalized,
+                )
+            )
+            if (
+                distinct is not None
+                and distinct >= 3
+                and message.moderation is MessageModeration.VISIBLE
+                and message.deleted_at is None
+            ):
+                await self.session.execute(
+                    update(Message)
+                    .where(Message.id == message.id, Message.created_at == message.created_at)
+                    .values(moderation=MessageModeration.HIDDEN, body_tsv=None)
+                )
+                record_audit(
+                    self.session,
+                    AuditAction.MESSAGE_AUTO_HIDDEN,
+                    actor_id=None,
+                    target_type="message",
+                    target_id=normalized,
+                    details={"channel_id": str(message.channel_id)},
+                )
+                hidden_message = message
         await self.session.commit()
+        if hidden_message is not None:
+            bus = ChatBus(self.cache)
+            public = await message_payload(self.session, hidden_message.id, None)
+            assert public is not None
+            await bus.publish(
+                channel_topic(hidden_message.channel_id),
+                "message.updated",
+                public.model_dump(mode="json"),
+            )
+            if hidden_message.author_id is not None:
+                own = await message_payload(
+                    self.session, hidden_message.id, hidden_message.author_id
+                )
+                assert own is not None
+                await bus.publish(
+                    user_topic(hidden_message.author_id),
+                    "message.updated",
+                    own.model_dump(mode="json"),
+                )
+            moderators = await self.session.scalars(
+                select(ChannelMember.user_id).where(
+                    ChannelMember.channel_id == hidden_message.channel_id,
+                    ChannelMember.role.in_([MemberRole.MODERATOR, MemberRole.OWNER]),
+                )
+            )
+            for moderator_id in moderators:
+                if moderator_id == hidden_message.author_id:
+                    continue
+                private = await message_payload(self.session, hidden_message.id, moderator_id)
+                assert private is not None
+                await bus.publish(
+                    user_topic(moderator_id), "message.updated", private.model_dump(mode="json")
+                )
         report = await self.session.get(Report, report_id)
         assert report is not None
         return Created(report, duplicate=False)

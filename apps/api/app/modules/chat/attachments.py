@@ -31,8 +31,8 @@ from app.core.uploads import (
 )
 from app.modules.chat.access import ChannelAccess, deny
 from app.modules.chat.lookup import find_message
-from app.modules.chat.models import MessageAttachment, ScanStatus
-from app.modules.chat.policy import Action
+from app.modules.chat.models import MessageAttachment, MessageModeration, ScanStatus
+from app.modules.chat.policy import Action, authorize
 from app.modules.notifications.models import NotificationCategory, NotificationKind
 from app.modules.notifications.service import NotificationSpec, Notifier
 from app.modules.users.models import User
@@ -156,7 +156,14 @@ class AttachmentService:
         message = await find_message(self.session, attachment.message_id)
         if message is None or message.deleted_at is not None:
             raise AppError("chat.attachment_not_found", 404)
-        if not (await self.access.decide(user, message.channel_id, Action.READ)).allowed:
+        state = await self.access.state(user, message.channel_id)
+        if not authorize(Action.READ, state).allowed:
+            raise AppError("chat.attachment_not_found", 404)
+        if (
+            message.moderation is not MessageModeration.VISIBLE
+            and message.author_id != user.id
+            and not state.privileged
+        ):
             raise AppError("chat.attachment_not_found", 404)
         if attachment.scan_status is not ScanStatus.CLEAN:
             raise AppError("chat.attachment_not_available", 409)

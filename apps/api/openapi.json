@@ -718,6 +718,9 @@
           "feedback.handled",
           "message.anonymous_posted",
           "message.author_revealed",
+          "blocked_term.added",
+          "blocked_term.removed",
+          "message.auto_hidden",
           "tip.reviewed"
         ],
         "title": "AuditAction",
@@ -897,6 +900,76 @@
         ],
         "title": "Availability",
         "type": "string"
+      },
+      "BlockedTermAction": {
+        "enum": [
+          "hold",
+          "reject"
+        ],
+        "title": "BlockedTermAction",
+        "type": "string"
+      },
+      "BlockedTermIn": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/BlockedTermAction"
+          },
+          "is_regex": {
+            "default": false,
+            "title": "Is Regex",
+            "type": "boolean"
+          },
+          "lang": {
+            "pattern": "^(az|en|ru)$",
+            "title": "Lang",
+            "type": "string"
+          },
+          "pattern": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern",
+          "action",
+          "lang"
+        ],
+        "title": "BlockedTermIn",
+        "type": "object"
+      },
+      "BlockedTermOut": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/BlockedTermAction"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_regex": {
+            "title": "Is Regex",
+            "type": "boolean"
+          },
+          "lang": {
+            "title": "Lang",
+            "type": "string"
+          },
+          "pattern": {
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "pattern",
+          "is_regex",
+          "action",
+          "lang"
+        ],
+        "title": "BlockedTermOut",
+        "type": "object"
       },
       "Body_createImport": {
         "properties": {
@@ -4108,6 +4181,15 @@
         "title": "MentorRequestOut",
         "type": "object"
       },
+      "MessageModeration": {
+        "enum": [
+          "visible",
+          "held",
+          "hidden"
+        ],
+        "title": "MessageModeration",
+        "type": "string"
+      },
       "MessageOut": {
         "properties": {
           "attachments": {
@@ -4206,6 +4288,10 @@
             "title": "Mentions Channel",
             "type": "boolean"
           },
+          "moderation": {
+            "$ref": "#/components/schemas/MessageModeration",
+            "default": "visible"
+          },
           "my_reactions": {
             "anyOf": [
               {
@@ -4303,6 +4389,7 @@
           "created_at",
           "edited_at",
           "deleted_at",
+          "moderation",
           "is_verified_answer",
           "verified_by_name",
           "is_anonymous",
@@ -15956,6 +16043,251 @@
         "summary": "Mark an accepted request as resolved",
         "tags": [
           "mentorship"
+        ]
+      }
+    },
+    "/api/v1/moderation/blocked-terms": {
+      "get": {
+        "operationId": "listBlockedTerms",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BlockedTermOut"
+                  },
+                  "title": "Response Listblockedterms",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Blocked Terms",
+        "tags": [
+          "reports"
+        ]
+      },
+      "post": {
+        "operationId": "addBlockedTerm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockedTermIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedTermOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Blocked Term",
+        "tags": [
+          "reports"
+        ]
+      }
+    },
+    "/api/v1/moderation/blocked-terms/{term_id}": {
+      "delete": {
+        "operationId": "removeBlockedTerm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "term_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Term Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Blocked Term",
+        "tags": [
+          "reports"
         ]
       }
     },
