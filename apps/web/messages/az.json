@@ -663,6 +663,9 @@
         "feedback_handled": "Rəyin vəziyyəti dəyişdi",
         "message_anonymous_posted": "Anonim sual yazıldı",
         "message_author_revealed": "Anonim sualın müəllifinə baxıldı",
+        "blocked_term_added": "Bloklama qaydası əlavə edildi",
+        "blocked_term_removed": "Bloklama qaydası silindi",
+        "message_auto_hidden": "Mesaj şikayətlərdən sonra gizlədildi",
         "tip_reviewed": "Fənn kartı yoxlanıldı"
       },
       "rolesAdded": "Əlavə: {roles}",
@@ -1160,6 +1163,8 @@
     "edited": "redaktə olunub",
     "editedAt": "Redaktə olunub: {time}",
     "deletedMessage": "Bu mesaj silinib.",
+    "moderationHidden": "Bu mesaj yoxlama üçün gizlədilib.",
+    "moderationTag": "Gizlədilib",
     "deletedParent": "silinmiş mesaja cavab",
     "verified": "Təsdiqlənmiş cavab",
     "toolbarLabel": "Mesaj əməliyyatları",

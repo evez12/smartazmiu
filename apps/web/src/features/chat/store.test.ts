@@ -15,6 +15,7 @@ function message(id: string, clientMsgId = `client-${id}`, channelId = "c-1"): C
     created_at: "2026-10-26T10:00:00Z",
     edited_at: null,
     deleted_at: null,
+    moderation: "visible",
     is_verified_answer: false,
     verified_by_name: null,
     is_anonymous: false,

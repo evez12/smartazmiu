@@ -1363,6 +1363,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/moderation/blocked-terms": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Blocked Terms */
+    get: operations["listBlockedTerms"];
+    put?: never;
+    /** Add Blocked Term */
+    post: operations["addBlockedTerm"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/moderation/blocked-terms/{term_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Remove Blocked Term */
+    delete: operations["removeBlockedTerm"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/moderation/material-reports": {
     parameters: {
       query?: never;
@@ -1914,6 +1949,9 @@ export interface components {
       | "feedback.handled"
       | "message.anonymous_posted"
       | "message.author_revealed"
+      | "blocked_term.added"
+      | "blocked_term.removed"
+      | "message.auto_hidden"
       | "tip.reviewed";
     /** AuditEntryOut */
     AuditEntryOut: {
@@ -1964,6 +2002,36 @@ export interface components {
      * @enum {string}
      */
     Availability: "available" | "busy" | "paused";
+    /**
+     * BlockedTermAction
+     * @enum {string}
+     */
+    BlockedTermAction: "hold" | "reject";
+    /** BlockedTermIn */
+    BlockedTermIn: {
+      action: components["schemas"]["BlockedTermAction"];
+      /**
+       * Is Regex
+       * @default false
+       */
+      is_regex: boolean;
+      /** Lang */
+      lang: string;
+      /** Pattern */
+      pattern: string;
+    };
+    /** BlockedTermOut */
+    BlockedTermOut: {
+      action: components["schemas"]["BlockedTermAction"];
+      /** Id */
+      id: string;
+      /** Is Regex */
+      is_regex: boolean;
+      /** Lang */
+      lang: string;
+      /** Pattern */
+      pattern: string;
+    };
     /** Body_createImport */
     Body_createImport: {
       encoding?: components["schemas"]["FileEncoding"] | null;
@@ -3105,6 +3173,11 @@ export interface components {
       subject_name: string;
       topic: components["schemas"]["RequestTopic"];
     };
+    /**
+     * MessageModeration
+     * @enum {string}
+     */
+    MessageModeration: "visible" | "held" | "hidden";
     /** MessageOut */
     MessageOut: {
       /** Attachments */
@@ -3146,6 +3219,8 @@ export interface components {
        * @default false
        */
       mentions_channel: boolean;
+      /** @default visible */
+      moderation: components["schemas"]["MessageModeration"];
       /** My Reactions */
       my_reactions: string[] | null;
       /** Parent Id */
@@ -10695,6 +10770,205 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["MentorRequestOut"];
         };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listBlockedTerms: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedTermOut"][];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  addBlockedTerm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BlockedTermIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BlockedTermOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  removeBlockedTerm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        term_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Missing, expired or invalid access token */
       401: {

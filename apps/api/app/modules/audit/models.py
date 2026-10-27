@@ -37,6 +37,9 @@ class AuditAction(StrEnum):
     FEEDBACK_HANDLED = "feedback.handled"
     MESSAGE_ANONYMOUS_POSTED = "message.anonymous_posted"
     MESSAGE_AUTHOR_REVEALED = "message.author_revealed"
+    BLOCKED_TERM_ADDED = "blocked_term.added"
+    BLOCKED_TERM_REMOVED = "blocked_term.removed"
+    MESSAGE_AUTO_HIDDEN = "message.auto_hidden"
     TIP_REVIEWED = "tip.reviewed"
 
 

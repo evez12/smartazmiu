@@ -593,7 +593,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** subject page shows aggregated tips from ≥ 3 past students; anonymous question shows "Anonim" to students and real author to moderator.
 
 #### Sprint 10 (04-05 → 04-16) — Moderation, Search, Exam Mode
-- [ ] Blocked-terms engine (hold/reject) using `normalize_az`, auto-hide after 3 reports.
+- [x] Blocked-terms engine (hold/reject) using `normalize_az`, auto-hide after 3 reports.
 - [ ] Moderator console: report queue with SLA, actions (delete, mute 1h/24h/7d, kick, ban, slow mode, lock thread), audit.
 - [ ] Message search: channel + global, Postgres FTS (`simple`) + trigram, permission-filtered **inside the SQL query**.
 - [ ] Exam mode from `exam_slots` (read-only + no attachments, −15 min → end), `channel.updated` WS event, banner UI.

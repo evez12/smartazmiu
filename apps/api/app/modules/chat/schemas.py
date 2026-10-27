@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.chat.models import ChannelType, NotifyLevel, ScanStatus
+from app.modules.chat.models import ChannelType, MessageModeration, NotifyLevel, ScanStatus
 from app.modules.chat.policy import Reason
 
 # Ids are strings in JSON (§4.2): snowflakes exceed JavaScript's 53-bit integers.
@@ -83,6 +83,7 @@ class MessageOut(BaseModel):
     created_at: datetime
     edited_at: datetime | None
     deleted_at: datetime | None
+    moderation: MessageModeration = MessageModeration.VISIBLE
     is_verified_answer: bool = False
     verified_by_name: str | None = None
     """Who confirmed the answer: the course teacher or a guide of the subject (§5.3)."""

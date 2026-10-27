@@ -140,6 +140,7 @@ export function MessageRow({
     : (message.author?.display_name ?? t("deletedUser"));
   const time = formatTime(message.created_at);
   const deleted = message.deleted_at !== null;
+  const moderated = message.moderation !== "visible";
   const own = canChange(message, context.currentUser.id, now);
   const canReact = context.canPost && !deleted && runtime !== null;
 
@@ -270,6 +271,7 @@ export function MessageRow({
           <header className="flex flex-wrap items-baseline gap-x-2">
             <span className={cn("font-medium", !message.author && "text-muted")}>{name}</span>
             {message.author ? <AuthorBadge author={message.author} /> : null}
+            {moderated ? <Tag tone="neutral">{t("moderationTag")}</Tag> : null}
             {message.pinned ? (
               <Tag tone="neutral" icon={Pin}>
                 {t("pinnedTag")}
@@ -288,9 +290,12 @@ export function MessageRow({
             {time}
           </time>
         )}
+        {moderated && !showHeader ? <Tag tone="neutral">{t("moderationTag")}</Tag> : null}
         {context.rootDeleted ? <p className="text-xs text-muted">{t("deletedParent")}</p> : null}
         {deleted ? (
           <p className="text-sm text-muted italic">{t("deletedMessage")}</p>
+        ) : moderated && !message.body ? (
+          <p className="text-sm text-muted italic">{t("moderationHidden")}</p>
         ) : collapsedAsBlocked && !revealed ? (
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
             {t("blockedMessage")}
