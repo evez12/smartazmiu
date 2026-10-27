@@ -17,10 +17,18 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    late_policy = sa.Enum("accept", "penalize", "reject", name="late_policy")
-    submission_status = sa.Enum("draft", "submitted", "returned", name="submission_status")
-    question_type = sa.Enum("mcq", "multi_select", "short_answer", name="question_type")
-    attempt_status = sa.Enum("in_progress", "submitted", "auto_submitted", name="attempt_status")
+    late_policy = postgresql.ENUM(
+        "accept", "penalize", "reject", name="late_policy", create_type=False
+    )
+    submission_status = postgresql.ENUM(
+        "draft", "submitted", "returned", name="submission_status", create_type=False
+    )
+    question_type = postgresql.ENUM(
+        "mcq", "multi_select", "short_answer", name="question_type", create_type=False
+    )
+    attempt_status = postgresql.ENUM(
+        "in_progress", "submitted", "auto_submitted", name="attempt_status", create_type=False
+    )
     for enum in (late_policy, submission_status, question_type, attempt_status):
         enum.create(op.get_bind(), checkfirst=True)
 

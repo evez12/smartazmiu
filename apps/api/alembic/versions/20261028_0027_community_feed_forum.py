@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0027"
 down_revision: str | None = "0026"
@@ -16,8 +17,13 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    report_reason = sa.Enum(
-        "spam", "abuse", "misinformation", "other", name="community_report_reason"
+    report_reason = postgresql.ENUM(
+        "spam",
+        "abuse",
+        "misinformation",
+        "other",
+        name="community_report_reason",
+        create_type=False,
     )
     report_reason.create(op.get_bind(), checkfirst=True)
     op.create_table(
