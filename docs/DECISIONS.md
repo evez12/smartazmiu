@@ -1800,3 +1800,22 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Options:** use `deleted_at` for every moderation state; keep a separate moderation state. The former would erase the distinction between an author's deletion and a reversible review hold.
 - **Decision:** `messages.moderation` is `visible`, `held`, or `hidden`. Reject stops a new send or edit before persistence. Hold persists a message without a search vector or notifications, delivers its content to the author only, and shows a marker with redacted content to other channel members. The author and assigned channel owner/moderators can read held and auto-hidden content in REST; shared WebSocket payloads always redact it. Edits re-check the active rules; an auto-hidden message stays hidden on edit pending moderator review. Rules use both `normalize_az` forms; reject wins if rules conflict. Regex configuration excludes groups, backreferences, empty matches and patterns longer than 128 characters. Rule removal sets `disabled_at`, retaining the configuration and audit trail. Admin role alone manages rules; adding or disabling a rule is audited without copying the pattern into the audit record. The third distinct report hides a visible, undeleted message under the message row lock, clears its search vector, writes one audit record, then publishes a redacted update after commit. The original body remains for author and moderator review.
 - **Consequences:** the moderator console group will add release/dismiss actions and a review queue for held messages. A clean edit releases a held message; a previously auto-hidden message needs moderator review. §13.2 permission, retry and WebSocket leak paths are covered by focused integration tests; §13.4 exam timing and §13.2 link-preview SSRF cases are assigned to their later Sprint 10 groups. No AI moderation is used.
+
+## D-087 · 2026-10-27 · Moderator queue scope, SLA and reversible chat sanctions (Sprint 10)
+
+- **Context:** Sprint 10 requires a report queue with an SLA, channel-scoped moderators, delete/mute/kick/ban,
+  slow-mode and thread-lock actions, and audit records. The spec does not set an SLA duration or distinguish a
+  kick from a channel ban.
+- **Options:** expose the existing staff-wide queue to every moderator; filter it by assigned channels in SQL.
+  Treat kick and ban identically; make kick remove current membership while a ban also survives provisioning.
+- **Decision:** the moderation SLA is 12 hours from report creation. Staff and admins retain the global queue;
+  users with the moderator role see and act only in channels where they are owner or moderator, with scope
+  enforced in the report and action SQL paths. Kick removes the current membership. A channel ban records a
+  durable deny before removing membership, and a global chat ban is admin-only. Mutes are exactly 1 hour,
+  24 hours or 7 days. Slow mode is off, 10, 30 or 60 seconds. Thread locks apply to one root message. Message
+  removal stays a soft delete; releasing held or auto-hidden content rebuilds its search vector. Moderators
+  cannot act on themselves or teacher/admin targets; every action stores its reason in the moderation record
+  and writes an audit event without copying message or report text.
+- **Consequences:** channel bans remain effective if a provisioning sync recreates membership, while a kick may
+  be reversed by a later authoritative sync. The console shows the global-ban option only to admins. Sanctions
+  emit the existing channel/user WebSocket events after commit; no grade, e-mail or phone data enters payloads.

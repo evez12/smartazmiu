@@ -1,6 +1,7 @@
 """Sending, editing, deleting, history, threads and read markers, shared by the REST endpoints and the WebSocket
 gateway (§5.9): both call the same methods, so both get the same authorisation (ADR 0004)."""
 
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -31,6 +32,7 @@ from app.modules.chat.models import (
     Message,
     MessageClientId,
     MessageModeration,
+    ThreadLock,
 )
 from app.modules.chat.payloads import enrich, message_payload, with_authors
 from app.modules.chat.policy import Action, Reason
@@ -51,6 +53,7 @@ BACKFILL_WINDOW = timedelta(days=3)
 BACKFILL_LIMIT = 1000
 # The author may edit or delete a message for 15 minutes (§5.3, §13.2).
 CHANGE_WINDOW = timedelta(minutes=15)
+URL_PATTERN = re.compile(r"https?://[^\s<]+", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +126,10 @@ class MessageService:
             attaching = await self.access.decide(user, channel_id, Action.SEND_ATTACHMENT)
             if not attaching.allowed:
                 raise deny(attaching)
+        if URL_PATTERN.search(body):
+            linking = await self.access.decide(user, channel_id, Action.SEND_LINK)
+            if not linking.allowed:
+                raise deny(linking)
         decision = await self.access.claim_send(user, channel_id)
         if not decision.allowed:
             raise deny(decision)
@@ -217,6 +224,8 @@ class MessageService:
             parent = await find_message(self.session, parent.parent_id)
         if parent is None or parent.channel_id != channel_id or parent.deleted_at is not None:
             raise AppError("chat.parent_not_found", 422)
+        if await self.session.get(ThreadLock, parent.id) is not None:
+            raise AppError("chat.thread_locked", 403)
         return parent
 
     async def _insert(

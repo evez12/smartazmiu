@@ -65,7 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Leases in the background, so the API serves reads while Redis A is still unreachable (ADR 0002).
         lease.start()
         app.state.snowflake = Snowflake(lease)
-        # Exam slots arrive in Sprint 10; the provider is swapped then without touching callers (D-059).
+        # REST and WebSocket access construct a database-backed provider per transaction.
         app.state.exam_windows = NoExamWindows()
         hub = Hub(app.state.redis, str(settings.database_url))
         await hub.start()

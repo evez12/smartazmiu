@@ -721,6 +721,7 @@
           "blocked_term.added",
           "blocked_term.removed",
           "message.auto_hidden",
+          "moderation.action",
           "tip.reviewed"
         ],
         "title": "AuditAction",
@@ -3186,6 +3187,29 @@
         "title": "InstructionLanguage",
         "type": "string"
       },
+      "LinkPreviewOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "title",
+          "description"
+        ],
+        "title": "LinkPreviewOut",
+        "type": "object"
+      },
       "ManagedAnnouncementOut": {
         "properties": {
           "audience": {
@@ -4428,6 +4452,142 @@
         "title": "MessagePageOut",
         "type": "object"
       },
+      "MessageSearchOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MessageSearchResultOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "MessageSearchOut",
+        "type": "object"
+      },
+      "MessageSearchResultOut": {
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/MessageOut"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "number"
+          }
+        },
+        "required": [
+          "message",
+          "rank"
+        ],
+        "title": "MessageSearchResultOut",
+        "type": "object"
+      },
+      "ModerationActionIn": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationActionKind"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "maximum": 604800.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9]{1,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "target_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target User Id"
+          }
+        },
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "ModerationActionIn",
+        "type": "object"
+      },
+      "ModerationActionKind": {
+        "enum": [
+          "delete_message",
+          "mute",
+          "kick",
+          "ban",
+          "global_ban",
+          "lock_thread",
+          "slow_mode",
+          "restore_message"
+        ],
+        "title": "ModerationActionKind",
+        "type": "string"
+      },
+      "ModerationActionOut": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationActionKind"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action",
+          "created_at"
+        ],
+        "title": "ModerationActionOut",
+        "type": "object"
+      },
       "MovedToOut": {
         "properties": {
           "date": {
@@ -5587,6 +5747,7 @@
           "chat.slow_mode",
           "chat.rate_limited",
           "chat.attachments_not_allowed",
+          "chat.links_not_allowed",
           "chat.channel_mention_not_allowed"
         ],
         "title": "Reason",
@@ -5725,6 +5886,15 @@
             "title": "Reporters",
             "type": "integer"
           },
+          "sla_breached": {
+            "title": "Sla Breached",
+            "type": "boolean"
+          },
+          "sla_due_at": {
+            "format": "date-time",
+            "title": "Sla Due At",
+            "type": "string"
+          },
           "status": {
             "$ref": "#/components/schemas/ReportStatus"
           },
@@ -5754,7 +5924,9 @@
           "message",
           "handled_by",
           "handled_at",
-          "reporters"
+          "reporters",
+          "sla_due_at",
+          "sla_breached"
         ],
         "title": "ReportOut",
         "type": "object"
@@ -10817,6 +10989,94 @@
         ]
       }
     },
+    "/api/v1/chat/link-preview": {
+      "get": {
+        "operationId": "fetchLinkPreview",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 2048,
+              "title": "Url",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Fetch a safe preview for an allowlisted link",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
     "/api/v1/chat/messages/{message_id}": {
       "delete": {
         "operationId": "deleteMessage",
@@ -11912,6 +12172,124 @@
           }
         ],
         "summary": "My saved messages; unreadable ones are listed without content",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/api/v1/chat/search": {
+      "get": {
+        "operationId": "searchMessages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channel_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Channel Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageSearchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search messages in channels the user can read",
         "tags": [
           "chat"
         ]
@@ -16043,6 +16421,92 @@
         "summary": "Mark an accepted request as resolved",
         "tags": [
           "mentorship"
+        ]
+      }
+    },
+    "/api/v1/moderation/actions": {
+      "post": {
+        "operationId": "createModerationAction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationActionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Moderation Action",
+        "tags": [
+          "reports"
         ]
       }
     },

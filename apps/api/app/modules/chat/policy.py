@@ -7,11 +7,15 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class Action(StrEnum):
     READ = "read"
     SEND = "send"
     SEND_ATTACHMENT = "send_attachment"
+    SEND_LINK = "send_link"
     REACT = "react"
     EDIT = "edit"
     DELETE = "delete"
@@ -33,11 +37,14 @@ class Reason(StrEnum):
     RATE_LIMITED = "chat.rate_limited"
     ATTACHMENTS_NOT_ALLOWED = "chat.attachments_not_allowed"
     """Accounts younger than 24 hours cannot attach files in subject communities (§5.5)."""
+    LINKS_NOT_ALLOWED = "chat.links_not_allowed"
     CHANNEL_MENTION_NOT_ALLOWED = "chat.channel_mention_not_allowed"
 
 
 # Exam mode, read-only channels and DM restrictions stop new content; deleting one's own message stays possible.
-CONTENT = frozenset({Action.SEND, Action.SEND_ATTACHMENT, Action.REACT, Action.EDIT})
+CONTENT = frozenset(
+    {Action.SEND, Action.SEND_ATTACHMENT, Action.SEND_LINK, Action.REACT, Action.EDIT}
+)
 POSTING = frozenset({Action.SEND, Action.SEND_ATTACHMENT, Action.REACT})
 NEW_MESSAGES = frozenset({Action.SEND, Action.SEND_ATTACHMENT})
 
@@ -61,6 +68,32 @@ class NoExamWindows:
 
     async def windows(self, channel_ids: list[uuid.UUID], at: datetime) -> list[ExamWindow]:
         return []
+
+
+class DatabaseExamWindows:
+    """Reads the authoritative exam schedule at authorization time."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def windows(self, channel_ids: list[uuid.UUID], at: datetime) -> list[ExamWindow]:
+        from app.modules.chat.models import ExamSlot
+
+        rows = await self.session.execute(
+            select(ExamSlot.channel_id, ExamSlot.starts_at, ExamSlot.ends_at).where(
+                ExamSlot.channel_id.in_(channel_ids),
+                ExamSlot.starts_at - func.make_interval(mins=15) <= at,
+                ExamSlot.ends_at > at,
+            )
+        )
+        return [
+            ExamWindow(
+                channel_id=channel_id,
+                starts_at=starts_at,
+                ends_at=ends_at,
+            )
+            for channel_id, starts_at, ends_at in rows
+        ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +160,8 @@ def authorize(action: Action, state: ChannelState) -> Decision:
         return Decision(False, Reason.RATE_LIMITED, retry_after=state.rate_limit_retry_after)
     if action is Action.SEND_ATTACHMENT and state.attachments_restricted:
         return Decision(False, Reason.ATTACHMENTS_NOT_ALLOWED)
+    if action is Action.SEND_LINK and state.attachments_restricted:
+        return Decision(False, Reason.LINKS_NOT_ALLOWED)
     if action is Action.MENTION_CHANNEL and not state.can_mention_channel:
         return Decision(False, Reason.CHANNEL_MENTION_NOT_ALLOWED)
     return ALLOW

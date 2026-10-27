@@ -2,8 +2,7 @@
 results-import re-check.
 
 Eligible: a completed and passed enrollment in a past semester of the subject, no active enrollment in it now
-(a retake), an active account, and no moderator posting mute in the subject community. The mute stands in for a
-chat ban until bans exist (Sprint 10, D-083).
+(a retake), an active account, and no channel or global chat ban (D-083, D-087).
 """
 
 import uuid
@@ -11,7 +10,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from sqlalchemy import ColumnElement, Select, and_, exists, func, select
+from sqlalchemy import ColumnElement, Select, and_, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import baku_today
@@ -22,7 +21,7 @@ from app.modules.academics.models import (
     EnrollmentStatus,
     Semester,
 )
-from app.modules.chat.models import Channel, ChannelMember, ChannelType
+from app.modules.chat.models import Channel, ChannelBan, ChannelType, GlobalChatBan
 from app.modules.users.models import User, UserStatus
 
 
@@ -59,15 +58,17 @@ def retaking(user_id: Any, subject_id: Any) -> ColumnElement[bool]:
 
 
 def banned(user_id: Any, subject_id: Any) -> ColumnElement[bool]:
-    return exists(
-        select(ChannelMember.user_id)
-        .join(Channel, Channel.id == ChannelMember.channel_id)
-        .where(
-            Channel.type == ChannelType.SUBJECT_COMMUNITY,
-            Channel.subject_id == subject_id,
-            ChannelMember.user_id == user_id,
-            ChannelMember.posting_muted_until > func.now(),
-        )
+    return or_(
+        exists(select(GlobalChatBan.user_id).where(GlobalChatBan.user_id == user_id)),
+        exists(
+            select(ChannelBan.user_id)
+            .join(Channel, Channel.id == ChannelBan.channel_id)
+            .where(
+                Channel.type == ChannelType.SUBJECT_COMMUNITY,
+                Channel.subject_id == subject_id,
+                ChannelBan.user_id == user_id,
+            )
+        ),
     )
 
 

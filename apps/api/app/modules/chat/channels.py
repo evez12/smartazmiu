@@ -27,6 +27,7 @@ from sqlalchemy.orm import InstrumentedAttribute, aliased
 from sqlalchemy.sql.selectable import ScalarSelect
 
 from app.core.errors import AppError
+from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.modules.academics.models import (
     AcademicGroup,
     CourseOffering,
@@ -39,10 +40,12 @@ from app.modules.chat.access import ALWAYS_REACHES, ChannelAccess
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.models import (
     Channel,
+    ChannelBan,
     ChannelMember,
     ChannelRead,
     ChannelTopic,
     ChannelType,
+    GlobalChatBan,
     MemberRole,
     Message,
     MessageMention,
@@ -67,6 +70,7 @@ SHARED_CONTEXT_TYPES = (
     ChannelType.COURSE_OFFERING,
     ChannelType.SUBJECT_COMMUNITY,
 )
+NEW_DM_LIMIT = RateLimit("chat_new_dm", limit=30, window_seconds=86400)
 
 
 def _id_floor(moment: InstrumentedAttribute[datetime]) -> ColumnElement[int]:
@@ -184,6 +188,10 @@ class ChannelService:
             .outerjoin(peer, and_(Channel.type == ChannelType.DM, peer.id == peer_id))
             .outerjoin(CourseOffering, CourseOffering.id == Channel.course_offering_id)
             .outerjoin(Semester, Semester.id == CourseOffering.semester_id)
+            .where(
+                ~exists().where(ChannelBan.channel_id == Channel.id, ChannelBan.user_id == user.id),
+                ~exists().where(GlobalChatBan.user_id == user.id),
+            )
             .order_by(Channel.type, Channel.is_archived, Channel.name, Channel.id)
         )
         if only is not None:
@@ -278,6 +286,7 @@ class ChannelService:
         # apart from a closed inbox (§5.4).
         if await self._blocked(other_id, user.id) or not await self._policy_allows(user, other):
             raise AppError("chat.dm_unavailable", 403)
+        await enforce_rate_limit(self.access.cache, NEW_DM_LIMIT, str(user.id))
         channel_id = await self.ensure_dm(user.id, other_id)
         await self.session.commit()
         await self.bus.membership_changed([(channel_id, low), (channel_id, high)], [])

@@ -141,6 +141,7 @@ export const REASON_KEYS = {
   "chat.rate_limited": "rateLimited",
   "chat.channel_mention_not_allowed": "channelMention",
   "chat.attachments_not_allowed": "attachmentsNotAllowed",
+  "chat.links_not_allowed": "linksNotAllowed",
 } as const satisfies Record<PostingReason, string>;
 
 /** Refusals of edits, deletes and reactions that are not policy reasons. */

@@ -160,6 +160,8 @@ const REPORTS: ReportItem[] = [
     handled_by: null,
     handled_at: null,
     reporters: 2,
+    sla_due_at: "2026-10-26T20:00:00Z",
+    sla_breached: false,
   },
 ];
 
@@ -197,7 +199,7 @@ export function Sprint6Specimens() {
       </Section>
       <Section title={t("reportList")}>
         <ListPanel>
-          <ReportTable items={REPORTS} caption={tReports("tableCaption")} canHandle />
+          <ReportTable items={REPORTS} caption={tReports("tableCaption")} canHandle canGlobalBan />
         </ListPanel>
       </Section>
     </ApiProvider>

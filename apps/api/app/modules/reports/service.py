@@ -2,9 +2,10 @@
 
 import uuid
 from dataclasses import dataclass
+from datetime import timedelta
 
 from redis.asyncio import Redis
-from sqlalchemy import func, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -229,9 +230,19 @@ class ReportService:
             raise AppError("reports.target_not_found", 404)
         return None, str(person_id)
 
-    async def page(self, status: ReportStatus | None, offset: int, limit: int) -> ReportPage:
+    async def page(
+        self, actor: CurrentUser, status: ReportStatus | None, offset: int, limit: int
+    ) -> ReportPage:
         query = select(Report)
         count = select(func.count()).select_from(Report)
+        if not actor.roles & {"staff", "admin"}:
+            scope = exists().where(
+                ChannelMember.channel_id == Report.channel_id,
+                ChannelMember.user_id == actor.id,
+                ChannelMember.role.in_([MemberRole.OWNER, MemberRole.MODERATOR]),
+            )
+            query = query.where(Report.channel_id.is_not(None), scope)
+            count = count.where(Report.channel_id.is_not(None), scope)
         if status is not None:
             query = query.where(Report.status == status)
             count = count.where(Report.status == status)
@@ -250,6 +261,18 @@ class ReportService:
         report = await self.session.get(Report, report_id, with_for_update=True)
         if report is None:
             raise AppError("reports.not_found", 404)
+        if not actor.roles & {"staff", "admin"}:
+            scoped = report.channel_id is not None and await self.session.scalar(
+                select(
+                    exists().where(
+                        ChannelMember.channel_id == report.channel_id,
+                        ChannelMember.user_id == actor.id,
+                        ChannelMember.role.in_([MemberRole.OWNER, MemberRole.MODERATOR]),
+                    )
+                )
+            )
+            if not scoped:
+                raise AppError("reports.not_found", 404)
         if report.status is not status:
             previous = report.status
             report.status = status
@@ -358,6 +381,9 @@ class ReportService:
                     else None,
                     handled_at=report.handled_at,
                     reporters=int(counts.get(report.target_id, 1)),
+                    sla_due_at=report.created_at + timedelta(hours=12),
+                    sla_breached=(report.handled_at or utc_now())
+                    > report.created_at + timedelta(hours=12),
                 )
             )
         return result

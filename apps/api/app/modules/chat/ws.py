@@ -32,7 +32,7 @@ from app.modules.chat.hub import Close, CloseCode, Connection, Hub
 from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MessageService
 from app.modules.chat.models import ChannelMember
-from app.modules.chat.policy import Action, ExamWindowProvider
+from app.modules.chat.policy import Action, DatabaseExamWindows, ExamWindowProvider
 from app.modules.chat.presence import OFFLINE_GRACE_SECONDS, Presence
 from app.modules.chat.reactions import ReactionService
 from app.modules.chat.schemas import MESSAGE_ID_PATTERN
@@ -262,7 +262,7 @@ class SocketSession:
             self.connection.send("error", {"id": event_id, "code": exc.code, "detail": exc.details})
 
     def _services(self, session: Any) -> tuple[ChannelAccess, MessageService]:
-        access = ChannelAccess(session, self.gateway.hub.cache, self.gateway.exams)
+        access = ChannelAccess(session, self.gateway.hub.cache, DatabaseExamWindows(session))
         # Read at call time: tests replace the storage and queue on the running app.
         state = self.connection.websocket.app.state
         messages = MessageService(

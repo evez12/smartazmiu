@@ -3,8 +3,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import * as React from "react";
 
 import { Button } from "@/components/ui/button";
+import { Field, Input, Select } from "@/components/ui/field";
 import {
   Table,
   TableBody,
@@ -31,10 +33,12 @@ export function ReportTable({
   items,
   caption,
   canHandle,
+  canGlobalBan,
 }: {
   items: ReportItem[];
   caption: string;
   canHandle: boolean;
+  canGlobalBan: boolean;
 }) {
   const t = useTranslations("reports.admin");
   const tReasons = useTranslations("reports.reasons");
@@ -83,6 +87,13 @@ export function ReportTable({
             <TableCell label={t("columns.status")}>
               <span className="flex flex-col items-start gap-1">
                 <Tag tone={STATUS_TONE[item.status]}>{t(`status.${item.status}`)}</Tag>
+                {item.status === "open" ? (
+                  <Tag tone={item.sla_breached ? "danger" : "neutral"}>
+                    {item.sla_breached
+                      ? t("slaBreached")
+                      : t("slaDue", { time: formatDateTime(item.sla_due_at) })}
+                  </Tag>
+                ) : null}
                 {item.handled_by && item.handled_at ? (
                   <span className="text-xs text-muted">
                     {t("handledBy", {
@@ -95,13 +106,101 @@ export function ReportTable({
             </TableCell>
             {canHandle ? (
               <TableCell label={t("columns.actions")}>
-                <StatusActions item={item} />
+                <span className="flex flex-col gap-3">
+                  <StatusActions item={item} />
+                  {item.message && item.reported_user ? (
+                    <ModerationActions item={item} canGlobalBan={canGlobalBan} />
+                  ) : null}
+                </span>
               </TableCell>
             ) : null}
           </TableRow>
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+type Action = components["schemas"]["ModerationActionKind"];
+
+function ModerationActions({ item, canGlobalBan }: { item: ReportItem; canGlobalBan: boolean }) {
+  const t = useTranslations("reports.admin");
+  const api = useApi();
+  const router = useRouter();
+  const toast = useToast();
+  const [action, setAction] = React.useState<Action>("delete_message");
+  const [duration, setDuration] = React.useState("3600");
+  const [reason, setReason] = React.useState("");
+  const change = useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.POST("/api/v1/moderation/actions", {
+          body: {
+            action,
+            channel_id: item.message!.channel_id,
+            message_id: ["delete_message", "restore_message", "lock_thread"].includes(action)
+              ? item.message!.id
+              : null,
+            target_user_id: item.reported_user!.id,
+            duration_seconds: ["mute", "slow_mode"].includes(action) ? Number(duration) : null,
+            reason,
+          },
+        }),
+      ),
+    onSuccess: () => {
+      toast({ title: t("actionDone") });
+      router.refresh();
+    },
+    onError: () => toast({ title: t("actionFailed"), tone: "danger" }),
+  });
+  return (
+    <form
+      className="flex min-w-52 flex-col gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        change.mutate();
+      }}
+    >
+      <Field label={t("moderationAction")}>
+        <Select value={action} onChange={(event) => setAction(event.target.value as Action)}>
+          {(
+            [
+              "delete_message",
+              "restore_message",
+              "mute",
+              "kick",
+              "ban",
+              "global_ban",
+              "lock_thread",
+              "slow_mode",
+            ] as Action[]
+          )
+            .filter((value) => value !== "global_ban" || canGlobalBan)
+            .map((value) => (
+              <option key={value} value={value}>
+                {t(`actions.${value}`)}
+              </option>
+            ))}
+        </Select>
+      </Field>
+      {["mute", "slow_mode"].includes(action) ? (
+        <Field label={t("duration")}>
+          <Select value={duration} onChange={(event) => setDuration(event.target.value)}>
+            {(action === "mute" ? [3600, 86400, 604800] : [0, 10, 30, 60]).map((value) => (
+              <option key={value} value={value}>
+                {t("seconds", { count: value })}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
+      <Field label={t("reasonLabel")}>
+        <Input value={reason} onChange={(event) => setReason(event.target.value)} required />
+      </Field>
+      <Button type="submit" size="dense" variant="secondary" loading={change.isPending}>
+        {t("applyAction")}
+      </Button>
+    </form>
   );
 }
 

@@ -536,6 +536,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/chat/link-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Fetch a safe preview for an allowlisted link */
+    get: operations["fetchLinkPreview"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/chat/messages/{message_id}": {
     parameters: {
       query?: never;
@@ -684,6 +701,23 @@ export interface paths {
     };
     /** My saved messages; unreadable ones are listed without content */
     get: operations["listSavedMessages"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/chat/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search messages in channels the user can read */
+    get: operations["searchMessages"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1363,6 +1397,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/moderation/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Moderation Action */
+    post: operations["createModerationAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/moderation/blocked-terms": {
     parameters: {
       query?: never;
@@ -1952,6 +2003,7 @@ export interface components {
       | "blocked_term.added"
       | "blocked_term.removed"
       | "message.auto_hidden"
+      | "moderation.action"
       | "tip.reviewed";
     /** AuditEntryOut */
     AuditEntryOut: {
@@ -2813,6 +2865,15 @@ export interface components {
      * @enum {string}
      */
     InstructionLanguage: "az" | "en" | "ru";
+    /** LinkPreviewOut */
+    LinkPreviewOut: {
+      /** Description */
+      description: string;
+      /** Title */
+      title: string;
+      /** Url */
+      url: string;
+    };
     /** ManagedAnnouncementOut */
     ManagedAnnouncementOut: {
       audience: components["schemas"]["AudienceOut"];
@@ -3252,6 +3313,55 @@ export interface components {
       /** Messages */
       messages: components["schemas"]["MessageOut"][];
     };
+    /** MessageSearchOut */
+    MessageSearchOut: {
+      /** Items */
+      items: components["schemas"]["MessageSearchResultOut"][];
+    };
+    /** MessageSearchResultOut */
+    MessageSearchResultOut: {
+      message: components["schemas"]["MessageOut"];
+      /** Rank */
+      rank: number;
+    };
+    /** ModerationActionIn */
+    ModerationActionIn: {
+      action: components["schemas"]["ModerationActionKind"];
+      /** Channel Id */
+      channel_id?: string | null;
+      /** Duration Seconds */
+      duration_seconds?: number | null;
+      /** Message Id */
+      message_id?: string | null;
+      /** Reason */
+      reason: string;
+      /** Target User Id */
+      target_user_id?: string | null;
+    };
+    /**
+     * ModerationActionKind
+     * @enum {string}
+     */
+    ModerationActionKind:
+      | "delete_message"
+      | "mute"
+      | "kick"
+      | "ban"
+      | "global_ban"
+      | "lock_thread"
+      | "slow_mode"
+      | "restore_message";
+    /** ModerationActionOut */
+    ModerationActionOut: {
+      action: components["schemas"]["ModerationActionKind"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Id */
+      id: string;
+    };
     /** MovedToOut */
     MovedToOut: {
       /**
@@ -3684,6 +3794,7 @@ export interface components {
       | "chat.slow_mode"
       | "chat.rate_limited"
       | "chat.attachments_not_allowed"
+      | "chat.links_not_allowed"
       | "chat.channel_mention_not_allowed";
     /**
      * RegistrationStatus
@@ -3730,6 +3841,13 @@ export interface components {
       reporter: components["schemas"]["AuthorOut"] | null;
       /** Reporters */
       reporters: number;
+      /** Sla Breached */
+      sla_breached: boolean;
+      /**
+       * Sla Due At
+       * Format: date-time
+       */
+      sla_due_at: string;
       status: components["schemas"]["ReportStatus"];
       target_type: components["schemas"]["ReportTarget"];
       tip?: components["schemas"]["ReportedTipOut"] | null;
@@ -6793,6 +6911,73 @@ export interface operations {
       };
     };
   };
+  fetchLinkPreview: {
+    parameters: {
+      query: {
+        url: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LinkPreviewOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
   deleteMessage: {
     parameters: {
       query?: never;
@@ -7560,6 +7745,75 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SavedListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  searchMessages: {
+    parameters: {
+      query: {
+        q: string;
+        channel_id?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageSearchOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -10769,6 +11023,75 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["MentorRequestOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createModerationAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ModerationActionIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModerationActionOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

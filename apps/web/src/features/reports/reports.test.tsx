@@ -50,6 +50,8 @@ function item(overrides: Partial<ReportItem>): ReportItem {
     handled_by: null,
     handled_at: null,
     reporters: 1,
+    sla_due_at: "2026-10-26T20:00:00Z",
+    sla_breached: false,
     ...overrides,
   };
 }
@@ -81,6 +83,11 @@ describe("ReportDialog", () => {
       note: "Cari semestrin sualları",
     });
   });
+
+  it("keeps the global ban action admin-only", () => {
+    wrap(<ReportTable caption="Moderasiya" canHandle canGlobalBan={false} items={[item({})]} />);
+    expect(document.querySelector('option[value="global_ban"]')).toBeNull();
+  });
 });
 
 describe("ReportTable", () => {
@@ -89,6 +96,7 @@ describe("ReportTable", () => {
       <ReportTable
         caption="Şikayətlər"
         canHandle={false}
+        canGlobalBan={false}
         items={[
           item({
             message: { ...item({}).message!, body: "<script>alert(1)</script>", deleted: true },
