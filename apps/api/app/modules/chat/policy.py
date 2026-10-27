@@ -3,12 +3,10 @@ asks it, so the reason a user sees is the one that actually applies (§13.2). Pu
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Protocol
-
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from importlib import import_module
+from typing import Any, Protocol
 
 
 class Action(StrEnum):
@@ -73,16 +71,18 @@ class NoExamWindows:
 class DatabaseExamWindows:
     """Reads the authoritative exam schedule at authorization time."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: Any) -> None:
         self.session = session
 
     async def windows(self, channel_ids: list[uuid.UUID], at: datetime) -> list[ExamWindow]:
         from app.modules.chat.models import ExamSlot
 
+        select = import_module("sqlalchemy").select
+
         rows = await self.session.execute(
             select(ExamSlot.channel_id, ExamSlot.starts_at, ExamSlot.ends_at).where(
                 ExamSlot.channel_id.in_(channel_ids),
-                ExamSlot.starts_at - func.make_interval(mins=15) <= at,
+                ExamSlot.starts_at - timedelta(minutes=15) <= at,
                 ExamSlot.ends_at > at,
             )
         )
