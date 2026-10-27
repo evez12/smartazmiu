@@ -11,9 +11,11 @@ from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.rbac import CurrentUserDep
 from app.core.security import TokenClaims
 from app.modules.chat import tickets
+from app.modules.chat.curation import validate_poll
 from app.modules.chat.deps import (
     AttachmentsDep,
     ChannelsDep,
+    CurationDep,
     DurableRedisDep,
     MessagesDep,
     ReactionsDep,
@@ -21,6 +23,7 @@ from app.modules.chat.deps import (
 from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MAX_PAGE_SIZE, PAGE_SIZE
 from app.modules.chat.schemas import (
+    AuthorOut,
     ChannelDetailOut,
     ChannelListOut,
     ChannelOut,
@@ -32,16 +35,21 @@ from app.modules.chat.schemas import (
     MessageOut,
     MessagePageOut,
     OpenDmIn,
+    PinsOut,
+    PollIn,
     PresignIn,
     PresignOut,
     ReactionIn,
     ReactionResultOut,
     ReadMarkerIn,
     ReadMarkerOut,
+    SavedItemOut,
+    SavedListOut,
     SendMessageIn,
     SendResultOut,
     ThreadOut,
     TicketOut,
+    VoteIn,
 )
 from app.modules.health.metrics import MESSAGES_SENT, counting_send
 
@@ -91,13 +99,17 @@ async def list_my_channels(user: CurrentUserDep, channels: ChannelsDep) -> Chann
     summary="A channel I am in, with its topics",
 )
 async def read_channel(
-    user: CurrentUserDep, channels: ChannelsDep, channel_id: uuid.UUID
+    user: CurrentUserDep, channels: ChannelsDep, curation: CurationDep, channel_id: uuid.UUID
 ) -> ChannelDetailOut:
     channel, topics, subject_id = await channels.get(user, channel_id)
+    can = await curation.capabilities(user, channel_id)
     return ChannelDetailOut(
         **channel.model_dump(),
         topics=topics,
         subject_id=str(subject_id) if subject_id else None,
+        can_pin=can.can_pin,
+        can_verify=can.can_verify,
+        can_see_anonymous=can.can_see_anonymous,
     )
 
 
@@ -163,6 +175,7 @@ async def send_channel_message(
             body.topic_id,
             parse_message_id(body.parent_id) if body.parent_id else None,
             body.attachment_ids,
+            body.is_anonymous,
         )
     if outcome.created:
         MESSAGES_SENT.labels("rest").inc()
@@ -362,3 +375,162 @@ async def download_attachment(
 ) -> DownloadOut:
     link = await attachments.download(user, attachment_id, inline=inline)
     return DownloadOut(url=link.url, expires_at=link.expires_at)
+
+
+MessageIdPath = Annotated[str, Path(pattern=MESSAGE_ID)]
+
+
+@router.get(
+    "/chat/channels/{channel_id}/pins",
+    response_model=PinsOut,
+    operation_id="listPins",
+    summary='The channel "Faydali" collection: pinned messages, newest pin first',
+)
+async def list_pins(user: CurrentUserDep, curation: CurationDep, channel_id: uuid.UUID) -> PinsOut:
+    return PinsOut(messages=await curation.pins(user, channel_id))
+
+
+@router.post(
+    "/chat/channels/{channel_id}/pins/{message_id}",
+    response_model=MessageOut,
+    operation_id="pinMessage",
+    summary="Pin a message (max 50 per channel)",
+)
+async def pin_message(
+    user: CurrentUserDep, curation: CurationDep, channel_id: uuid.UUID, message_id: MessageIdPath
+) -> MessageOut:
+    return await curation.pin(user, channel_id, parse_message_id(message_id))
+
+
+@router.delete(
+    "/chat/channels/{channel_id}/pins/{message_id}",
+    status_code=204,
+    operation_id="unpinMessage",
+    summary="Unpin a message",
+)
+async def unpin_message(
+    user: CurrentUserDep, curation: CurationDep, channel_id: uuid.UUID, message_id: MessageIdPath
+) -> None:
+    await curation.unpin(user, channel_id, parse_message_id(message_id))
+
+
+@router.post(
+    "/chat/channels/{channel_id}/polls",
+    response_model=MessageOut,
+    status_code=201,
+    operation_id="createPoll",
+    summary="Post a poll: a message with options, single or multiple choice, optional deadline",
+)
+async def create_poll(
+    user: CurrentUserDep,
+    messages: MessagesDep,
+    curation: CurationDep,
+    channel_id: uuid.UUID,
+    body: PollIn,
+    response: Response,
+) -> MessageOut:
+    validate_poll(body.options, body.closes_at)
+    outcome = await messages.send(
+        user, channel_id, body.question, body.client_msg_id, body.topic_id
+    )
+    if not outcome.created:
+        response.status_code = 200
+        return outcome.message
+    return await curation.attach_poll(
+        user, outcome.message, body.options, body.multi, body.closes_at
+    )
+
+
+@router.post(
+    "/chat/polls/{poll_id}/votes",
+    response_model=MessageOut,
+    operation_id="votePoll",
+    summary="Vote (replaces my earlier choice)",
+)
+async def vote_poll(
+    user: CurrentUserDep, curation: CurationDep, poll_id: uuid.UUID, body: VoteIn
+) -> MessageOut:
+    return await curation.vote(user, poll_id, body.option_ids)
+
+
+@router.put(
+    "/chat/messages/{message_id}/saved",
+    response_model=MessageOut,
+    operation_id="saveMessage",
+    summary="Save a message to my list",
+)
+async def save_message(
+    user: CurrentUserDep, curation: CurationDep, message_id: MessageIdPath
+) -> MessageOut:
+    saved = await curation.save(user, parse_message_id(message_id), True)
+    assert saved is not None
+    return saved
+
+
+@router.delete(
+    "/chat/messages/{message_id}/saved",
+    status_code=204,
+    operation_id="unsaveMessage",
+    summary="Remove a message from my list",
+)
+async def unsave_message(
+    user: CurrentUserDep, curation: CurationDep, message_id: MessageIdPath
+) -> None:
+    await curation.save(user, parse_message_id(message_id), False)
+
+
+@router.get(
+    "/chat/saved",
+    response_model=SavedListOut,
+    operation_id="listSavedMessages",
+    summary="My saved messages; unreadable ones are listed without content",
+)
+async def list_saved(user: CurrentUserDep, curation: CurationDep) -> SavedListOut:
+    return SavedListOut(
+        items=[
+            SavedItemOut(
+                message_id=str(item.message_id),
+                channel_id=str(item.channel_id),
+                channel_name=item.channel_name,
+                saved_at=item.saved_at,
+                message=item.message,
+            )
+            for item in await curation.saved(user)
+        ]
+    )
+
+
+@router.post(
+    "/chat/messages/{message_id}/verify",
+    response_model=MessageOut,
+    operation_id="verifyAnswer",
+    summary="Mark a reply as a verified answer (course teacher or subject guide)",
+)
+async def verify_answer(
+    user: CurrentUserDep, curation: CurationDep, message_id: MessageIdPath
+) -> MessageOut:
+    return await curation.verify(user, parse_message_id(message_id), True)
+
+
+@router.delete(
+    "/chat/messages/{message_id}/verify",
+    response_model=MessageOut,
+    operation_id="unverifyAnswer",
+    summary="Remove the verified mark",
+)
+async def unverify_answer(
+    user: CurrentUserDep, curation: CurationDep, message_id: MessageIdPath
+) -> MessageOut:
+    return await curation.verify(user, parse_message_id(message_id), False)
+
+
+@router.get(
+    "/chat/messages/{message_id}/anonymous-author",
+    response_model=AuthorOut,
+    operation_id="revealAnonymousAuthor",
+    summary="Who asked an anonymous question (moderators, teachers, staff; audited)",
+)
+async def reveal_anonymous_author(
+    user: CurrentUserDep, curation: CurationDep, message_id: MessageIdPath
+) -> AuthorOut:
+    return await curation.anonymous_author(user, parse_message_id(message_id))

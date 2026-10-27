@@ -48,6 +48,25 @@ class AttachmentOut(BaseModel):
     previewable: bool
 
 
+class PollOptionOut(BaseModel):
+    id: str
+    text: str
+    votes: int
+
+
+class PollOut(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    id: str
+    multi: bool
+    closes_at: datetime | None
+    closed: bool
+    options: list[PollOptionOut]
+    voters: int
+    my_votes: list[str] | None = None
+    """The reader's own choices; None in broadcast events."""
+
+
 class MessageOut(BaseModel):
     # Every field is always present in responses, so the generated client needs no optional checks.
     model_config = ConfigDict(json_schema_serialization_defaults_required=True)
@@ -65,6 +84,15 @@ class MessageOut(BaseModel):
     edited_at: datetime | None
     deleted_at: datetime | None
     is_verified_answer: bool = False
+    verified_by_name: str | None = None
+    """Who confirmed the answer: the course teacher or a guide of the subject (§5.3)."""
+    is_anonymous: bool = False
+    """An anonymous #suallar question: ``author`` is None for everyone, shown as "Anonim" (§5.3)."""
+    pinned: bool = False
+    """In the channel's "Faydalı" collection."""
+    saved: bool | None = None
+    """Saved by the reader; None in broadcast events."""
+    poll: PollOut | None = None
     reply_count: int = 0
     """Replies in the message's thread that are not deleted (top-level messages only)."""
     last_reply_at: datetime | None = None
@@ -99,6 +127,8 @@ class SendMessageIn(BaseModel):
     """Reply in this message's thread; a reply to a reply joins the same thread (one level, D-067)."""
     attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
     """Uploads from ``POST /chat/attachments/presign``; the body may be empty when there are some."""
+    is_anonymous: bool = False
+    """Only for new questions in #suallar of course and community channels (§5.3)."""
 
 
 Notice = Literal["chat.channel_mention_not_allowed"]
@@ -195,6 +225,12 @@ class ChannelListOut(BaseModel):
 
 class ChannelDetailOut(ChannelOut):
     topics: list[TopicOut]
+    can_pin: bool = False
+    """May add to and remove from the channel's "Faydalı" collection."""
+    can_verify: bool = False
+    """May mark answers as verified: the course's teacher or a guide of the community's subject (§5.3)."""
+    can_see_anonymous: bool = False
+    """May look up who asked an anonymous question (moderators, teachers, staff; audited)."""
     subject_id: str | None = None
     """Course and community channels: their subject, for links to materials and guides (§5.1)."""
 
@@ -239,3 +275,35 @@ class PresignOut(BaseModel):
 class DownloadOut(BaseModel):
     url: str
     expires_at: datetime
+
+
+class PinsOut(BaseModel):
+    messages: list[MessageOut]
+
+
+class PollIn(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    client_msg_id: uuid.UUID
+    topic_id: uuid.UUID | None = None
+    options: list[str] = Field(min_length=2, max_length=10)
+    multi: bool = False
+    closes_at: datetime | None = None
+
+
+class VoteIn(BaseModel):
+    option_ids: list[uuid.UUID] = Field(min_length=1, max_length=10)
+
+
+class SavedItemOut(BaseModel):
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    message_id: str
+    channel_id: str
+    channel_name: str | None
+    saved_at: datetime
+    message: MessageOut | None
+    """None when the message was deleted or the channel is no longer readable; then nothing else is shown."""
+
+
+class SavedListOut(BaseModel):
+    items: list[SavedItemOut]

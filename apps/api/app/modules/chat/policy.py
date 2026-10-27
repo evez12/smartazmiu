@@ -84,6 +84,8 @@ class ChannelState:
     rate_limit_retry_after: int | None = None
     attachments_restricted: bool = False
     can_mention_channel: bool = False
+    privileged: bool = False
+    """Teacher of the course, or the channel's owner or a moderator: curates pins, sees anonymous authors."""
 
 
 @dataclass(frozen=True, slots=True)

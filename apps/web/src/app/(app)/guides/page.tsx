@@ -1,4 +1,4 @@
-import { ChevronRight, Compass, GraduationCap } from "lucide-react";
+import { ChevronRight, Compass, GraduationCap, NotebookPen } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
@@ -23,11 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GuidesPage() {
   const t = await getTranslations("guides");
   const api = await serverApi();
-  const [subjects, eligible, mine] = await Promise.all([
+  const [subjects, eligible, mine, tipSubjects] = await Promise.all([
     api.GET("/api/v1/materials/subjects").then(loaded),
     api.GET("/api/v1/guides/eligible").then(loaded),
     api.GET("/api/v1/guides/me").then(loaded),
+    api.GET("/api/v1/tips/eligible").then(loaded),
   ]);
+  const tTips = await getTranslations("guides.tips");
   const header = (
     <PageHeader
       title={t("title")}
@@ -101,6 +103,37 @@ export default async function GuidesPage() {
                     })}
                   >
                     {item.opted_in ? t("editProfile") : t("optIn")}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        <Panel>
+          <PanelHeader title={tTips("myCardsTitle")} description={tTips("myCardsDescription")} />
+          {tipSubjects.status !== "ok" || tipSubjects.data.length === 0 ? (
+            <PanelBody>
+              <EmptyState icon={NotebookPen} message={tTips("myCardsEmpty")} />
+            </PanelBody>
+          ) : (
+            <ul aria-label={tTips("myCardsTitle")} className="divide-y divide-border">
+              {tipSubjects.data.map((item) => (
+                <li
+                  key={`${item.subject_id}-${item.semester_id}`}
+                  className="flex flex-wrap items-center gap-3 px-4 py-3"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-medium break-words">{item.subject_name}</span>
+                    <span className="text-sm text-muted">{item.semester}</span>
+                  </span>
+                  {item.tip_status ? (
+                    <Tag tone="neutral">{tTips(`status.${item.tip_status}`)}</Tag>
+                  ) : null}
+                  <Link
+                    href={`/guides/tips/${item.subject_id}?semester=${item.semester_id}`}
+                    className={buttonVariants({ variant: "secondary" })}
+                  >
+                    {item.tip_status ? tTips("edit") : tTips("write")}
                   </Link>
                 </li>
               ))}

@@ -115,6 +115,17 @@ function Target({ item }: { item: ReportItem }) {
       </span>
     );
   }
+  if (item.target_type === "tip") {
+    return (
+      <span className="flex flex-col gap-1">
+        <span className="text-sm text-muted">
+          {t("tipIn", { subject: item.tip?.subject_name ?? "—" })} ·{" "}
+          {item.reported_user?.display_name ?? t("deletedAccount")}
+        </span>
+        <span className="line-clamp-4 break-words whitespace-pre-wrap">{item.tip?.excerpt}</span>
+      </span>
+    );
+  }
   const message = item.message;
   if (!message) return <span className="text-muted">{t("deletedMessage")}</span>;
   return (

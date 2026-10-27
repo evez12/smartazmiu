@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Banner } from "@/components/ui/banner";
+import { Checkbox } from "@/components/ui/choice";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
@@ -22,7 +23,9 @@ import { NotifyMenu } from "./notify-menu";
 import { StudentAdviceDisclaimer } from "@/features/mentorship/disclaimer";
 import { ChannelRequests } from "@/features/mentorship/request-list";
 
+import { PollButton } from "./poll-dialog";
 import { PostingBanner } from "./posting";
+import { UsefulButton } from "./useful-sheet";
 import { FALLBACK_POLL_MS, useChannels, useChatRuntime, useChatState, useMembers } from "./runtime";
 import type { PageDirection } from "./store";
 
@@ -46,6 +49,7 @@ export function MessagePane({
   const [historyFailed, setHistoryFailed] = useState(false);
   // Course and community channels have topics (§5.1); null shows every message.
   const [topicId, setTopicId] = useState<string | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   const atBottom = useRef(true);
 
   const detail = useQuery({
@@ -160,6 +164,9 @@ export function MessagePane({
   );
   const topics = detail.data?.topics ?? [];
   const activeTopic = topics.find((topic) => topic.id === topicId);
+  // Anonymous questions only as new posts in #suallar (§5.3); the server checks the channel type too.
+  const anonymousAllowed = activeTopic?.slug === "suallar";
+  const asAnonymous = anonymousAllowed && anonymous;
   // The divider stays where the read marker was when the channel opened, even after it moves on (§12.7).
   const [frozenMarker, setFrozenMarker] = useState<string | null | undefined>(undefined);
   if (frozenMarker === undefined && listed) setFrozenMarker(listed.last_read_message_id);
@@ -248,6 +255,7 @@ export function MessagePane({
             <Skeleton className="h-4 w-40" />
           )}
         </div>
+        <UsefulButton channelId={channelId} currentUserId={runtime.currentUserId} />
         {listed ? <NotifyMenu channel={listed} /> : null}
         <Button variant="tertiary" size="dense" onClick={() => setMembersOpen(true)}>
           <Icon icon={Users} />
@@ -342,6 +350,13 @@ export function MessagePane({
             canPost: channel?.posting.allowed ?? false,
             members: members.data ?? [],
             onOpenThread,
+            capabilities: detail.data
+              ? {
+                  canPin: detail.data.can_pin,
+                  canVerify: detail.data.can_verify,
+                  canSeeAnonymous: detail.data.can_see_anonymous,
+                }
+              : undefined,
           }}
           blockedIds={blockedIds}
           onRetry={runtime.retry}
@@ -372,6 +387,17 @@ export function MessagePane({
         </div>
       ) : null}
       {channel ? <PostingBanner posting={channel.posting} /> : null}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pt-1">
+        <PollButton channelId={channelId} topicId={topicId} disabled={!channel?.posting.allowed} />
+        {anonymousAllowed ? (
+          <Checkbox
+            checked={anonymous}
+            onCheckedChange={(checked) => setAnonymous(checked === true)}
+            label={t("anonymousToggle")}
+            description={t("anonymousHint")}
+          />
+        ) : null}
+      </div>
       <Composer
         label={t("composerLabel")}
         placeholder={t("composerPlaceholder", { channel: channel?.name ?? "" })}
@@ -381,9 +407,17 @@ export function MessagePane({
         attachTo={channelId}
         onSend={(body, attachmentIds) => {
           atBottom.current = true;
-          runtime.send(channelId, body, undefined, attachmentIds, topicId ?? undefined);
+          runtime.send(
+            channelId,
+            body,
+            undefined,
+            attachmentIds,
+            topicId ?? undefined,
+            asAnonymous,
+          );
         }}
-        onTyping={() => runtime.typing(channelId)}
+        // An anonymous question must not announce who is typing it.
+        onTyping={() => (asAnonymous ? undefined : runtime.typing(channelId))}
       />
       <MemberSheet channelId={channelId} open={membersOpen} onOpenChange={setMembersOpen} />
     </section>

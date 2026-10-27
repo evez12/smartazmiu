@@ -247,6 +247,12 @@ export function createChatStore() {
         patch(state, message.id, (current) => ({
           ...message,
           my_reactions: message.my_reactions ?? current.my_reactions,
+          // Broadcasts leave the reader's own choices out (null); keep what this tab already knows.
+          saved: message.saved ?? current.saved,
+          poll:
+            message.poll && current.poll && message.poll.my_votes === null
+              ? { ...message.poll, my_votes: current.poll.my_votes }
+              : message.poll,
           // Broadcasts carry clean files only; the author keeps their own files still being scanned.
           attachments: [
             ...message.attachments,

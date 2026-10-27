@@ -157,9 +157,7 @@ async def scan_figures(
                     .where(model.scan_status.in_([ScanStatus.FAILED, ScanStatus.INFECTED]))
                     .group_by(model.scan_status)
                 )
-            )
-            .tuples()
-            .all()
+            ).all()
         )
         for status in (ScanStatus.FAILED, ScanStatus.INFECTED):
             rejected[(kind, status.value)] = float(counts.get(status, 0))

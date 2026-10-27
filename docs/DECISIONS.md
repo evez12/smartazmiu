@@ -1737,3 +1737,48 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   accepted stay open for the two people to resolve. Topic filtering is client-side over loaded pages; a server-side
   topic page (the API already accepts `topic`) can replace it when channels grow. Reputation XP (§5.2 flow 4) is
   not built; it has no spec beyond the word.
+
+## D-084 · 2026-10-27 · Knowledge in channels: guide cards, pins, polls, anonymous questions, verified answers, saved messages (Sprint 9)
+
+- **Context:** Sprint 9 adds §5.2 flow 5 (`course_tips`) and the Phase 2 rows of §5.3. The spec is silent on who sees
+  a card's author, whether authors may upvote themselves, who may pin, how anonymous identities are revealed, what
+  a verified answer must be attached to, and how saved messages behave after access is lost.
+- **Decision:**
+  - **Guide cards:** one per author, subject and semester (`UNIQUE`), only for a completed and passed enrollment in
+    that subject and semester. Writing again upserts the same row and sends it back to `pending`; staff with
+    `admin.reports.read`/`.handle` publish, reject, hide or restore it (published again) on the reports page,
+    audited as `tip.reviewed`; nothing is deleted. Fields as §5.7: difficulty 1–5, weekly hours in five bands,
+    key topics, resources (title with an http(s) link or a visible material of the same subject, at most ten),
+    exam advice, retrospective. People who passed a subject in a semester that ended in the last 90 days get one
+    in-app prompt per subject and semester (after results imports and nightly).
+  - **Privacy:** students see a card's semester ("2025 Payız tələbəsi"), never the author's name, and no grade
+    anywhere; the staff moderation list shows the name. The moderation note never leaves staff views.
+  - **Subject page** (`/guides/{subject}/tips`, same readers as the guide directory): published cards only, count,
+    average difficulty, cards per workload band, resources ranked by how many cards name them, and the 20 most
+    upvoted cards.
+  - **Upvotes:** one per person and card (primary key); PUT and DELETE are idempotent and the counter moves only
+    when a row was really added or removed, so concurrent clicks keep it exact. Authors cannot upvote their own
+    card (the simplest rule that avoids self-promotion; there is no reputation system yet).
+  - **Tip reports** use the existing reports flow with the new target `tip` (published cards the reporter can
+    read; not one's own), shown in the staff list with the subject and an excerpt.
+  - **Pins:** at most 50 per channel, serialised on the channel row. Course teachers, channel owners and moderators
+    (the policy's "privileged" flag) and staff pin; in a DM both people may. "Faydalı" lists pinned messages that
+    still exist, newest pin first; messages carry `pinned`.
+  - **Polls:** a poll is a message (question as body, sent through the normal posting policy, so read-only,
+    archive and future exam mode apply) plus 2–10 distinct options, single or multiple choice, optional deadline.
+    Voting needs the same posting permission; a vote replaces the person's earlier choice inside the poll's row
+    lock; results show counts and voters; anonymous polls are not built.
+  - **Anonymous questions:** only new top-level posts in `#suallar` of course and community channels. The author is
+    stored as usual and the post is audited (`message.anonymous_posted`); every payload, REST or WebSocket, has
+    `author = null` and `is_anonymous = true`. Teachers of the course, channel moderators and staff can look up the
+    author on demand (audited as `message.author_revealed`). Mentions in an anonymous question notify nobody, and
+    the web client sends no typing events while the toggle is on, so neither can reveal the author. Authors cannot
+    edit or delete an anonymous question from the web client (it would have to know whose it is).
+  - **Verified answers:** a reply in a thread, verified by a teacher of the offering (course channel) or an active
+    guide of the subject (community). The mark names the verifier; an edit removes it (§13.2, already in place);
+    the question's author is notified ("chat.answer_verified"), also for anonymous questions, without anyone else
+    learning who that is.
+  - **Saved messages:** a personal list (owner only). An item whose message was deleted or whose channel the owner
+    can no longer read shows neither content nor channel name, only "no longer available" and a remove button.
+- **Consequences:** reputation and helpful-answer XP stay in Sprint 17. A moderator console (Sprint 10) can reuse the
+  anonymous-author lookup and the pin endpoints. Card prompts are in-app only.

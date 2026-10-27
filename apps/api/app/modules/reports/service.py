@@ -12,6 +12,7 @@ from sqlalchemy.orm import aliased
 from app.core.errors import AppError
 from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.time import utc_now
+from app.modules.academics.models import Subject
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.chat.access import ChannelAccess
@@ -19,8 +20,10 @@ from app.modules.chat.lookup import MAX_MESSAGE_ID, find_message
 from app.modules.chat.models import Channel, Message
 from app.modules.chat.policy import Action
 from app.modules.chat.schemas import AuthorOut
+from app.modules.knowledge.models import CourseTip, TipStatus
+from app.modules.mentorship.service import readable_subject
 from app.modules.reports.models import Report, ReportReason, ReportStatus, ReportTarget
-from app.modules.reports.schemas import ReportedMessageOut, ReportOut
+from app.modules.reports.schemas import ReportedMessageOut, ReportedTipOut, ReportOut
 from app.modules.users.models import User
 from app.modules.users.profile import photo_url
 from app.modules.users.service import CurrentUser
@@ -128,6 +131,23 @@ class ReportService:
             if message.author_id == user.id:
                 raise AppError("reports.own_content", 422)
             return message.channel_id, str(message.id)
+        if target_type is ReportTarget.TIP:
+            try:
+                tip_id = uuid.UUID(target_id)
+            except ValueError as exc:
+                raise AppError("reports.target_not_found", 404) from exc
+            tip = await self.session.get(CourseTip, tip_id)
+            if tip is None or tip.status is not TipStatus.PUBLISHED:
+                raise AppError("reports.target_not_found", 404)
+            try:
+                await readable_subject(
+                    self.session, user, tip.subject_id, "reports.target_not_found"
+                )
+            except AppError as exc:
+                raise AppError("reports.target_not_found", 404) from exc
+            if tip.author_id == user.id:
+                raise AppError("reports.own_content", 422)
+            return None, str(tip.id)
         try:
             person_id = uuid.UUID(target_id)
         except ValueError as exc:
@@ -193,6 +213,16 @@ class ReportService:
             uuid.UUID(r.target_id) for r in reports if r.target_type is ReportTarget.USER
         }
         people_ids |= {found.author_id for found, _ in messages.values()}
+        tips: dict[str, tuple[CourseTip, str]] = {}
+        for report in reports:
+            if report.target_type is ReportTarget.TIP:
+                tip = await self.session.get(CourseTip, uuid.UUID(report.target_id))
+                if tip is not None:
+                    subject_name = await self.session.scalar(
+                        select(Subject.name_az).where(Subject.id == tip.subject_id)
+                    )
+                    tips[report.target_id] = (tip, subject_name or "")
+                    people_ids.add(tip.author_id)
         people_ids.discard(None)
         people = {
             person.id: person
@@ -209,6 +239,7 @@ class ReportService:
         for report in reports:
             message_out = None
             reported = None
+            tip_out = None
             if report.target_type is ReportTarget.MESSAGE:
                 pair = messages.get(report.target_id)
                 if pair is not None:
@@ -223,6 +254,17 @@ class ReportService:
                         body=message.body[:EXCERPT],
                         deleted=message.deleted_at is not None,
                         created_at=message.created_at,
+                    )
+            elif report.target_type is ReportTarget.TIP:
+                found_tip = tips.get(report.target_id)
+                if found_tip is not None:
+                    tip, subject_name = found_tip
+                    reported = _person(people.get(tip.author_id))
+                    tip_out = ReportedTipOut(
+                        id=str(tip.id),
+                        subject_name=subject_name,
+                        excerpt=tip.exam_advice[:EXCERPT],
+                        status=tip.status.value,
                     )
             else:
                 reported = _person(people.get(uuid.UUID(report.target_id)))
@@ -239,6 +281,7 @@ class ReportService:
                     else None,
                     reported_user=reported,
                     message=message_out,
+                    tip=tip_out,
                     handled_by=_person(people.get(report.handled_by))
                     if report.handled_by
                     else None,

@@ -262,7 +262,8 @@
       "materials": "Materiallar",
       "feedback": "Rəylər",
       "guides": "Bələdçilər"
-    }
+    },
+    "saved": "Saxlanılanlar"
   },
   "roles": {
     "student": "Tələbə",
@@ -659,7 +660,10 @@
         "material_report_handled": "Material şikayətinin vəziyyəti dəyişdi",
         "material_hidden": "Material gizlədildi",
         "material_shown": "Material yenidən göstərildi",
-        "feedback_handled": "Rəyin vəziyyəti dəyişdi"
+        "feedback_handled": "Rəyin vəziyyəti dəyişdi",
+        "message_anonymous_posted": "Anonim sual yazıldı",
+        "message_author_revealed": "Anonim sualın müəllifinə baxıldı",
+        "tip_reviewed": "Fənn kartı yoxlanıldı"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -812,7 +816,9 @@
       "mentorshipRequestAccepted": "Məsləhət sorğunuz qəbul edildi",
       "mentorshipRequestDeclined": "Məsləhət sorğunuz qəbul edilmədi",
       "mentorshipRequestExpired": "Məsləhət sorğunuzun vaxtı bitdi",
-      "mentorshipAdvicePost": "#məsləhət bölməsində yeni sual"
+      "mentorshipAdvicePost": "#məsləhət bölməsində yeni sual",
+      "mentorshipTipPrompt": "Fənn kartını doldurun",
+      "chatAnswerVerified": "Sualınıza təsdiqlənmiş cavab verildi"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
@@ -1235,6 +1241,47 @@
     "topics": {
       "label": "Mövzular",
       "all": "Hamısı"
+    },
+    "anonymous": "Anonim",
+    "anonymousToggle": "Anonim soruşun",
+    "anonymousHint": "Adınız tələbələrə göstərilməyəcək. Moderatorlar və müəllim onu görə bilər.",
+    "verifiedBy": "Təsdiqlənmiş cavab · {name}",
+    "pinnedTag": "Sancaqlanıb",
+    "pin": "Sancaqlayın",
+    "unpin": "Sancağı götürün",
+    "unsave": "Saxlanılanlardan çıxarın",
+    "savedToast": "Mesaj saxlanılanlara əlavə edildi.",
+    "verify": "Cavabı təsdiqləyin",
+    "unverify": "Təsdiqi götürün",
+    "revealAuthor": "Müəllifi göstərin",
+    "revealedAuthor": "Sualı yazan: {name}",
+    "useful": "Faydalı",
+    "usefulTitle": "Faydalı mesajlar",
+    "usefulDescription": "Moderatorların bu kanalda sancaqladığı mesajlar.",
+    "usefulEmpty": "Bu kanalda hələ sancaqlanmış mesaj yoxdur. Vacib mesajları moderatorlar buraya əlavə edir.",
+    "usefulFailed": "Faydalı mesajları yükləmək mümkün olmadı. Yenidən cəhd edin.",
+    "actionFailed": "Əməliyyat alınmadı",
+    "poll": {
+      "create": "Sorğu yaradın",
+      "title": "Yeni sorğu",
+      "question": "Sual",
+      "option": "Variant {n}",
+      "addOption": "Variant əlavə edin",
+      "removeOption": "{n}-ci variantı silin",
+      "multi": "Bir neçə variant seçmək olar",
+      "closesAt": "Bitmə vaxtı",
+      "closesAtHelper": "İstəyə bağlı. Bu vaxtdan sonra səs vermək mümkün olmayacaq.",
+      "submit": "Göndərin",
+      "cancel": "Ləğv edin",
+      "vote": "Səs verin",
+      "votes": "{count, plural, one {# səs} other {# səs}}",
+      "voters": "{count, plural, one {# nəfər səs verib} other {# nəfər səs verib}}",
+      "closed": "Sorğu bağlanıb",
+      "closesOn": "{date} tarixində bağlanır",
+      "failed": "Sorğu göndərilmədi",
+      "invalid": "Sualı və ən azı iki fərqli variantı yazın.",
+      "label": "Sorğu: {question}",
+      "myChoice": "Sizin seçiminiz"
     }
   },
   "reports": {
@@ -1296,7 +1343,8 @@
       "reopen": "Yenidən açın",
       "handledBy": "{name}, {time}",
       "updated": "Şikayətin vəziyyəti dəyişdi.",
-      "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
+      "updateFailed": "Vəziyyət dəyişmədi. Yenidən cəhd edin.",
+      "tipIn": "Fənn kartı: {subject}"
     }
   },
   "materials": {
@@ -1675,6 +1723,94 @@
       "date": "Tarix"
     },
     "materialsLink": "Fənnin materiallarına baxın",
-    "materialsHint": "Bu fənnin mühazirə və seminar faylları Materiallar bölməsindədir."
+    "materialsHint": "Bu fənnin mühazirə və seminar faylları Materiallar bölməsindədir.",
+    "tips": {
+      "link": "Fənn kartları",
+      "title": "Fənn kartları: {subject}",
+      "description": "Bu fənni keçmiş tələbələrin moderasiyadan keçmiş məsləhətləri.",
+      "empty": "Bu fənn üzrə hələ dərc olunmuş kart yoxdur.",
+      "summary": "Ümumi mənzərə",
+      "count": "{count, plural, one {# kart} other {# kart}}",
+      "difficulty": "Orta çətinlik: {value} / 5",
+      "workload": "Həftəlik iş yükü",
+      "resources": "Tövsiyə olunan mənbələr",
+      "resourceMentions": "{count, plural, one {# kartda} other {# kartda}}",
+      "material": "Material",
+      "topTips": "Ən faydalı kartlar",
+      "semester": "{semester} semestrində keçib",
+      "keyTopics": "Ən vacib mövzular",
+      "examAdvice": "İmtahan barədə",
+      "retrospective": "Yenidən keçsəydim",
+      "upvote": "Faydalıdır",
+      "upvoted": "Faydalı kimi qeyd etmisiniz",
+      "upvotes": "{count, plural, one {# nəfər faydalı hesab edir} other {# nəfər faydalı hesab edir}}",
+      "report": "Şikayət edin",
+      "mine": "Sizin kartınız",
+      "write": "Kart yazın",
+      "writeTitle": "Fənn kartı: {subject}",
+      "writeDescription": "{semester} semestrində bu fənni keçmisiniz. Kart moderasiyadan sonra fənnin tələbələrinə adınız göstərilmədən dərc olunacaq.",
+      "edit": "Kartı dəyişin",
+      "semesterField": "Semestr",
+      "difficultyField": "Çətinlik (1 – asan, 5 – çox çətin)",
+      "weeklyHoursField": "Həftəlik iş yükü",
+      "keyTopicsField": "Ən vacib mövzular",
+      "examAdviceField": "İmtahan formatı barədə məsləhət",
+      "retrospectiveField": "Nəyi fərqli edərdiniz?",
+      "resourcesField": "Mənbələr",
+      "resourceTitle": "Mənbənin adı",
+      "resourceUrl": "Keçid (https://…)",
+      "resourceMaterial": "Və ya fənnin materialı",
+      "noMaterial": "Material seçilməyib",
+      "addResource": "Mənbə əlavə edin",
+      "removeResource": "Mənbəni silin",
+      "save": "Moderasiyaya göndərin",
+      "saved": "Kartınız moderasiyaya göndərildi.",
+      "failed": "Kart göndərilmədi",
+      "required": "Bu sahəni doldurun.",
+      "notEligible": "Bu fənn üzrə kart yazmaq üçün onu həmin semestrdə uğurla bitirmiş olmalısınız.",
+      "editNotice": "Dəyişiklikdən sonra kart yenidən moderasiyaya göndəriləcək.",
+      "myCardsTitle": "Kart yazın",
+      "myCardsDescription": "Keçdiyiniz fənlər üzrə gələcək tələbələr üçün qısa məsləhət kartı yazın.",
+      "myCardsEmpty": "Kart yaza biləcəyiniz fənn yoxdur. Fənni uğurla bitirdikdən sonra burada görünəcək.",
+      "hours": {
+        "under_2": "2 saatdan az",
+        "2_4": "2–4 saat",
+        "4_6": "4–6 saat",
+        "6_10": "6–10 saat",
+        "over_10": "10 saatdan çox"
+      },
+      "status": {
+        "pending": "Moderasiyada",
+        "published": "Dərc olunub",
+        "rejected": "Rədd edilib",
+        "hidden": "Gizlədilib"
+      }
+    },
+    "tipModeration": {
+      "tab": "Fənn kartları",
+      "empty": "Bu vəziyyətdə kart yoxdur.",
+      "caption": "Fənn kartları, ən köhnəsi əvvəldə",
+      "filter": "Vəziyyət",
+      "apply": "Tətbiq edin",
+      "author": "Müəllif: {name}",
+      "reports": "{count, plural, one {# şikayət} other {# şikayət}}",
+      "note": "Qeyd (yalnız əməkdaşlar görür)",
+      "publish": "Dərc edin",
+      "reject": "Rədd edin",
+      "hide": "Gizlədin",
+      "restore": "Bərpa edin",
+      "changed": "Kartın vəziyyəti dəyişdi.",
+      "failed": "Vəziyyət dəyişmədi. Yenidən cəhd edin."
+    }
+  },
+  "saved": {
+    "title": "Saxlanılanlar",
+    "description": "Sonra qayıtmaq üçün saxladığınız mesajlar. Bu siyahını yalnız siz görürsünüz.",
+    "empty": "Hələ saxlanılmış mesaj yoxdur. Mesajın menyusundan «Yadda saxlayın» seçin.",
+    "unavailable": "Bu mesaj artıq əlçatan deyil: silinib və ya kanala girişiniz yoxdur.",
+    "remove": "Siyahıdan çıxarın",
+    "open": "Kanalda açın",
+    "loadFailed": "Saxlanılanları yükləmək mümkün olmadı. Yenidən cəhd edin.",
+    "savedAt": "Saxlanılıb: {date}"
   }
 }

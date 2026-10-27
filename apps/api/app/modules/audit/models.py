@@ -35,6 +35,9 @@ class AuditAction(StrEnum):
     MATERIAL_HIDDEN = "material.hidden"
     MATERIAL_SHOWN = "material.shown"
     FEEDBACK_HANDLED = "feedback.handled"
+    MESSAGE_ANONYMOUS_POSTED = "message.anonymous_posted"
+    MESSAGE_AUTHOR_REVEALED = "message.author_revealed"
+    TIP_REVIEWED = "tip.reviewed"
 
 
 class AuditLog(Base):

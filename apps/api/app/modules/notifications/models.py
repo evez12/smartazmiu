@@ -53,6 +53,8 @@ class NotificationKind(StrEnum):
     MENTORSHIP_REQUEST_DECLINED = "mentorship.request_declined"
     MENTORSHIP_REQUEST_EXPIRED = "mentorship.request_expired"
     MENTORSHIP_ADVICE_POST = "mentorship.advice_post"
+    MENTORSHIP_TIP_PROMPT = "mentorship.tip_prompt"
+    CHAT_ANSWER_VERIFIED = "chat.answer_verified"
 
 
 class DeliveryChannel(StrEnum):

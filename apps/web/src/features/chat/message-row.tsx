@@ -1,6 +1,17 @@
 "use client";
 
-import { CircleAlert, Clock, Flag, MessagesSquare } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkX,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  Eye,
+  Flag,
+  MessagesSquare,
+  Pin,
+  PinOff,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -11,7 +22,8 @@ import { ConfirmDialog, MenuItem } from "@/components/ui/overlay";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
 import { ReportDialog } from "@/features/reports/report-dialog";
-import { ApiRequestError } from "@/lib/api/browser";
+import { ApiRequestError, unwrap } from "@/lib/api/browser";
+import { useApi } from "@/lib/api/provider";
 import { cn } from "@/lib/cn";
 
 import { AuthorBadge } from "./author-badge";
@@ -21,6 +33,7 @@ import { Composer } from "./composer";
 import { MessageToolbar, ReactionChips } from "./message-actions";
 import { MessageAttachments } from "./message-attachments";
 import { MessageMarkdown } from "./markdown";
+import { PollCard } from "./poll-card";
 import {
   canChange,
   CHANGE_ERROR_KEYS,
@@ -94,6 +107,8 @@ export type RowContext = {
   onOpenThread?: (rootId: string) => void;
   /** Inside a thread whose root was deleted: replies carry the placeholder (§13.2). */
   rootDeleted?: boolean;
+  /** What the reader may curate in this channel (§5.3); absent where curation is not offered. */
+  capabilities?: { canPin: boolean; canVerify: boolean; canSeeAnonymous: boolean };
 };
 
 export function MessageRow({
@@ -119,7 +134,10 @@ export function MessageRow({
   const [reporting, setReporting] = useState(false);
   // Checked when the menu renders; the server has the final word on the 15-minute window (§13.2).
   const [now, setNow] = useState(() => Date.now());
-  const name = message.author?.display_name ?? t("deletedUser");
+  const api = useApi();
+  const name = message.is_anonymous
+    ? t("anonymous")
+    : (message.author?.display_name ?? t("deletedUser"));
   const time = formatTime(message.created_at);
   const deleted = message.deleted_at !== null;
   const own = canChange(message, context.currentUser.id, now);
@@ -144,6 +162,93 @@ export function MessageRow({
     }
   };
   const editable = decodeMentions(message.body, message.mentions);
+  const can = context.capabilities;
+  // Curation calls answer with the updated message for this reader; others get it through the socket.
+  const curate = async (call: () => Promise<ChatMessage | null>, done?: string) => {
+    try {
+      const updated = await call();
+      if (updated) runtime?.store.getState().update(updated);
+      if (done) toast({ title: done });
+    } catch (error) {
+      fail(error);
+    }
+  };
+  const messagePath = { params: { path: { message_id: message.id } } };
+  const pinPath = { params: { path: { channel_id: message.channel_id, message_id: message.id } } };
+  const curationItems = (
+    <>
+      <MenuItem
+        onSelect={() =>
+          void curate(async () =>
+            message.saved
+              ? (unwrap(await api.DELETE("/api/v1/chat/messages/{message_id}/saved", messagePath)),
+                { ...message, saved: false })
+              : unwrap(await api.PUT("/api/v1/chat/messages/{message_id}/saved", messagePath)),
+          )
+        }
+      >
+        <Icon icon={message.saved ? BookmarkX : Bookmark} />
+        {message.saved ? t("unsave") : t("save")}
+      </MenuItem>
+      {can?.canPin ? (
+        <MenuItem
+          onSelect={() =>
+            void curate(async () =>
+              message.pinned
+                ? (unwrap(
+                    await api.DELETE(
+                      "/api/v1/chat/channels/{channel_id}/pins/{message_id}",
+                      pinPath,
+                    ),
+                  ),
+                  { ...message, pinned: false })
+                : unwrap(
+                    await api.POST("/api/v1/chat/channels/{channel_id}/pins/{message_id}", pinPath),
+                  ),
+            )
+          }
+        >
+          <Icon icon={message.pinned ? PinOff : Pin} />
+          {message.pinned ? t("unpin") : t("pin")}
+        </MenuItem>
+      ) : null}
+      {can?.canVerify && message.parent_id ? (
+        <MenuItem
+          onSelect={() =>
+            void curate(async () =>
+              unwrap(
+                message.is_verified_answer
+                  ? await api.DELETE("/api/v1/chat/messages/{message_id}/verify", messagePath)
+                  : await api.POST("/api/v1/chat/messages/{message_id}/verify", messagePath),
+              ),
+            )
+          }
+        >
+          <Icon icon={CircleCheck} />
+          {message.is_verified_answer ? t("unverify") : t("verify")}
+        </MenuItem>
+      ) : null}
+      {can?.canSeeAnonymous && message.is_anonymous ? (
+        <MenuItem
+          onSelect={() =>
+            void (async () => {
+              try {
+                const author = unwrap(
+                  await api.GET("/api/v1/chat/messages/{message_id}/anonymous-author", messagePath),
+                );
+                toast({ title: t("revealedAuthor", { name: author.display_name }) });
+              } catch (error) {
+                fail(error);
+              }
+            })()
+          }
+        >
+          <Icon icon={Eye} />
+          {t("revealAuthor")}
+        </MenuItem>
+      ) : null}
+    </>
+  );
 
   return (
     <article
@@ -165,6 +270,11 @@ export function MessageRow({
           <header className="flex flex-wrap items-baseline gap-x-2">
             <span className={cn("font-medium", !message.author && "text-muted")}>{name}</span>
             {message.author ? <AuthorBadge author={message.author} /> : null}
+            {message.pinned ? (
+              <Tag tone="neutral" icon={Pin}>
+                {t("pinnedTag")}
+              </Tag>
+            ) : null}
             <time
               dateTime={message.created_at}
               title={formatDateTime(message.created_at)}
@@ -227,9 +337,14 @@ export function MessageRow({
               }
             />
             {message.is_verified_answer ? (
-              <Tag tone="success" className="ml-2">
-                {t("verified")}
+              <Tag tone="success" icon={CircleCheck} className="mt-1">
+                {message.verified_by_name
+                  ? t("verifiedBy", { name: message.verified_by_name })
+                  : t("verified")}
               </Tag>
+            ) : null}
+            {message.poll ? (
+              <PollCard message={message} poll={message.poll} canVote={context.canPost} />
             ) : null}
           </>
         )}
@@ -263,13 +378,17 @@ export function MessageRow({
                 : undefined,
             onEdit: own && context.canPost && runtime ? () => setEditing(true) : undefined,
             onDelete: own && runtime ? () => setConfirming(true) : undefined,
-            extra:
-              runtime && message.author?.id !== context.currentUser.id ? (
-                <MenuItem onSelect={() => setReporting(true)}>
-                  <Icon icon={Flag} />
-                  {tReports("action")}
-                </MenuItem>
-              ) : undefined,
+            extra: runtime ? (
+              <>
+                {curationItems}
+                {message.author?.id !== context.currentUser.id ? (
+                  <MenuItem onSelect={() => setReporting(true)}>
+                    <Icon icon={Flag} />
+                    {tReports("action")}
+                  </MenuItem>
+                ) : null}
+              </>
+            ) : undefined,
           }}
         />
       ) : null}

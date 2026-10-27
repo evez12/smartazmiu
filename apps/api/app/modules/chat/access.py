@@ -158,6 +158,7 @@ class ChannelAccess:
                 slow_mode_seconds=slow_seconds,
                 slow_mode_exempt=privileged,
                 can_mention_channel=privileged or announces,
+                privileged=privileged,
                 attachments_restricted=new_account and kind is ChannelType.SUBJECT_COMMUNITY,
             )
         return states
