@@ -144,6 +144,30 @@ class SyncReport:
     invited: int
 
 
+async def readable_subject(
+    session: AsyncSession, user: CurrentUser, subject_id: uuid.UUID, not_found: str
+) -> Subject:
+    """The subject if the person studies it (any enrollment that is not dropped), guides it, or is staff;
+    otherwise the same 404 as an unknown subject (§14)."""
+    subject = await session.get(Subject, subject_id)
+    if subject is None:
+        raise AppError(not_found, 404)
+    if user.roles & STAFF_ROLES:
+        return subject
+    enrolled = exists(
+        select(Enrollment.id)
+        .join(CourseOffering, CourseOffering.id == Enrollment.course_offering_id)
+        .where(
+            Enrollment.user_id == user.id,
+            CourseOffering.subject_id == subject_id,
+            Enrollment.status != EnrollmentStatus.DROPPED,
+        )
+    )
+    if not await session.scalar(select(or_(enrolled, active_guide(user.id, subject_id)))):
+        raise AppError(not_found, 404)
+    return subject
+
+
 class MentorshipService:
     def __init__(self, session: AsyncSession, cache: Redis | None = None) -> None:
         self.session = session
@@ -152,25 +176,9 @@ class MentorshipService:
     # --- access ---------------------------------------------------------------------------------------------
 
     async def _subject(self, user: CurrentUser, subject_id: uuid.UUID) -> Subject:
-        """The subject if the person studies it (any enrollment that is not dropped), guides it, or is staff;
-        otherwise the same 404 as an unknown subject (§14)."""
-        subject = await self.session.get(Subject, subject_id)
-        if subject is None:
-            raise AppError("mentorship.subject_not_found", 404)
-        if user.roles & STAFF_ROLES:
-            return subject
-        enrolled = exists(
-            select(Enrollment.id)
-            .join(CourseOffering, CourseOffering.id == Enrollment.course_offering_id)
-            .where(
-                Enrollment.user_id == user.id,
-                CourseOffering.subject_id == subject_id,
-                Enrollment.status != EnrollmentStatus.DROPPED,
-            )
+        return await readable_subject(
+            self.session, user, subject_id, "mentorship.subject_not_found"
         )
-        if not await self.session.scalar(select(or_(enrolled, active_guide(user.id, subject_id)))):
-            raise AppError("mentorship.subject_not_found", 404)
-        return subject
 
     # --- guides -----------------------------------------------------------------------------------------------
 

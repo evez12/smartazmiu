@@ -8,6 +8,7 @@ from app.modules.chat.access import ChannelAccess
 from app.modules.chat.attachments import AttachmentService
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.channels import ChannelService
+from app.modules.chat.curation import CurationService
 from app.modules.chat.messages import MessageService
 from app.modules.chat.reactions import ReactionService
 
@@ -62,3 +63,10 @@ def get_reactions(session: SessionDep, cache: RedisDep, access: AccessDep) -> Re
 
 
 ReactionsDep = Annotated[ReactionService, Depends(get_reactions)]
+
+
+def get_curation(session: SessionDep, cache: RedisDep, access: AccessDep) -> CurationService:
+    return CurationService(session, access, ChatBus(cache))
+
+
+CurationDep = Annotated[CurationService, Depends(get_curation)]

@@ -31,6 +31,13 @@ class ReportedMessageOut(BaseModel):
     created_at: datetime
 
 
+class ReportedTipOut(BaseModel):
+    id: str
+    subject_name: str
+    excerpt: str
+    status: str
+
+
 class ReportOut(BaseModel):
     id: str
     target_type: ReportTarget
@@ -42,6 +49,7 @@ class ReportOut(BaseModel):
     reported_user: AuthorOut | None
     """The reported person, or the author of the reported message."""
     message: ReportedMessageOut | None
+    tip: ReportedTipOut | None = None
     handled_by: AuthorOut | None
     handled_at: datetime | None
     reporters: int

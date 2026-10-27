@@ -391,6 +391,78 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Bu sorğuya artıq rəy vermisiniz.",
         "en": "You already gave feedback on this request.",
     },
+    "chat.anonymous_not_allowed": {
+        "az": "Anonim sual yalnız fənn və icma kanallarının #suallar bölməsində yeni mesaj kimi yazıla bilər.",
+        "en": "Anonymous questions are allowed only as new posts in #suallar of course and community channels.",
+    },
+    "chat.pin_not_allowed": {
+        "az": "Bu kanalda mesajları yalnız moderatorlar və müəllimlər sancaqlaya bilər.",
+        "en": "Only moderators and teachers can pin messages in this channel.",
+    },
+    "chat.pin_limit": {
+        "az": "Kanalda ən çox 50 sancaqlanmış mesaj ola bilər. Əvvəlcə birini çıxarın.",
+        "en": "A channel can have at most 50 pinned messages. Unpin one first.",
+    },
+    "chat.poll_invalid_options": {
+        "az": "Sorğuda 2-dən 10-a qədər fərqli, boş olmayan variant olmalıdır.",
+        "en": "A poll needs 2 to 10 distinct, non-empty options.",
+    },
+    "chat.poll_invalid_deadline": {
+        "az": "Bitmə vaxtı gələcəkdə olmalıdır.",
+        "en": "The deadline must be in the future.",
+    },
+    "chat.poll_not_found": {
+        "az": "Sorğu tapılmadı.",
+        "en": "The poll was not found.",
+    },
+    "chat.poll_closed": {
+        "az": "Sorğu bağlanıb, səs vermək mümkün deyil.",
+        "en": "The poll is closed.",
+    },
+    "chat.poll_invalid_vote": {
+        "az": "Variant seçin. Tək seçimli sorğuda yalnız bir variant seçilə bilər.",
+        "en": "Choose an option. Single-choice polls take exactly one.",
+    },
+    "chat.verify_not_allowed": {
+        "az": "Cavabı yalnız fənnin müəllimi (fənn kanalında) və ya bələdçi (fənn icmasında) təsdiqləyə bilər.",
+        "en": "Only the course teacher or a guide of the subject can verify answers here.",
+    },
+    "chat.verify_needs_reply": {
+        "az": "Yalnız sual mövzusundakı cavabı təsdiqləmək olar.",
+        "en": "Only a reply in a question's thread can be verified.",
+    },
+    "chat.anonymous_author_hidden": {
+        "az": "Anonim sualın müəllifini yalnız moderatorlar görə bilər.",
+        "en": "Only moderators can see who asked an anonymous question.",
+    },
+    "tips.subject_not_found": {
+        "az": "Fənn tapılmadı və ya onun kartlarına baxmaq imkanınız yoxdur.",
+        "en": "The subject was not found or you cannot see its cards.",
+    },
+    "tips.not_eligible": {
+        "az": "Kartı yalnız bu fənni həmin semestrdə uğurla bitirmiş tələbə yaza bilər.",
+        "en": "Only students who passed the subject in that semester can write a card.",
+    },
+    "tips.invalid_link": {
+        "az": "Keçid http:// və ya https:// ilə başlamalıdır.",
+        "en": "Links must start with http:// or https://.",
+    },
+    "tips.invalid_material": {
+        "az": "Seçilmiş material bu fənnə aid deyil və ya əlçatan deyil.",
+        "en": "The chosen material does not belong to this subject or is not available.",
+    },
+    "tips.not_found": {
+        "az": "Kart tapılmadı.",
+        "en": "The card was not found.",
+    },
+    "tips.own_tip": {
+        "az": "Öz kartınıza səs verə bilməzsiniz.",
+        "en": "You cannot upvote your own card.",
+    },
+    "tips.invalid_status": {
+        "az": "Bu vəziyyəti seçmək olmaz.",
+        "en": "This status cannot be chosen.",
+    },
     "materials.subject_not_found": {
         "az": "Fənn tapılmadı və ya onun materiallarına baxmaq icazəniz yoxdur.",
         "en": "The subject was not found or you cannot view its materials.",

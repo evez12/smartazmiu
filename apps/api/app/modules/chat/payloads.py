@@ -21,6 +21,11 @@ from app.modules.chat.models import (
     MessageAttachment,
     MessageMention,
     MessageReaction,
+    PinnedMessage,
+    Poll,
+    PollOption,
+    PollVote,
+    SavedMessage,
     ScanStatus,
 )
 from app.modules.chat.reactions import REACTIONS
@@ -30,6 +35,8 @@ from app.modules.chat.schemas import (
     Badge,
     MentionOut,
     MessageOut,
+    PollOptionOut,
+    PollOut,
     ReactionOut,
 )
 from app.modules.chat.snowflake import created_at_of
@@ -74,7 +81,8 @@ def message_out(message: Message, author: User | None, badge: str | None = None)
             # The query yields only these two literals or NULL.
             badge=cast("Badge | None", badge),
         )
-        if author is not None
+        # An anonymous question names nobody in any payload; moderators ask for the author separately (D-084).
+        if author is not None and not message.is_anonymous
         else None,
         body="" if deleted else message.body,
         client_msg_id=str(message.client_msg_id),
@@ -82,6 +90,7 @@ def message_out(message: Message, author: User | None, badge: str | None = None)
         edited_at=message.edited_at,
         deleted_at=message.deleted_at,
         is_verified_answer=message.is_verified_answer and not deleted,
+        is_anonymous=message.is_anonymous,
         mentions_channel=message.mentions_channel and not deleted,
     )
 
@@ -155,18 +164,20 @@ async def enrich(
             assert attachment.message_id is not None
             attached[attachment.message_id].append(attachment_out(attachment))
 
+    extras = await curation(session, messages, viewer)
     # Teacher and curator badges come from the query; guides only matter in subject communities (§5.2).
     guides = await guide_terms(
         session,
         (
             (message.channel_id, author.id)
             for message, author, badge in rows
-            if author is not None and badge is None
+            if author is not None and badge is None and not message.is_anonymous
         ),
     )
     result = []
     for message, author, badge in rows:
         out = message_out(message, author, badge)
+        extras.apply(out, message)
         if out.author is not None and author is not None:
             term = guides.get((message.channel_id, author.id))
             if term is not None:
@@ -217,3 +228,114 @@ async def message_payload(
     if row is None:
         return None
     return (await enrich(session, [(row[0], row[1], row[2])], viewer))[0]
+
+
+class Curation:
+    """Pins, polls, saves and verifiers of a page of messages, loaded in one query per kind."""
+
+    def __init__(self) -> None:
+        self.pinned: set[int] = set()
+        self.saved: set[int] = set()
+        self.viewer: uuid.UUID | None = None
+        self.verifiers: dict[uuid.UUID, str] = {}
+        self.polls: dict[int, PollOut] = {}
+
+    def apply(self, out: MessageOut, message: Message) -> None:
+        if message.deleted_at is not None:
+            return
+        out.pinned = message.id in self.pinned
+        if self.viewer is not None:
+            out.saved = message.id in self.saved
+        if message.is_verified_answer and message.verified_by is not None:
+            out.verified_by_name = self.verifiers.get(message.verified_by)
+        out.poll = self.polls.get(message.id)
+
+
+async def curation(
+    session: AsyncSession, messages: Sequence[Message], viewer: uuid.UUID | None
+) -> Curation:
+    found = Curation()
+    found.viewer = viewer
+    ids = [message.id for message in messages]
+    found.pinned = set(
+        await session.scalars(
+            select(PinnedMessage.message_id).where(PinnedMessage.message_id.in_(ids))
+        )
+    )
+    if viewer is not None:
+        found.saved = set(
+            await session.scalars(
+                select(SavedMessage.message_id).where(
+                    SavedMessage.user_id == viewer, SavedMessage.message_id.in_(ids)
+                )
+            )
+        )
+    verifier_ids = {m.verified_by for m in messages if m.is_verified_answer and m.verified_by}
+    if verifier_ids:
+        found.verifiers = dict(
+            (
+                await session.execute(
+                    select(User.id, User.display_name).where(User.id.in_(verifier_ids))
+                )
+            ).all()
+        )
+    polls = list(await session.scalars(select(Poll).where(Poll.message_id.in_(ids))))
+    if polls:
+        found.polls = await poll_payloads(session, polls, viewer)
+    return found
+
+
+async def poll_payloads(
+    session: AsyncSession, polls: Sequence[Poll], viewer: uuid.UUID | None
+) -> dict[int, PollOut]:
+    poll_ids = [poll.id for poll in polls]
+    options = list(
+        await session.scalars(
+            select(PollOption)
+            .where(PollOption.poll_id.in_(poll_ids))
+            .order_by(PollOption.poll_id, PollOption.position)
+        )
+    )
+    counts = dict(
+        (
+            await session.execute(
+                select(PollVote.option_id, func.count())
+                .where(PollVote.poll_id.in_(poll_ids))
+                .group_by(PollVote.option_id)
+            )
+        ).all()
+    )
+    voters = dict(
+        (
+            await session.execute(
+                select(PollVote.poll_id, func.count(func.distinct(PollVote.user_id)))
+                .where(PollVote.poll_id.in_(poll_ids))
+                .group_by(PollVote.poll_id)
+            )
+        ).all()
+    )
+    mine: dict[uuid.UUID, list[str]] = defaultdict(list)
+    if viewer is not None:
+        for poll_id, option_id in await session.execute(
+            select(PollVote.poll_id, PollVote.option_id).where(
+                PollVote.poll_id.in_(poll_ids), PollVote.user_id == viewer
+            )
+        ):
+            mine[poll_id].append(str(option_id))
+    now = datetime.now(tz=next(iter(polls)).created_at.tzinfo)
+    result: dict[int, PollOut] = {}
+    for poll in polls:
+        result[poll.message_id] = PollOut(
+            id=str(poll.id),
+            multi=poll.multi,
+            closes_at=poll.closes_at,
+            closed=poll.closes_at is not None and poll.closes_at <= now,
+            options=[
+                PollOptionOut(id=str(option.id), text=option.text, votes=counts.get(option.id, 0))
+                for option in options
+                if option.poll_id == poll.id
+            ],
+            voters=voters.get(poll.id, 0),
+            my_votes=mine.get(poll.id, []) if viewer is not None else None,
+        )
+    return result

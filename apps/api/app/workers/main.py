@@ -29,6 +29,7 @@ from app.modules.chat.models import ScanStatus
 from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
+from app.modules.knowledge.service import TipService
 from app.modules.materials.service import MaterialScanner
 from app.modules.mentorship import service as mentorship
 from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
@@ -137,6 +138,8 @@ async def sync_guides(ctx: dict[str, Any]) -> int:
     database: Database = ctx["database"]
     async with database.sessionmaker() as session:
         report = await mentorship.MentorshipService(session).sync()
+        # The same results ask people who just passed a subject for its guide card (§5.2 flow 5).
+        await TipService(session).prompt_authors()
     if report.revoked:
         # Revoked guides leave the community on the next provisioning run; run it now.
         await provision_channels(ctx)

@@ -34,6 +34,7 @@ from app.modules.feedback.router import router as feedback_router
 from app.modules.health.metrics import mark_process_dead
 from app.modules.health.metrics import router as metrics_router
 from app.modules.health.router import router as health_router
+from app.modules.knowledge.router import router as knowledge_router
 from app.modules.materials.router import router as materials_router
 from app.modules.mentorship.router import router as mentorship_router
 from app.modules.notifications.router import router as notifications_router
@@ -142,6 +143,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(materials_router, prefix=API_PREFIX)
     app.include_router(feedback_router, prefix=API_PREFIX)
     app.include_router(mentorship_router, prefix=API_PREFIX)
+    app.include_router(knowledge_router, prefix=API_PREFIX)
     app.include_router(chat_socket_router)
     return app
 

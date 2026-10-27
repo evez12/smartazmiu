@@ -70,6 +70,7 @@ class SendIn(BaseModel):
     topic_id: uuid.UUID | None = None
     parent_id: str | None = Field(default=None, pattern=MESSAGE_ID_PATTERN)
     attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
+    is_anonymous: bool = False
 
 
 class EditIn(BaseModel):
@@ -341,6 +342,7 @@ class SocketSession:
                     request.topic_id,
                     parse_message_id(request.parent_id) if request.parent_id else None,
                     request.attachment_ids,
+                    request.is_anonymous,
                 )
         if outcome.created:
             MESSAGES_SENT.labels("ws").inc()

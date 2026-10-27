@@ -20,6 +20,8 @@ KIND_LABELS: dict[NotificationKind, str] = {
     NotificationKind.MENTORSHIP_REQUEST_DECLINED: "Məsləhət sorğunuz qəbul edilmədi",
     NotificationKind.MENTORSHIP_REQUEST_EXPIRED: "Məsləhət sorğunuzun vaxtı bitdi",
     NotificationKind.MENTORSHIP_ADVICE_POST: "#məsləhət bölməsində yeni sual",
+    NotificationKind.MENTORSHIP_TIP_PROMPT: "Fənn kartını doldurun",
+    NotificationKind.CHAT_ANSWER_VERIFIED: "Sualınıza təsdiqlənmiş cavab verildi",
 }
 
 

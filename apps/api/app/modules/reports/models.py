@@ -19,6 +19,7 @@ def _enum(enum: type[StrEnum], name: str) -> Enum:
 class ReportTarget(StrEnum):
     MESSAGE = "message"
     USER = "user"
+    TIP = "tip"
 
 
 class ReportReason(StrEnum):

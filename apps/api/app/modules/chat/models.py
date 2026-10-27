@@ -332,3 +332,69 @@ class UserBlock(Base):
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PinnedMessage(Base):
+    """A message in the channel's "Faydalı" collection (§5.3); at most ``MAX_PINS`` per channel."""
+
+    __tablename__ = "pinned_messages"
+
+    channel_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("channels.id", ondelete="CASCADE"), primary_key=True
+    )
+    message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    pinned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    pinned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Poll(Base):
+    """A poll is a message plus its options; the message carries the question as its body (§5.3)."""
+
+    __tablename__ = "polls"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    message_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
+    multi: Mapped[bool] = mapped_column(Boolean, default=False)
+    closes_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PollOption(Base):
+    __tablename__ = "poll_options"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    poll_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("polls.id", ondelete="CASCADE"), index=True
+    )
+    text: Mapped[str] = mapped_column(String(200))
+    position: Mapped[int] = mapped_column(SmallInteger)
+
+
+class PollVote(Base):
+    __tablename__ = "poll_votes"
+    __table_args__ = (Index("ix_poll_votes_poll_id_user_id", "poll_id", "user_id"),)
+
+    poll_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("polls.id", ondelete="CASCADE"), primary_key=True
+    )
+    option_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("poll_options.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SavedMessage(Base):
+    """A personal bookmark (§5.3); shown only while the owner can still read the message."""
+
+    __tablename__ = "saved_messages"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    message_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

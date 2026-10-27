@@ -14,18 +14,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import AppError
 from app.core.jobs import JobQueue
 from app.core.time import utc_now
+from app.modules.audit.models import AuditAction
+from app.modules.audit.service import record_audit
 from app.modules.chat.access import ChannelAccess, deny
 from app.modules.chat.attachments import AttachmentService
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
 from app.modules.chat.lookup import find_message
 from app.modules.chat.mentions import MentionService, ParsedMentions, parse
-from app.modules.chat.models import ChannelRead, ChannelTopic, Message, MessageClientId
+from app.modules.chat.models import (
+    Channel,
+    ChannelRead,
+    ChannelTopic,
+    ChannelType,
+    Message,
+    MessageClientId,
+)
 from app.modules.chat.payloads import enrich, message_payload, with_authors
 from app.modules.chat.policy import Action, Reason
 from app.modules.chat.schemas import MessageOut, Notice
 from app.modules.chat.search import body_vector
 from app.modules.chat.snowflake import Snowflake, SnowflakeUnavailableError, created_at_of
 from app.modules.users.service import CurrentUser
+
+ANONYMOUS_TOPIC = "suallar"
 
 logger = structlog.get_logger(__name__)
 
@@ -94,6 +105,7 @@ class MessageService:
         topic_id: uuid.UUID | None = None,
         parent_id: int | None = None,
         attachment_ids: list[uuid.UUID] | None = None,
+        is_anonymous: bool = False,
     ) -> SendOutcome:
         """Persists the message, then publishes it; a retried client id returns the original (§13.2)."""
         attachment_ids = list(dict.fromkeys(attachment_ids or []))
@@ -114,7 +126,12 @@ class MessageService:
         if topic_id is not None and not await self._topic_in_channel(topic_id, channel_id):
             raise AppError("chat.topic_not_found", 422)
         parent = await self._thread_root(channel_id, parent_id) if parent_id else None
+        if is_anonymous:
+            await self._check_anonymous(channel_id, topic_id, parent)
         parsed, notices = await self._mentions(user, channel_id, body)
+        if is_anonymous:
+            # Mentions would notify people in the author's name, so an anonymous question names nobody.
+            parsed = ParsedMentions([], False)
 
         for attempt in range(2):
             try:
@@ -133,6 +150,7 @@ class MessageService:
                     parent,
                     parsed,
                     attachment_ids,
+                    is_anonymous,
                 )
             except IntegrityError:
                 # A duplicate snowflake is the primary key's to catch; one retry with a fresh id (ADR 0002).
@@ -196,6 +214,7 @@ class MessageService:
         parent: Message | None,
         parsed: ParsedMentions,
         attachment_ids: list[uuid.UUID],
+        is_anonymous: bool = False,
     ) -> bool:
         """One transaction: claim the client id, insert the message and its mentions, create the notifications.
         False if a concurrent send won the claim."""
@@ -239,8 +258,19 @@ class MessageService:
                     body_tsv=body_vector(body),
                     client_msg_id=message.client_msg_id,
                     mentions_channel=message.mentions_channel,
+                    is_anonymous=is_anonymous,
                 )
             )
+            if is_anonymous:
+                # The real author stays known to the server and in the audit log (§5.3, D-084).
+                record_audit(
+                    self.session,
+                    AuditAction.MESSAGE_ANONYMOUS_POSTED,
+                    actor_id=user.id,
+                    target_type="message",
+                    target_id=str(message_id),
+                    details={"channel_id": str(channel_id)},
+                )
             if attachment_ids:
                 assert self.attachments is not None
                 try:
@@ -290,6 +320,28 @@ class MessageService:
             # Someone else's client id: never hand out their message.
             raise AppError("chat.duplicate_client_id", 409)
         return (await enrich(self.session, [(row[0], row[1], row[2])], user.id))[0]
+
+    async def _check_anonymous(
+        self, channel_id: uuid.UUID, topic_id: uuid.UUID | None, parent: Message | None
+    ) -> None:
+        """Anonymous questions only as new posts in #suallar of a course or community channel (§5.3)."""
+        allowed = (
+            parent is None
+            and topic_id is not None
+            and await self.session.scalar(
+                select(ChannelTopic.id)
+                .join(Channel, Channel.id == ChannelTopic.channel_id)
+                .where(
+                    ChannelTopic.id == topic_id,
+                    ChannelTopic.channel_id == channel_id,
+                    ChannelTopic.slug == ANONYMOUS_TOPIC,
+                    Channel.type.in_([ChannelType.COURSE_OFFERING, ChannelType.SUBJECT_COMMUNITY]),
+                )
+            )
+            is not None
+        )
+        if not allowed:
+            raise AppError("chat.anonymous_not_allowed", 422)
 
     async def _topic_in_channel(self, topic_id: uuid.UUID, channel_id: uuid.UUID) -> bool:
         found = await self.session.scalar(
