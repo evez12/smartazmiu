@@ -4,6 +4,7 @@ import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI
@@ -252,8 +253,14 @@ async def test_presence_survives_a_short_drop_and_ends_after_the_grace_period(
 
 
 async def test_sending_is_rate_limited_and_typing_throttled(
-    open_socket: Open, person: MakePerson, channel: MakeChannel
+    open_socket: Open,
+    person: MakePerson,
+    channel: MakeChannel,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Keep all sends in one fixed window; crossing a real ten-second boundary may legitimately allow both
+    # portions of the burst and would make this assertion timing-dependent.
+    monkeypatch.setattr("app.core.ratelimit.time", SimpleNamespace(time=lambda: 1_000_000_001))
     aysel, ramin = await person(), await person("Ramin", "Əliyev")
     room = await channel(aysel, ramin)
     sender, receiver = await open_socket(aysel), await open_socket(ramin)
