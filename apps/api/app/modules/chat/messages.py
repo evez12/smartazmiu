@@ -183,7 +183,9 @@ class MessageService:
             assert again is not None
             return SendOutcome(again, created=False)
 
-        message = await self.message(channel_id, message_id, user.id)
+        # The channel event must contain only fields every member may see. Pending or rejected
+        # attachments are added separately on the author's private topic below (D-068).
+        message = await self.message(channel_id, message_id)
         assert message is not None
         await self.bus.publish(
             user_topic(user.id)

@@ -1,6 +1,7 @@
 """Attachments: presign, send, scan, download, purge (§5.3, §5.5, §6.1, §13.2, §13.5, §14, D-068)."""
 
 import io
+import json
 import os
 import uuid
 import zipfile
@@ -265,6 +266,41 @@ async def test_sending_binds_own_uploads_and_hides_them_until_clean(
     )
     again = await send(client, aysel, room, "Yenə", [attachment_id])
     assert again.json()["error"]["code"] == "chat.attachment_not_found"
+
+
+async def test_pending_attachment_publish_is_private_to_uploader(
+    client: AsyncClient,
+    app: FastAPI,
+    person: MakePerson,
+    channel: MakeChannel,
+    storage: MemoryStorage,
+) -> None:
+    aysel, ramin = await person(), await person("Ramin", "Əliyev")
+    room = await channel(aysel, ramin)
+    attachment_id = await upload(client, storage, aysel, room)
+    bus = app.state.redis.pubsub()
+    await bus.psubscribe("chat:*")
+    try:
+        response = await send(client, aysel, room, "Material", [attachment_id])
+        assert response.status_code == 201, response.text
+        published: dict[str, dict[str, Any]] = {}
+        for _ in range(10):
+            event = await bus.get_message(ignore_subscribe_messages=True, timeout=0.2)
+            if event is None:
+                continue
+            payload = json.loads(event["data"])
+            published[event["channel"]] = payload
+            if len(published) == 2:
+                break
+
+        channel_event = published[f"chat:channel:{room}"]
+        assert channel_event["type"] == "message.created"
+        assert channel_event["data"]["attachments"] == []
+        author_event = published[f"chat:user:{aysel.id}"]
+        assert author_event["type"] == "message.updated"
+        assert author_event["data"]["attachments"][0]["status"] == "pending"
+    finally:
+        await bus.aclose()
 
 
 async def test_scans_publish_clean_files_and_reject_the_rest(
