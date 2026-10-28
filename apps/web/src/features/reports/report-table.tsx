@@ -155,7 +155,7 @@ function ModerationActions({ item, canGlobalBan }: { item: ReportItem; canGlobal
   });
   return (
     <form
-      className="flex min-w-52 flex-col gap-2"
+      className="flex min-w-0 flex-1 flex-col gap-2 md:min-w-52"
       onSubmit={(event) => {
         event.preventDefault();
         change.mutate();

@@ -14,7 +14,12 @@ import { Icon } from "./icon";
  */
 
 export function Table({ className, ...rest }: ComponentProps<"table">) {
-  return <table className={cn("w-full border-collapse text-base", className)} {...rest} />;
+  return (
+    <table
+      className={cn("w-full border-collapse text-base max-md:block max-md:min-w-0", className)}
+      {...rest}
+    />
+  );
 }
 
 export function TableHeader({ className, ...rest }: ComponentProps<"thead">) {
@@ -26,8 +31,8 @@ export function TableHeader({ className, ...rest }: ComponentProps<"thead">) {
   );
 }
 
-export function TableBody(props: ComponentProps<"tbody">) {
-  return <tbody {...props} />;
+export function TableBody({ className, ...rest }: ComponentProps<"tbody">) {
+  return <tbody className={cn("max-md:block max-md:min-w-0", className)} {...rest} />;
 }
 
 export function TableRow({ className, ...rest }: ComponentProps<"tr">) {
@@ -100,7 +105,7 @@ export function TableCell({ label, numeric, className, children, ...rest }: Tabl
       className={cn(
         "px-3 text-text md:py-2",
         numeric && "tabular md:text-right",
-        "max-md:flex max-md:justify-between max-md:gap-4 max-md:px-0",
+        "max-md:flex max-md:min-w-0 max-md:justify-between max-md:gap-4 max-md:px-0 max-md:[&>*]:min-w-0",
         "max-md:before:text-sm max-md:before:text-muted max-md:before:content-[attr(data-label)]",
         className,
       )}
