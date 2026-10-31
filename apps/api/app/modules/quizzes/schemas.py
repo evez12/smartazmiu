@@ -68,6 +68,11 @@ class QuestionCreateIn(BaseModel):
         return self
 
 
+class OptionOut(BaseModel):
+    id: str
+    text: str
+
+
 class QuestionOut(BaseModel):
     """What a student sees: never the correct answer."""
 
@@ -76,7 +81,7 @@ class QuestionOut(BaseModel):
     type: QuestionType
     prompt: str
     points: int
-    options: list[dict[str, str]]
+    options: list[OptionOut]
     is_required: bool
 
 

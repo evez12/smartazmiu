@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ratelimit import RateLimit
@@ -533,3 +533,31 @@ async def test_infected_files_are_blocked_and_purged_and_outages_leave_files_pen
     assert purged == 1
     assert key not in storage.objects
     assert await db.get(AssignmentFile, uuid.UUID(abandoned)) is None
+
+
+async def test_files_of_a_deleted_assignment_are_still_purged(
+    client: AsyncClient, db: AsyncSession, people: dict[str, Person], storage: MemoryStorage
+) -> None:
+    leyla, aysel = people["leyla"], people["aysel"]
+    work = await make(client, leyla, await statistika(client, leyla), late_policy="accept")
+    sent = await submit(
+        client, aysel, work["id"], await upload(client, storage, db, aysel, work["id"])
+    )
+    file_id = uuid.UUID(sent.json()["my_submission"]["files"][0]["id"])
+    file = await db.get(AssignmentFile, file_id)
+    assert file is not None
+    key = file.object_key
+
+    await db.execute(delete(Assignment).where(Assignment.id == uuid.UUID(work["id"])))
+    await db.commit()
+    await db.refresh(file)
+    # The row outlives the assignment, detached, so the stored object can still be found and removed.
+    assert (file.assignment_id, file.submission_id) == (None, None)
+    assert key in storage.objects
+    gone = await client.get(f"{API}/assignment-files/{file_id}/download", headers=aysel.headers)
+    assert gone.status_code == 404
+    assert (
+        await SubmissionScanner(db, storage, FakeScanner()).purge(utc_now() + timedelta(days=2))
+        == 1
+    )
+    assert key not in storage.objects

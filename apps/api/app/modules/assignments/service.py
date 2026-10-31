@@ -430,7 +430,7 @@ class AssignmentService:
         self, user: CurrentUser, file_id: uuid.UUID, *, inline: bool
     ) -> FileDownloadOut:
         file = await self.session.get(AssignmentFile, file_id)
-        if file is None or file.submission_id is None:
+        if file is None or file.submission_id is None or file.assignment_id is None:
             raise AppError("assignments.not_found", 404)
         assignment = await self.session.get(Assignment, file.assignment_id)
         assert assignment is not None

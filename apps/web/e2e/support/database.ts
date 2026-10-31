@@ -68,6 +68,16 @@ const SEED_TABLES: Record<string, string> = {
   forum_questions: "SELECT count(*) FROM forum_questions",
   forum_answers: "SELECT count(*) FROM forum_answers",
   forum_votes: "SELECT count(*) FROM forum_votes",
+  // Coursework is test data in every run (D-092). Files are counted only while submitted: detached ones wait for
+  // the worker to remove their objects.
+  assignments: "SELECT count(*) FROM assignments",
+  assignment_submissions: "SELECT count(*) FROM assignment_submissions",
+  assignment_grades: "SELECT count(*) FROM assignment_grades",
+  "assignment_files (submitted)":
+    "SELECT count(*) FROM assignment_files WHERE submission_id IS NOT NULL",
+  quizzes: "SELECT count(*) FROM quizzes",
+  quiz_questions: "SELECT count(*) FROM quiz_questions",
+  quiz_attempts: "SELECT count(*) FROM quiz_attempts",
   "reports (feed and forum)":
     "SELECT count(*) FROM reports WHERE target_type IN ('post', 'comment', 'question', 'answer')",
 };
@@ -108,6 +118,7 @@ export class TestRecords {
   private readonly materialMarkers: string[] = [];
   private readonly feedbackMarkers: string[] = [];
   private readonly communityMarkers: string[] = [];
+  private readonly courseworkMarkers: string[] = [];
   private readonly mailboxes: string[] = [];
   private readonly limited: { emails: string[]; rule: string }[] = [];
 
@@ -171,6 +182,13 @@ export class TestRecords {
   community(marker: string): string {
     if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
     this.communityMarkers.push(marker);
+    return marker;
+  }
+
+  /** Assignments and quizzes whose title contains `marker`, with submissions, grades, attempts and files (D-092). */
+  coursework(marker: string): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.courseworkMarkers.push(marker);
     return marker;
   }
 
@@ -243,6 +261,17 @@ export class TestRecords {
       );
       await client.query(`DELETE FROM feed_posts WHERE id IN (${posts})`, [marked]);
       await client.query(`DELETE FROM forum_questions WHERE id IN (${questions})`, [marked]);
+      const work = this.courseworkMarkers.map((marker) => `%${marker}%`);
+      const assignments = "SELECT id FROM assignments WHERE title LIKE ANY($1)";
+      // Uploaded files outlive their assignment, detached and old enough for the worker to remove their
+      // objects with the other abandoned uploads (D-092).
+      await client.query(
+        `UPDATE assignment_files SET submission_id = NULL, version = NULL, created_at = now() - interval '2 days'
+         WHERE assignment_id IN (${assignments})`,
+        [work],
+      );
+      await client.query(`DELETE FROM assignments WHERE id IN (${assignments})`, [work]);
+      await client.query("DELETE FROM quizzes WHERE title LIKE ANY($1)", [work]);
       const materials = "SELECT id FROM materials WHERE title LIKE ANY($1)";
       const titles = this.materialMarkers.map((marker) => `%${marker}%`);
       await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
@@ -331,6 +360,7 @@ export class TestRecords {
         this.materialMarkers,
         this.feedbackMarkers,
         this.communityMarkers,
+        this.courseworkMarkers,
       ]) {
         list.length = 0;
       }

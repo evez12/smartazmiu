@@ -245,6 +245,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/assignment-files/{file_id}/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A one-minute link to a scanned submission file */
+    get: operations["downloadAssignmentFile"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assignment-submissions/{submission_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Submission */
+    get: operations["getAssignmentSubmission"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/assignment-submissions/{submission_id}/grade": {
     parameters: {
       query?: never;
@@ -254,8 +288,8 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Grade Assignment */
-    post: operations["grade_assignment_api_v1_assignment_submissions__submission_id__grade_post"];
+    /** Grade Submission */
+    post: operations["gradeAssignmentSubmission"];
     delete?: never;
     options?: never;
     head?: never;
@@ -269,10 +303,28 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** List Assignments */
+    get: operations["listAssignments"];
     put?: never;
     /** Create Assignment */
-    post: operations["create_assignment_api_v1_assignments_post"];
+    post: operations["createAssignment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assignments/{assignment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Assignment */
+    get: operations["getAssignment"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -286,10 +338,28 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** Every student of the offering with their submission, for the people who manage it */
+    get: operations["listAssignmentSubmissions"];
+    put?: never;
+    /** Submit the uploaded file; sending the same upload again returns the same result */
+    post: operations["submitAssignment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/assignments/{assignment_id}/uploads/presign": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     get?: never;
     put?: never;
-    /** Submit Assignment */
-    post: operations["submit_assignment_api_v1_assignments__assignment_id__submissions_post"];
+    /** Reserve a submission upload: a ten-minute URL to PUT one file to (25 MB) */
+    post: operations["presignAssignmentUpload"];
     delete?: never;
     options?: never;
     head?: never;
@@ -821,6 +891,23 @@ export interface paths {
     get?: never;
     /** Set Visibility */
     put: operations["setCommunityVisibility"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/coursework/offerings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Offerings I may add assignments and quizzes to */
+    get: operations["listCourseworkOfferings"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -1887,14 +1974,49 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** Get Attempt */
+    get: operations["getQuizAttempt"];
     put?: never;
     post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    /** Save Attempt Answers */
-    patch: operations["save_attempt_answers_api_v1_quiz_attempts__attempt_id__patch"];
+    /** Save the answers so far; answers that arrive after the time limit are not counted */
+    patch: operations["saveQuizAnswers"];
+    trace?: never;
+  };
+  "/api/v1/quiz-attempts/{attempt_id}/open-question-scores": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Score Open Questions */
+    put: operations["scoreOpenQuestions"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/quiz-attempts/{attempt_id}/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Review Attempt */
+    get: operations["reviewQuizAttempt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   "/api/v1/quiz-attempts/{attempt_id}/submit": {
@@ -1907,7 +2029,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Submit Attempt */
-    post: operations["submit_attempt_api_v1_quiz_attempts__attempt_id__submit_post"];
+    post: operations["submitQuizAttempt"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1921,10 +2043,28 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** List Quizzes */
+    get: operations["listQuizzes"];
     put?: never;
     /** Create Quiz */
-    post: operations["create_quiz_api_v1_quizzes_post"];
+    post: operations["createQuiz"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/quizzes/{quiz_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Quiz */
+    get: operations["getQuiz"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1938,10 +2078,28 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
+    /** Every attempt of the quiz, for the people who manage the offering */
+    get: operations["listQuizAttempts"];
+    put?: never;
+    /** Start an attempt, or resume the one in progress */
+    post: operations["startQuizAttempt"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/quizzes/{quiz_id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     get?: never;
     put?: never;
-    /** Start Attempt */
-    post: operations["start_attempt_api_v1_quizzes__quiz_id__attempts_post"];
+    /** Publish Quiz */
+    post: operations["publishQuiz"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1958,7 +2116,41 @@ export interface paths {
     get?: never;
     put?: never;
     /** Add Question */
-    post: operations["add_question_api_v1_quizzes__quiz_id__questions_post"];
+    post: operations["addQuizQuestion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/quizzes/{quiz_id}/questions/{question_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Question */
+    delete: operations["deleteQuizQuestion"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/quizzes/{quiz_id}/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Stats */
+    get: operations["getQuizStats"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2366,6 +2558,40 @@ export interface components {
       /** Title */
       title: string;
     };
+    /** AssignmentDetailOut */
+    AssignmentDetailOut: {
+      /** Available From */
+      available_from: string | null;
+      /** Can Manage */
+      can_manage: boolean;
+      /** Can Submit */
+      can_submit: boolean;
+      /** Deadline */
+      deadline: string | null;
+      /** Enrolled Count */
+      enrolled_count: number | null;
+      /** Graded Count */
+      graded_count: number | null;
+      /** Id */
+      id: string;
+      /** Instructions */
+      instructions: string;
+      /** Late Penalty Percent */
+      late_penalty_percent: string;
+      late_policy: components["schemas"]["LatePolicy"];
+      /** Max Points */
+      max_points: string;
+      /** My Status */
+      my_status: ("not_submitted" | "submitted" | "graded") | null;
+      my_submission: components["schemas"]["MySubmissionOut"] | null;
+      offering: components["schemas"]["CourseOfferingOut"];
+      /** Submit Blocked */
+      submit_blocked: string | null;
+      /** Submitted Count */
+      submitted_count: number | null;
+      /** Title */
+      title: string;
+    };
     /** AssignmentGradeIn */
     AssignmentGradeIn: {
       /**
@@ -2376,42 +2602,70 @@ export interface components {
       /** Points */
       points: number | string;
     };
-    /** AssignmentOut */
-    AssignmentOut: {
+    /** AssignmentListOut */
+    AssignmentListOut: {
+      /** Items */
+      items: components["schemas"]["AssignmentSummaryOut"][];
+    };
+    /** AssignmentPresignIn */
+    AssignmentPresignIn: {
+      /** Filename */
+      filename: string;
+      /** Mime */
+      mime: string;
+      /** Size */
+      size: number;
+    };
+    /** AssignmentPresignOut */
+    AssignmentPresignOut: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Headers */
+      headers: {
+        [key: string]: string;
+      };
+      /** Upload Id */
+      upload_id: string;
+      /** Url */
+      url: string;
+    };
+    /** AssignmentSubmissionIn */
+    AssignmentSubmissionIn: {
+      /**
+       * Upload Id
+       * Format: uuid
+       */
+      upload_id: string;
+    };
+    /** AssignmentSummaryOut */
+    AssignmentSummaryOut: {
       /** Available From */
       available_from: string | null;
-      /**
-       * Course Offering Id
-       * Format: uuid
-       */
-      course_offering_id: string;
+      /** Can Manage */
+      can_manage: boolean;
       /** Deadline */
       deadline: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Enrolled Count */
+      enrolled_count: number | null;
+      /** Graded Count */
+      graded_count: number | null;
+      /** Id */
       id: string;
-      /** Instructions */
-      instructions: string;
       /** Late Penalty Percent */
       late_penalty_percent: string;
       late_policy: components["schemas"]["LatePolicy"];
       /** Max Points */
       max_points: string;
+      /** My Status */
+      my_status: ("not_submitted" | "submitted" | "graded") | null;
+      offering: components["schemas"]["CourseOfferingOut"];
+      /** Submitted Count */
+      submitted_count: number | null;
       /** Title */
       title: string;
-    };
-    /** AssignmentSubmissionIn */
-    AssignmentSubmissionIn: {
-      /** Filename */
-      filename: string;
-      /** Mime */
-      mime: string;
-      /** Object Key */
-      object_key: string;
-      /** Size Bytes */
-      size_bytes: number;
     };
     /** AttachmentOut */
     AttachmentOut: {
@@ -2431,6 +2685,11 @@ export interface components {
       /** Width */
       width: number | null;
     };
+    /** AttemptListOut */
+    AttemptListOut: {
+      /** Items */
+      items: components["schemas"]["AttemptRowOut"][];
+    };
     /** AttemptOut */
     AttemptOut: {
       /** Answers */
@@ -2441,17 +2700,53 @@ export interface components {
       attempt_number: number;
       /** Expires At */
       expires_at: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Max Score */
       max_score: number | null;
+      /** Pending Review */
+      pending_review: boolean;
+      /** Questions */
+      questions: components["schemas"]["QuestionOut"][] | null;
+      /** Quiz Id */
+      quiz_id: string;
+      /** Score */
+      score: number | null;
       /**
-       * Quiz Id
-       * Format: uuid
+       * Server Time
+       * Format: date-time
        */
+      server_time: string;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      status: components["schemas"]["AttemptStatus"];
+      /** Submitted At */
+      submitted_at: string | null;
+    };
+    /** AttemptReviewOut */
+    AttemptReviewOut: {
+      /** Answers */
+      answers: {
+        [key: string]: unknown;
+      };
+      /** Attempt Number */
+      attempt_number: number;
+      /** Id */
+      id: string;
+      /** Manual Scores */
+      manual_scores: {
+        [key: string]: number;
+      };
+      /** Max Score */
+      max_score: number | null;
+      /** Pending Review */
+      pending_review: boolean;
+      /** Questions */
+      questions: components["schemas"]["ManagerQuestionOut"][];
+      /** Quiz Id */
       quiz_id: string;
       /** Score */
       score: number | null;
@@ -2461,11 +2756,29 @@ export interface components {
        */
       started_at: string;
       status: components["schemas"]["AttemptStatus"];
+      student: components["schemas"]["StudentOut"];
+      /** Submitted At */
+      submitted_at: string | null;
+    };
+    /** AttemptRowOut */
+    AttemptRowOut: {
+      /** Attempt Number */
+      attempt_number: number;
+      /** Id */
+      id: string;
+      /** Max Score */
+      max_score: number | null;
+      /** Pending Review */
+      pending_review: boolean;
+      /** Score */
+      score: number | null;
       /**
-       * Student Id
-       * Format: uuid
+       * Started At
+       * Format: date-time
        */
-      student_id: string;
+      started_at: string;
+      status: components["schemas"]["AttemptStatus"];
+      student: components["schemas"]["StudentOut"];
       /** Submitted At */
       submitted_at: string | null;
     };
@@ -2474,6 +2787,27 @@ export interface components {
      * @enum {string}
      */
     AttemptStatus: "in_progress" | "submitted" | "auto_submitted";
+    /** AttemptSummaryOut */
+    AttemptSummaryOut: {
+      /** Attempt Number */
+      attempt_number: number;
+      /** Id */
+      id: string;
+      /** Max Score */
+      max_score: number | null;
+      /** Pending Review */
+      pending_review: boolean;
+      /** Score */
+      score: number | null;
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      status: components["schemas"]["AttemptStatus"];
+      /** Submitted At */
+      submitted_at: string | null;
+    };
     /** AttendeeOut */
     AttendeeOut: {
       check_in_method: components["schemas"]["CheckInMethod"] | null;
@@ -2569,7 +2903,12 @@ export interface components {
       | "tip.reviewed"
       | "community.hidden"
       | "community.shown"
-      | "community.auto_hidden";
+      | "community.auto_hidden"
+      | "assignment.created"
+      | "assignment.graded"
+      | "quiz.created"
+      | "quiz.published"
+      | "quiz.graded";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -2899,6 +3238,27 @@ export interface components {
      * @enum {string}
      */
     ContactVisibility: "hidden" | "shared_context" | "everyone";
+    /** CourseOfferingListOut */
+    CourseOfferingListOut: {
+      /** Items */
+      items: components["schemas"]["CourseOfferingOut"][];
+    };
+    /**
+     * CourseOfferingOut
+     * @description An offering in a picker or a heading: subject, groups and semester.
+     */
+    CourseOfferingOut: {
+      /** Groups */
+      groups: string[];
+      /** Id */
+      id: string;
+      /** Semester */
+      semester: string;
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Name */
+      subject_name: string;
+    };
     /** CourseOut */
     CourseOut: {
       /** Groups */
@@ -2911,6 +3271,13 @@ export interface components {
       subject: components["schemas"]["SubjectRef"];
       /** Teachers */
       teachers: string[];
+    };
+    /** DistributionBucket */
+    DistributionBucket: {
+      /** Count */
+      count: number;
+      /** Label */
+      label: string;
     };
     /**
      * DmPolicy
@@ -3186,6 +3553,16 @@ export interface components {
     FeedbackStatusIn: {
       status: components["schemas"]["FeedbackStatus"];
     };
+    /** FileDownloadOut */
+    FileDownloadOut: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Url */
+      url: string;
+    };
     /**
      * FileEncoding
      * @enum {string}
@@ -3231,10 +3608,10 @@ export interface components {
        * Format: date-time
        */
       graded_at: string;
-      /** Graded By */
-      graded_by: string | null;
       /** Points */
       points: string;
+      /** Raw Points */
+      raw_points: string;
     };
     /**
      * GradeVisibility
@@ -3521,6 +3898,31 @@ export interface components {
       page_size: number;
       /** Total */
       total: number;
+    };
+    /** ManagerQuestionOut */
+    ManagerQuestionOut: {
+      /** Correct Answer */
+      correct_answer: unknown;
+      /** Id */
+      id: string;
+      /** Is Required */
+      is_required: boolean;
+      /** Options */
+      options: components["schemas"]["OptionOut"][];
+      /** Points */
+      points: number;
+      /** Position */
+      position: number;
+      /** Prompt */
+      prompt: string;
+      type: components["schemas"]["QuestionType"];
+    };
+    /** ManualScoresIn */
+    ManualScoresIn: {
+      /** Scores */
+      scores: {
+        [key: string]: number;
+      };
     };
     /** MaterialCreateIn */
     MaterialCreateIn: {
@@ -4037,6 +4439,21 @@ export interface components {
       /** Ticket Code */
       ticket_code: string | null;
     };
+    /** MySubmissionOut */
+    MySubmissionOut: {
+      /** Files */
+      files: components["schemas"]["SubmissionFileOut"][];
+      grade: components["schemas"]["GradeOut"] | null;
+      /** Id */
+      id: string;
+      /** Is Late */
+      is_late: boolean;
+      /**
+       * Submitted At
+       * Format: date-time
+       */
+      submitted_at: string;
+    };
     /** MyTipOut */
     MyTipOut: {
       /** Difficulty */
@@ -4168,6 +4585,20 @@ export interface components {
        * Format: uuid
        */
       user_id: string;
+    };
+    /** OptionIn */
+    OptionIn: {
+      /** Id */
+      id: string;
+      /** Text */
+      text: string;
+    };
+    /** OptionOut */
+    OptionOut: {
+      /** Id */
+      id: string;
+      /** Text */
+      text: string;
     };
     /**
      * Period
@@ -4401,16 +4832,14 @@ export interface components {
     /** QuestionCreateIn */
     QuestionCreateIn: {
       /** Correct Answer */
-      correct_answer: unknown;
+      correct_answer?: unknown;
       /**
        * Is Required
        * @default true
        */
       is_required: boolean;
       /** Options */
-      options?: {
-        [key: string]: unknown;
-      }[];
+      options?: components["schemas"]["OptionIn"][];
       /**
        * Points
        * @default 1
@@ -4449,19 +4878,17 @@ export interface components {
       /** Title */
       title: string;
     };
-    /** QuestionOut */
+    /**
+     * QuestionOut
+     * @description What a student sees: never the correct answer.
+     */
     QuestionOut: {
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Is Required */
       is_required: boolean;
       /** Options */
-      options: {
-        [key: string]: unknown;
-      }[];
+      options: components["schemas"]["OptionOut"][];
       /** Points */
       points: number;
       /** Position */
@@ -4476,6 +4903,18 @@ export interface components {
       items: components["schemas"]["QuestionSummaryOut"][];
       /** Next Cursor */
       next_cursor?: string | null;
+    };
+    /** QuestionStats */
+    QuestionStats: {
+      /** Correct Percent */
+      correct_percent: number | null;
+      /** Position */
+      position: number;
+      /** Prompt */
+      prompt: string;
+      /** Question Id */
+      question_id: string;
+      type: components["schemas"]["QuestionType"];
     };
     /** QuestionSummaryOut */
     QuestionSummaryOut: {
@@ -4550,28 +4989,87 @@ export interface components {
       /** Title */
       title: string;
     };
-    /** QuizOut */
-    QuizOut: {
+    /** QuizDetailOut */
+    QuizDetailOut: {
+      /** Attempts Used */
+      attempts_used: number | null;
       /** Available From */
       available_from: string | null;
-      /**
-       * Course Offering Id
-       * Format: uuid
-       */
-      course_offering_id: string;
+      /** Best Percent */
+      best_percent: number | null;
+      /** Can Manage */
+      can_manage: boolean;
+      /** Can Start */
+      can_start: boolean;
       /** Deadline */
       deadline: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Instructions */
       instructions: string;
       /** Max Attempts */
       max_attempts: number;
-      /** Published At */
-      published_at: string | null;
+      /** My Attempts */
+      my_attempts: components["schemas"]["AttemptSummaryOut"][];
+      offering: components["schemas"]["CourseOfferingOut"];
+      /** Published */
+      published: boolean;
+      /** Question Count */
+      question_count: number;
+      /** Questions */
+      questions: components["schemas"]["ManagerQuestionOut"][] | null;
+      /** Start Blocked */
+      start_blocked: string | null;
+      /** Students Attempted */
+      students_attempted: number | null;
+      /** Time Limit Seconds */
+      time_limit_seconds: number | null;
+      /** Title */
+      title: string;
+    };
+    /** QuizListOut */
+    QuizListOut: {
+      /** Items */
+      items: components["schemas"]["QuizSummaryOut"][];
+    };
+    /** QuizStatsOut */
+    QuizStatsOut: {
+      /** Average Percent */
+      average_percent: number | null;
+      /** Distribution */
+      distribution: components["schemas"]["DistributionBucket"][];
+      /** Pending Review */
+      pending_review: number;
+      /** Questions */
+      questions: components["schemas"]["QuestionStats"][];
+      /** Students */
+      students: number;
+      /** Submitted Attempts */
+      submitted_attempts: number;
+    };
+    /** QuizSummaryOut */
+    QuizSummaryOut: {
+      /** Attempts Used */
+      attempts_used: number | null;
+      /** Available From */
+      available_from: string | null;
+      /** Best Percent */
+      best_percent: number | null;
+      /** Can Manage */
+      can_manage: boolean;
+      /** Deadline */
+      deadline: string | null;
+      /** Id */
+      id: string;
+      /** Max Attempts */
+      max_attempts: number;
+      offering: components["schemas"]["CourseOfferingOut"];
+      /** Published */
+      published: boolean;
+      /** Question Count */
+      question_count: number;
+      /** Students Attempted */
+      students_attempted: number | null;
       /** Time Limit Seconds */
       time_limit_seconds: number | null;
       /** Title */
@@ -4946,6 +5444,15 @@ export interface components {
       /** Notices */
       notices: "chat.channel_mention_not_allowed"[];
     };
+    /** StudentOut */
+    StudentOut: {
+      /** Display Name */
+      display_name: string;
+      /** Group Code */
+      group_code: string | null;
+      /** Id */
+      id: string;
+    };
     /** SubjectCatalogOut */
     SubjectCatalogOut: {
       /** Can Manage */
@@ -4991,40 +5498,72 @@ export interface components {
       /** Workload */
       workload: components["schemas"]["WorkloadOut"][];
     };
-    /** SubmissionOut */
-    SubmissionOut: {
-      /**
-       * Assignment Id
-       * Format: uuid
-       */
+    /** SubmissionDetailOut */
+    SubmissionDetailOut: {
+      /** Assignment Id */
       assignment_id: string;
-      /** Filename */
-      filename: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Assignment Title */
+      assignment_title: string;
+      /** Files */
+      files: components["schemas"]["SubmissionFileOut"][];
+      grade: components["schemas"]["GradeOut"] | null;
+      /** Id */
       id: string;
       /** Is Late */
       is_late: boolean;
-      /** Mime */
-      mime: string | null;
-      /** Size Bytes */
-      size_bytes: number | null;
-      status: components["schemas"]["SubmissionStatus"];
+      /** Late Penalty Percent */
+      late_penalty_percent: string;
+      late_policy: components["schemas"]["LatePolicy"];
+      /** Max Points */
+      max_points: string;
+      student: components["schemas"]["StudentOut"];
       /**
-       * Student Id
-       * Format: uuid
+       * Submitted At
+       * Format: date-time
        */
-      student_id: string;
+      submitted_at: string;
+    };
+    /** SubmissionFileOut */
+    SubmissionFileOut: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Filename */
+      filename: string;
+      /** Id */
+      id: string;
+      /** Mime */
+      mime: string;
+      /** Previewable */
+      previewable: boolean;
+      /** Size Bytes */
+      size_bytes: number;
+      status: components["schemas"]["ScanStatus"];
+      /** Version */
+      version: number;
+    };
+    /** SubmissionListOut */
+    SubmissionListOut: {
+      /** Items */
+      items: components["schemas"]["SubmissionRowOut"][];
+    };
+    /** SubmissionRowOut */
+    SubmissionRowOut: {
+      file_status: components["schemas"]["ScanStatus"] | null;
+      /** Graded */
+      graded: boolean;
+      /** Is Late */
+      is_late: boolean;
+      /** Points */
+      points: string | null;
+      student: components["schemas"]["StudentOut"];
+      /** Submission Id */
+      submission_id: string | null;
       /** Submitted At */
       submitted_at: string | null;
     };
-    /**
-     * SubmissionStatus
-     * @enum {string}
-     */
-    SubmissionStatus: "draft" | "submitted" | "returned";
     /** TagListOut */
     TagListOut: {
       /** Items */
@@ -6494,7 +7033,143 @@ export interface operations {
       };
     };
   };
-  grade_assignment_api_v1_assignment_submissions__submission_id__grade_post: {
+  downloadAssignmentFile: {
+    parameters: {
+      query?: {
+        inline?: boolean;
+      };
+      header?: never;
+      path: {
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FileDownloadOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getAssignmentSubmission: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        submission_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SubmissionDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  gradeAssignmentSubmission: {
     parameters: {
       query?: never;
       header?: never;
@@ -6515,7 +7190,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GradeOut"];
+          "application/json": components["schemas"]["SubmissionDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -6565,7 +7240,74 @@ export interface operations {
       };
     };
   };
-  create_assignment_api_v1_assignments_post: {
+  listAssignments: {
+    parameters: {
+      query?: {
+        offering_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssignmentListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createAssignment: {
     parameters: {
       query?: never;
       header?: never;
@@ -6584,7 +7326,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AssignmentOut"];
+          "application/json": components["schemas"]["AssignmentDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -6634,7 +7376,141 @@ export interface operations {
       };
     };
   };
-  submit_assignment_api_v1_assignments__assignment_id__submissions_post: {
+  getAssignment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssignmentDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listAssignmentSubmissions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SubmissionListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  submitAssignment: {
     parameters: {
       query?: never;
       header?: never;
@@ -6655,7 +7531,78 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["SubmissionOut"];
+          "application/json": components["schemas"]["AssignmentDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  presignAssignmentUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        assignment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AssignmentPresignIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AssignmentPresignOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -9132,6 +10079,71 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listCourseworkOfferings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CourseOfferingListOut"];
+        };
       };
       /** @description Missing, expired or invalid access token */
       401: {
@@ -14361,7 +15373,74 @@ export interface operations {
       };
     };
   };
-  save_attempt_answers_api_v1_quiz_attempts__attempt_id__patch: {
+  getQuizAttempt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        attempt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AttemptOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  saveQuizAnswers: {
     parameters: {
       query?: never;
       header?: never;
@@ -14432,7 +15511,145 @@ export interface operations {
       };
     };
   };
-  submit_attempt_api_v1_quiz_attempts__attempt_id__submit_post: {
+  scoreOpenQuestions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        attempt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ManualScoresIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AttemptReviewOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  reviewQuizAttempt: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        attempt_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AttemptReviewOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  submitQuizAttempt: {
     parameters: {
       query?: never;
       header?: never;
@@ -14503,7 +15720,74 @@ export interface operations {
       };
     };
   };
-  create_quiz_api_v1_quizzes_post: {
+  listQuizzes: {
+    parameters: {
+      query?: {
+        offering_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QuizListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createQuiz: {
     parameters: {
       query?: never;
       header?: never;
@@ -14522,7 +15806,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["QuizOut"];
+          "application/json": components["schemas"]["QuizDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -14572,7 +15856,141 @@ export interface operations {
       };
     };
   };
-  start_attempt_api_v1_quizzes__quiz_id__attempts_post: {
+  getQuiz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        quiz_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QuizDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listQuizAttempts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        quiz_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AttemptListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  startQuizAttempt: {
     parameters: {
       query?: never;
       header?: never;
@@ -14639,11 +16057,76 @@ export interface operations {
       };
     };
   };
-  add_question_api_v1_quizzes__quiz_id__questions_post: {
+  publishQuiz: {
     parameters: {
-      query: {
-        position: number;
+      query?: never;
+      header?: never;
+      path: {
+        quiz_id: string;
       };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QuizDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  addQuizQuestion: {
+    parameters: {
+      query?: never;
       header?: never;
       path: {
         quiz_id: string;
@@ -14662,7 +16145,142 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["QuestionOut"];
+          "application/json": components["schemas"]["QuizDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  deleteQuizQuestion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        quiz_id: string;
+        question_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QuizDetailOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getQuizStats: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        quiz_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["QuizStatsOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

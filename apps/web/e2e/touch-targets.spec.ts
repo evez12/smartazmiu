@@ -101,6 +101,28 @@ test("the feed, the forum and a question with an answer", async ({ page, account
   expect(await undersizedTargets(page), "question").toEqual([]);
 });
 
+test("the assignment and quiz screens of a student", async ({ page, accounts }) => {
+  await signIn(
+    page,
+    await accounts.create("student", { givenName: "Səbinə", familyName: "Rzayeva" }),
+    "/assignments",
+  );
+  await expect(page.getByText("Hələ sizin üçün tapşırıq yoxdur.")).toBeVisible();
+  expect(await undersizedTargets(page), "/assignments").toEqual([]);
+  await expectTargets(page, "/quizzes");
+});
+
+test("the assignment and quiz builders of a staff member", async ({ page, accounts }) => {
+  await signInWithSecondFactor(
+    page,
+    await accounts.create("staff", { givenName: "Günel", familyName: "Səfərova" }),
+    "/assignments/new",
+  );
+  await expect(page.getByLabel(/Fənn və qrup/)).toBeVisible();
+  expect(await undersizedTargets(page), "/assignments/new").toEqual([]);
+  await expectTargets(page, "/quizzes/new");
+});
+
 test("a student's schedule, chat, events and materials", async ({ page }) => {
   await signIn(page, "aysel.mammadova", "/schedule");
   expect(await undersizedTargets(page), "/schedule").toEqual([]);

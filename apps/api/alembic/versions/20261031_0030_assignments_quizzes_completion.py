@@ -36,12 +36,9 @@ def upgrade() -> None:
     op.create_table(
         "assignment_files",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column(
-            "assignment_id",
-            sa.Uuid(),
-            sa.ForeignKey("assignments.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
+        # Both references are cleared, not cascaded, when an assignment goes: the stored object must still be
+        # found and purged by the worker afterwards (D-092).
+        sa.Column("assignment_id", sa.Uuid(), sa.ForeignKey("assignments.id", ondelete="SET NULL")),
         sa.Column(
             "student_id", sa.Uuid(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
         ),
@@ -49,7 +46,7 @@ def upgrade() -> None:
         sa.Column(
             "submission_id",
             sa.Uuid(),
-            sa.ForeignKey("assignment_submissions.id", ondelete="CASCADE"),
+            sa.ForeignKey("assignment_submissions.id", ondelete="SET NULL"),
         ),
         sa.Column("version", sa.SmallInteger()),
         sa.Column("object_key", sa.String(300), nullable=False),

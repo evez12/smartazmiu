@@ -154,14 +154,14 @@ class AssignmentFile(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    assignment_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("assignments.id", ondelete="CASCADE"), index=True
+    assignment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assignments.id", ondelete="SET NULL"), index=True
     )
     student_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     submission_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("assignment_submissions.id", ondelete="CASCADE")
+        ForeignKey("assignment_submissions.id", ondelete="SET NULL")
     )
     version: Mapped[int | None] = mapped_column(SmallInteger)
     object_key: Mapped[str] = mapped_column(String(300))

@@ -1926,3 +1926,94 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     there is no screenshot baseline of the two screens (signed-in screens are covered by the E2E accessibility
     and overflow checks, D-075); the list of the report queue in the browser has no E2E check of hide and restore.
 - **Consequences:** none for behaviour. The open items are not scheduled.
+
+## D-092 · 2026-11-01 · Assignments and quizzes completed (Sprint 13; retroactive for choices made silently)
+
+- **Context:** the Sprint 13 backend was a stub with a mismatching screen (D-089). The spec (§6, §6.1, §8) lists
+  assignments (create, deadline, file submission, late policy, grading and feedback) and quizzes (MCQ, multi and
+  short answer, timer, auto-grading of non-open questions, statistics); the quiz timer must be server-authoritative
+  and a late submission is closed with the answers received so far. It does not say who may do what, how files
+  are checked, what a short answer is graded by, or what a student may see afterwards.
+- **Decision:**
+  - **Access.** Everything is scoped to a course offering in SQL (`academics/coursework.py`). A teacher manages the
+    offerings they teach; staff and administrators manage any offering through the new permissions
+    `assignments.manage` and `quizzes.manage` (migration 0030; migration 0028 had created the routes without ever
+    granting a permission, so nobody could create an assignment or a quiz). A student with a not-dropped
+    enrollment reads, one with an active enrollment submits and attempts; a completed enrollment only reads.
+    Everyone else gets the same 404 as for an unknown id; a student who calls a teacher-only endpoint of their
+    own course gets 403. `assignments.grade` was never created: grading is part of managing. Offering pickers
+    come from `GET /coursework/offerings` (running or coming semesters), so nobody types an id.
+  - **Assignments.** Students see an assignment from `available_from`. One submission per student; sending again
+    before grading adds the next file version and keeps the old ones; graded work is final (`assignments.graded`).
+    File flow as for materials (D-071): presign (25 MB, the shared type list, 30 per hour), PUT, then submit with
+    the `upload_id`; submitting the same upload twice returns the same result. The submission row no longer
+    carries a client-chosen object key; files live in `assignment_files`, checked by the worker (stored object,
+    magic bytes, ClamAV, back-off, purge) through `core/file_scan.py`, which `MaterialScanner` now shares (the
+    materials tests still pass). Only a clean file can be downloaded, by its owner and by managers (one-minute
+    link). The file rows reference the assignment and the submission with `SET NULL`, so the stored objects of a
+    deleted assignment are still found and purged by the worker after a day.
+  - **Late policy** (`reject` default, `penalize`, `accept`): `reject` closes submission at the deadline;
+    `penalize` accepts a late file, marks it late, and reduces the points at grading; `accept` changes nothing.
+    The teacher's points are stored as `raw_points` and the points that count as `points`, both shown with two
+    decimals. The maximum is checked against what the teacher enters: the earlier check ran after the penalty, so
+    120 of 100 with a 25 % penalty was accepted.
+  - **Grades are personal data (§5.4).** A student sees only their own points and feedback; the class list is for
+    managers; the audit entries `assignment.graded` (with `regraded`), `quiz.graded` and the creation entries
+    carry ids only, never points or feedback text. No assignment or quiz data goes into chat payloads.
+  - **Quizzes.** A quiz is a draft until published; questions are added and removed only before that, so students
+    never see a changing quiz. A question is validated by type (a multiple choice has 2 to 10 options with ids and
+    a known correct answer; a short answer has none). `correct_answer` never leaves a manager payload. Closed
+    questions are graded automatically (multi-select is all or nothing, in any order); a short answer is an open
+    question: a teacher gives points up to the question maximum (`manual_scores`, audited), and the score is
+    automatic plus manual points. Until then the attempt shows "pending review". Students see their score and
+    percentage, not the right answers.
+  - **Attempts and time.** Starting resumes the attempt in progress (a unique partial index and a lock on the quiz
+    row make two quick clicks one attempt); at most `max_attempts`, none before `available_from` or after the
+    deadline. The attempt expires at the earlier of start plus time limit and the deadline. The page counts down
+    from the server's clock (`server_time`), saves answers 1.5 s after typing, and submits at zero. Answers that
+    arrive more than 3 seconds after expiry are not counted (`quizzes.time_is_up`, the attempt closes as
+    `auto_submitted` with what was saved); an ARQ job closes attempts that nobody came back to, every minute
+    (idempotent). Answers are validated against their question (`quizzes.invalid_answers`).
+  - **Statistics** (managers): submitted attempts, students, average percentage, a distribution in four bands and
+    the share of correct answers per closed question.
+  - **Web.** `/assignments`, `/assignments/new`, `/assignments/<id>` (student upload and result, teacher class
+    table), `/assignments/<id>/submissions/<submission>` (grading); `/quizzes`, `/quizzes/new`, `/quizzes/<id>`
+    (questions, publishing, attempts), `/quizzes/<id>/attempt/<attempt>`, `/quizzes/<id>/results` and
+    `/results/<attempt>`. Both join the main navigation. The old stub screens are removed: they had no way to reach
+    the submission to grade, a quiz page with no questions and an answer that was always empty.
+- **Consequences:** no new dependency. The generated client changed (`make openapi`). Sprint 13 is ticked only
+  now, with its E2E (`coursework.spec.ts`) green.
+
+## D-093 · 2026-11-01 · §13 review of assignments and quizzes (Sprint 13)
+
+- **Decision (D-092):**
+  - Tested: scoping by offering for managers, students, outsiders and teachers of other offerings, staff access and
+    invalid input (`test_only_people_who_manage_the_offering_create_for_it`,
+    `test_building_is_for_the_offerings_teachers_and_the_answer_stays_secret`, §13.1 roles); assignments that have
+    not opened (404) and the class list for managers only
+    (`test_students_see_only_assignments_that_have_opened_in_their_courses`); the upload type, size, rate limit,
+    storage outage and a missing, wrong-sized or foreign upload (`test_upload_checks_and_storage_outage`, §13.5);
+    resubmitting the same upload and a new version, the scan, downloads before and after it, grading, regrading,
+    the limit on entered points, the penalty, the audit entry without points and graded work being final
+    (`test_a_submission_is_uploaded_scanned_graded_and_graded_work_is_final`,
+    `test_late_submissions_follow_the_policy_of_the_assignment`, §13.2 duplicate send); an infected file, a scanner
+    outage leaving the file pending and retried, purging of rejected and never-submitted uploads and of the files
+    of a deleted assignment (`test_infected_files_are_blocked_and_purged_and_outages_leave_files_pending`,
+    `test_files_of_a_deleted_assignment_are_still_purged`, §13.2 infected or abandoned, §13.5 job retried);
+    attempts: answers never contain the correct answer, resuming, the limit, the window, concurrent starts, expiry
+    with late answers discarded, the closing job and its idempotency, open-question scoring limits and statistics
+    (`test_quizzes.py`, §13.2 duplicate, §13.4 time on the server); the migration up and down; the screens in their
+    loading, empty, error and role-dependent states (`assignments.test.tsx`, `quizzes.test.tsx`); the whole flow
+    with a throwaway teacher, student and outsider, the accessibility check and 320 px touch targets
+    (`coursework.spec.ts`, `touch-targets.spec.ts`). The seed-data check counts the new tables.
+  - By design, not asserted: a dropped enrollment or a replaced teacher loses access at once, because access is
+    computed per request from the registry (§13.1); a joint offering is one offering, so its groups share the
+    assignment (§13.1); grades never reach chat (no chat code reads these tables).
+  - Open: nobody is notified when an assignment opens, a grade is given or a file is rejected: the spec lists no
+    such notification, the student sees all three on the assignment page, and the categories of D-049 can carry
+    them later; assignments and quizzes cannot be edited or deleted after creation (the spec says "create"); an
+    infected submission is covered by a backend test but has no browser E2E; when account deletion is built
+    (§5.4), the attempts and submissions of the deleted person need a decision, as their foreign keys delete them
+    today; the offline queue of answers waits for the PWA work (Sprint 15); no screenshot baselines of the new
+    screens (D-075).
+- **Consequences:** none for behaviour.
