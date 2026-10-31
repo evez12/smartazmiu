@@ -50,7 +50,9 @@
       "materials": "Materiallar",
       "materialReports": "Material şikayətləri",
       "feedbackList": "Rəylər",
-      "reportList": "Mesaj şikayətləri"
+      "reportList": "Mesaj şikayətləri",
+      "attendanceScreen": "Davamiyyət: müəllim ekranı",
+      "attendanceReport": "Davamiyyət hesabatı"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -265,7 +267,8 @@
       "feed": "Lent",
       "assignments": "Tapşırıqlar",
       "quizzes": "Testlər",
-      "forum": "Sual-cavab"
+      "forum": "Sual-cavab",
+      "attendance": "Davamiyyət"
     },
     "saved": "Saxlanılanlar"
   },
@@ -2232,5 +2235,125 @@
       "wasRight": "Düzgündür",
       "wasWrong": "Səhvdir"
     }
+  },
+  "attendance": {
+    "title": "Davamiyyət",
+    "description": "Dərsdə iştirakı QR kodla və ya altı rəqəmli kodla qeyd edin.",
+    "mine": {
+      "title": "Fənn üzrə davamiyyət",
+      "error": "Davamiyyət yüklənmədi. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "attendedOf": "{attended} / {total} dərs",
+      "noMeetings": "Dərs yoxdur",
+      "empty": "Bu fənn üzrə hələ dərs qeyd olunmayıb.",
+      "list": "Dərslər",
+      "present": "İştirak etdiniz",
+      "absent": "İştirak etməmisiniz"
+    },
+    "run": "Dərslərin idarə edilməsi",
+    "scan": {
+      "title": "İştirakı qeyd et",
+      "description": "Müəllimin ekranındakı QR kodu oxudun və ya rəqəmləri yazın.",
+      "start": "Kameranı aç",
+      "scanAgain": "Yenidən oxu",
+      "stop": "Kameranı bağla",
+      "back": "Davamiyyətə qayıt",
+      "cameraLabel": "Kamera görüntüsü",
+      "aim": "Kameranı müəllimin ekranındakı QR koda tuşlayın.",
+      "noCamera": "Kameradan istifadə etmək mümkün olmadı. Aşağıda rəqəmli kodu yaza bilərsiniz.",
+      "digitsLabel": "Altı rəqəmli kod",
+      "digitsHelp": "QR kodun altındakı rəqəmlər.",
+      "digitsInvalid": "Altı rəqəm yazın.",
+      "submitDigits": "Kodu göndər",
+      "done": "İştirakınız qeyd olundu",
+      "alreadyDone": "İştirakınız artıq qeyd olunub",
+      "doneDetail": "{course}, saat {time}",
+      "failed": "İştirak qeyd olunmadı"
+    },
+    "empty": "Davamiyyət üçün fənniniz yoxdur.",
+    "error": "Davamiyyət yüklənmədi. Bir az sonra yenidən cəhd edin.",
+    "retry": "Yenidən cəhd et",
+    "attendedOf": "{attended} / {total} dərs",
+    "noMeetings": "Dərs yoxdur",
+    "offering": "Fənn",
+    "roleCurator": "kurator",
+    "report": {
+      "title": "Davamiyyət hesabatı",
+      "error": "Hesabat yüklənmədi. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "meetings": "{count} dərs",
+      "exportCsv": "CSV yüklə",
+      "exportXlsx": "Excel yüklə",
+      "empty": "Hesabat üçün tələbə yoxdur.",
+      "columns": {
+        "student": "Tələbə",
+        "group": "Qrup",
+        "attended": "İştirak",
+        "rate": "Faiz"
+      },
+      "attendedOf": "{attended} / {total}",
+      "noMeetings": "Dərs yoxdur"
+    },
+    "exportCsv": "CSV yüklə",
+    "exportXlsx": "Excel yüklə",
+    "alreadyOpen": "Bu fənn üçün açıq dərs var.",
+    "continue": "Davam et",
+    "openFailed": "Dərs açılmadı",
+    "meetingTitle": "Dərsin adı",
+    "meetingTitleHelp": "Məsələn, “Mühazirə 5”. Boş saxlaya bilərsiniz.",
+    "duration": "Qeyd müddəti",
+    "minutes": "{count} dəqiqə",
+    "open": "Dərsi aç",
+    "curatorNote": "Kurator kimi yalnız qruplarınızın hesabatını görürsünüz.",
+    "meetings": "Dərslər",
+    "noMeetingsYet": "Bu fənn üzrə hələ dərs açılmayıb.",
+    "presentOf": "{present} / {enrolled} iştirakçı",
+    "statusOpen": "Açıq",
+    "statusClosed": "Bağlı",
+    "session": {
+      "title": "Dərs",
+      "error": "Dərs yüklənmədi. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "window": "{from} – {to}",
+      "statusOpen": "Açıq",
+      "statusClosed": "Bağlı",
+      "count": "{present} / {enrolled} tələbə",
+      "hint": "Tələbələr bu kodu telefonla oxudur və ya altındakı rəqəmləri yazır. Kod hər 30 saniyədən bir dəyişir.",
+      "qrLabel": "İştirakı qeyd etmək üçün QR kod",
+      "digitsLabel": "Altı rəqəmli kod",
+      "rotatesIn": "Yeni kod {seconds} saniyə sonra",
+      "codeFailed": "Kod yüklənmədi. Bağlantını yoxlayın.",
+      "close": "Qeydi bağla",
+      "closeFailed": "Dərs bağlanmadı. Yenidən cəhd edin.",
+      "closedNote": "Bu dərsin iştirak qeydi bağlanıb.",
+      "roster": "Tələbələr",
+      "rosterEmpty": "Bu fənnə yazılmış tələbə yoxdur.",
+      "columns": {
+        "student": "Tələbə",
+        "group": "Qrup",
+        "status": "Vəziyyət",
+        "method": "Qeyd üsulu",
+        "actions": "Əməliyyatlar"
+      },
+      "present": "İştirak edir",
+      "absent": "Yoxdur",
+      "method": {
+        "qr": "QR kod",
+        "code": "Rəqəmli kod",
+        "manual": "Əl ilə"
+      },
+      "mark": "İştirak qeyd et",
+      "unmark": "İştirakı ləğv et",
+      "markTitle": "Tələbəni iştirak edən kimi qeyd et",
+      "unmarkTitle": "Tələbənin iştirakını ləğv et",
+      "reason": "Səbəb",
+      "reasonHelp": "Səbəb audit jurnalında saxlanılır.",
+      "reasonRequired": "Səbəbi yazın (ən azı 3 simvol).",
+      "markFailed": "Dəyişiklik saxlanmadı",
+      "cancel": "Ləğv et"
+    },
+    "mineHeading": "Mənim davamiyyətim",
+    "scanAction": "İştirakı qeyd et",
+    "reportAction": "Hesabat"
   }
 }

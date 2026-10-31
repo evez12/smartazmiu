@@ -28,6 +28,7 @@ import { ChatSpecimen } from "@/features/chat/specimen";
 
 import { GroupTable } from "./group-table";
 import { Section } from "./section";
+import { Sprint14Specimens } from "./sprint14-specimens";
 import { Sprint6Specimens } from "./sprint6-specimens";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -400,6 +401,7 @@ export function StaticSpecimens() {
         <ChatSpecimen />
       </Section>
       <Sprint6Specimens />
+      <Sprint14Specimens />
     </div>
   );
 }

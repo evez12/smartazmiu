@@ -142,6 +142,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
   | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
+  | Added in Sprint 14 | web: jsqr 1.4.0 (QR decoding in a worker where the browser has no BarcodeDetector, D-095; `pnpm audit` reports nothing for it, the two moderate findings are `glob` under `@sentry/nextjs`, already there). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -2017,3 +2018,83 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     today; the offline queue of answers waits for the PWA work (Sprint 15); no screenshot baselines of the new
     screens (D-075).
 - **Consequences:** none for behaviour.
+
+## D-094 · 2026-11-01 · QR attendance (Sprint 14, group A)
+
+- **Context:** §6.1 asks for a signed 30-second token bound to the session, a 5-second grace, one record per
+  student and meeting, a per-device rate limit, manual marks with an audit entry, and an optional geofence. The
+  product owner answered the ask-first questions on 2026-11-01: no geofence in Sprint 14; reports for the teacher,
+  the group curator and the dean's office; students see their own rate.
+- **Options:** store a token per meeting and rotate it (a Redis key or a column); or derive every code from a secret.
+- **Decision:**
+  - **Codes are derived, not stored.** `attendance/codes.py`: an HMAC-SHA256 under the new `ATTENDANCE_SECRET` of the
+    session id and a 30-second step. The QR carries `SAT1.<session id>.<step>.<signature>`; the same MAC gives six
+    digits for a student without a camera. The previous step is accepted until 5 seconds into the next one. A forged
+    signature is answered `code_invalid`, never `code_expired`, so an old code reveals nothing. Nothing secret is in
+    the database. `ATTENDANCE_SECRET` is required in production (like `TICKET_SECRET`, D-051); `make env` generates
+    it; `docker-compose.yml` passes it to the API.
+  - **Tables** (migration `0031`, reversible): `attendance_sessions` (offering, opener, title, `expires_at`,
+    `closed_at`; a partial unique index allows one open meeting per offering, so a scanned code is never
+    ambiguous; an unclosed meeting whose window has passed is closed when the next one opens) and
+    `attendance_records` (unique `(session_id, student_id)`, method `qr | code | manual`, `marked_by`, `reason`). The
+    enum is `attendance_method`: `check_in_method` already belongs to event registrations.
+  - **Check-in** is `POST /attendance/check-in` with either the scanned string or the six digits. It is idempotent
+    (a second call returns `already_present`, with the first time). Typed errors: `code_invalid` 400,
+    `code_expired` 410, `session_closed` 409, `not_enrolled` 403. The six digits name no meeting, so they are tried
+    only against the open meetings of the student's own active enrollments. Rate limits (Redis B): 12 per minute
+    per student and 60 per minute per client address, which bounds guessing six digits to a fraction of a percent
+    per code window. Only an active enrollment may check in.
+  - **Who may do what.** Running a meeting (open, close, the code, manual marks): a teacher of the offering through
+    their teaching assignment (D-071), or anyone with the new permission `attendance.manage` (staff, admin: the
+    dean's office). Reading the report: those, plus the curator of a group in the offering, who sees only the rows of
+    the groups they curate. Students read their own rate and meetings (`/attendance/my`). Everyone else, and a
+    student calling a manager endpoint, gets 404 (§14). The report lists enrolled students and anyone with a record.
+  - **Manual marks** need a reason (3 to 300 characters); a mark replaces a scanned record, an unmark deletes it; both
+    are audited (`attendance.marked`, `attendance.unmarked`) with the student id and the reason, no grades involved.
+    Marking is allowed after the meeting is closed, since corrections come later.
+  - **Report and export:** per student, attended of total and the rate; `report.csv` (UTF-8 with a byte-order mark,
+    cells that start a formula are prefixed with an apostrophe) and `report.xlsx` with one column per meeting.
+  - **Geofence: not built.** The spec calls it optional; the product owner declined it for this sprint. Replay and
+    sharing a screenshot are limited by the 30-second step, one record per student, the per-device rate limit and
+    the teacher's manual review. It would need the browser's location and a privacy notice (§5.4).
+  - **Metric:** `smartazmiu_attendance_checkins{method,result}`; labels carry no person or meeting.
+  - **Screens:** `/attendance` (a student's rates; for teachers, staff and curators the offering picker, the open
+    form, the meetings and report links), `/attendance/sessions/<id>` (the teacher's screen: QR, digits, rotation
+    countdown against the server's clock, live count polled every 2 s, roster with manual marks),
+    `/attendance/scan` (camera and typing), `/attendance/reports/<offering>`, `/attendance/my/<offering>`.
+- **Consequences:** a new secret and a new permission; the audit labels and the error catalogue grew. Teachers of
+  an offering share its attendance, like assignments (D-092). A student who is not on the roster cannot learn
+  anything from a code.
+
+## D-095 · 2026-11-01 · Scanning QR codes in the browser
+
+- **Context:** the product owner ruled: no CSP relaxation; native `BarcodeDetector` where it exists, otherwise
+  `jsqr`, decoding in a Web Worker; typing the digits stays available. Asked whether a Permissions-Policy header
+  is needed for the camera.
+- **Options:** `barcode-detector` (a WebAssembly ponyfill), which needs `'wasm-unsafe-eval'` in `script-src`;
+  `jsqr` 1.4.0, pure JavaScript.
+- **Decision:** `scan-loop.ts` uses `BarcodeDetector` when `window` has it, otherwise a worker (`scan-worker.ts`,
+  same-origin, covered by the existing `worker-src 'self'`) running `jsqr` 1.4.0 on frames scaled to 480 px wide,
+  four times a second and one frame at a time. The `barcode-detector` ponyfill is **rejected** because it would
+  need `'wasm-unsafe-eval'`. `jsqr` is pinned (D-014) and `pnpm audit` has no finding for it. The camera starts only
+  when the student presses the button; a refused permission or a missing camera shows the typing form, which is
+  always on the page. Only strings that start with `SAT1.` are sent, and a camera stops after each answer so a wrong
+  code is not sent again four times a second. Some in-app browsers lack the `MediaStream` class, so the code does not
+  test for it.
+- **Permissions-Policy: no change.** The app sends no `Permissions-Policy` header, and without one the camera is
+  allowed for the page's own origin, which is all `getUserMedia` here needs. Adding `camera=(self)` would not
+  change behaviour, so no header was added and nothing needed approval. CSP is unchanged.
+- **Consequences:** a headless browser has nothing to point at, so the camera path is covered by unit tests of the
+  screen and by the API tests of the codes; the browser E2E checks typing, the layout at 320 px and accessibility.
+
+## D-096 · 2026-11-01 · Error messages for Sprints 12 and 13 were missing
+
+- **Context:** adding the attendance codes to `core/i18n.py` showed that the 40 error codes raised by community,
+  assignments and quizzes (Sprints 12 and 13) had no entry in the catalogue. The envelope then carries the generic
+  "request could not be completed" text, so a student whose submission was refused because the deadline had
+  passed was told nothing useful.
+- **Decision:** the Azerbaijani and English messages of those codes were added (including the four
+  `assignments.<blocker>` codes built from `submission_blocker`, and `assignments.type_not_allowed`, which the new
+  test found missing). `tests/test_error_catalogue.py` reads the source of the four modules and fails when a raised
+  code has no message in both languages.
+- **Consequences:** a bug of Sprints 12 and 13, fixed here; it is not a behaviour change of the API.

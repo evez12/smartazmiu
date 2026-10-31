@@ -78,6 +78,9 @@ const SEED_TABLES: Record<string, string> = {
   quizzes: "SELECT count(*) FROM quizzes",
   quiz_questions: "SELECT count(*) FROM quiz_questions",
   quiz_attempts: "SELECT count(*) FROM quiz_attempts",
+  // Attendance is test data in every run (D-094).
+  attendance_sessions: "SELECT count(*) FROM attendance_sessions",
+  attendance_records: "SELECT count(*) FROM attendance_records",
   "reports (feed and forum)":
     "SELECT count(*) FROM reports WHERE target_type IN ('post', 'comment', 'question', 'answer')",
 };
@@ -322,6 +325,11 @@ export class TestRecords {
         `DELETE FROM channel_members WHERE user_id IN (SELECT id FROM users WHERE email = ANY($1))
            AND channel_id IN (SELECT id FROM channels WHERE type <> 'dm')`,
         [this.people],
+      );
+      // Check-ins cascade from the meeting; meetings point at the offering without cascading (D-094).
+      await client.query(
+        `DELETE FROM attendance_sessions WHERE course_offering_id IN (${offerings})`,
+        [this.offerings],
       );
       await client.query(`DELETE FROM enrollments WHERE course_offering_id IN (${offerings})`, [
         this.offerings,
