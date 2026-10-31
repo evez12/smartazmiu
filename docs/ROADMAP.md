@@ -612,9 +612,9 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** 1 GB lecture uploads, plays adaptively; progress persists.
 
 #### Sprint 12 (05-03 → 05-14) — Feed & Q&A Forum
-- [ ] Feed: posts, tags, "faydalı" reaction, comments, report.
-- [ ] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
-- [ ] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
+- [x] Feed: posts, tags, "faydalı" reaction, comments, report.
+- [x] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
+- [x] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
 
 #### Sprint 13 (05-17 → 05-28) — Assignments & Quizzes
 - [ ] Assignments: create, deadline, file submission, late policy, grading + feedback.
