@@ -33,3 +33,21 @@ def test_attempt_expiry_uses_earliest_server_deadline() -> None:
     assert attempt_expiry(started, 3600, started + timedelta(minutes=30)) == started + timedelta(
         minutes=30
     )
+
+
+def test_open_questions_score_nothing_until_a_teacher_does() -> None:
+    quiz_id = uuid7()
+    multi = QuizQuestion(
+        id=uuid7(),
+        quiz_id=quiz_id,
+        position=1,
+        type=QuestionType.MULTI_SELECT,
+        prompt="",
+        points=3,
+        options=[{"id": "a", "text": ""}, {"id": "b", "text": ""}, {"id": "c", "text": ""}],
+        correct_answer=["a", "c"],
+    )
+    # All or nothing, whatever the order of the picked options.
+    assert auto_grade([multi], {str(multi.id): ["c", "a"]}) == (3, 3)
+    assert auto_grade([multi], {str(multi.id): ["a"]}) == (0, 3)
+    assert auto_grade([multi], {}) == (0, 3)

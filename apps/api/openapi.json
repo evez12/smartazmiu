@@ -533,9 +533,6 @@
         "properties": {
           "answers": {
             "additionalProperties": true,
-            "propertyNames": {
-              "format": "uuid"
-            },
             "title": "Answers",
             "type": "object"
           }
@@ -638,6 +635,159 @@
         "title": "AssignmentCreateIn",
         "type": "object"
       },
+      "AssignmentDetailOut": {
+        "properties": {
+          "available_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available From"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "can_submit": {
+            "title": "Can Submit",
+            "type": "boolean"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "enrolled_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrolled Count"
+          },
+          "graded_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded Count"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string"
+          },
+          "late_penalty_percent": {
+            "title": "Late Penalty Percent",
+            "type": "string"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_points": {
+            "title": "Max Points",
+            "type": "string"
+          },
+          "my_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "not_submitted",
+                  "submitted",
+                  "graded"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Status"
+          },
+          "my_submission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MySubmissionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "submit_blocked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submit Blocked"
+          },
+          "submitted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted Count"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offering",
+          "title",
+          "available_from",
+          "deadline",
+          "max_points",
+          "late_policy",
+          "late_penalty_percent",
+          "can_manage",
+          "my_status",
+          "enrolled_count",
+          "submitted_count",
+          "graded_count",
+          "instructions",
+          "can_submit",
+          "submit_blocked",
+          "my_submission"
+        ],
+        "title": "AssignmentDetailOut",
+        "type": "object"
+      },
       "AssignmentGradeIn": {
         "properties": {
           "feedback": {
@@ -666,77 +816,23 @@
         "title": "AssignmentGradeIn",
         "type": "object"
       },
-      "AssignmentOut": {
+      "AssignmentListOut": {
         "properties": {
-          "available_from": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Available From"
-          },
-          "course_offering_id": {
-            "format": "uuid",
-            "title": "Course Offering Id",
-            "type": "string"
-          },
-          "deadline": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deadline"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "instructions": {
-            "title": "Instructions",
-            "type": "string"
-          },
-          "late_penalty_percent": {
-            "title": "Late Penalty Percent",
-            "type": "string"
-          },
-          "late_policy": {
-            "$ref": "#/components/schemas/LatePolicy"
-          },
-          "max_points": {
-            "title": "Max Points",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentSummaryOut"
+            },
+            "title": "Items",
+            "type": "array"
           }
         },
         "required": [
-          "id",
-          "course_offering_id",
-          "title",
-          "instructions",
-          "available_from",
-          "deadline",
-          "max_points",
-          "late_policy",
-          "late_penalty_percent"
+          "items"
         ],
-        "title": "AssignmentOut",
+        "title": "AssignmentListOut",
         "type": "object"
       },
-      "AssignmentSubmissionIn": {
+      "AssignmentPresignIn": {
         "properties": {
           "filename": {
             "maxLength": 255,
@@ -750,25 +846,184 @@
             "title": "Mime",
             "type": "string"
           },
-          "object_key": {
-            "maxLength": 300,
-            "minLength": 1,
-            "title": "Object Key",
-            "type": "string"
-          },
-          "size_bytes": {
+          "size": {
             "minimum": 1.0,
-            "title": "Size Bytes",
+            "title": "Size",
             "type": "integer"
           }
         },
         "required": [
-          "object_key",
           "filename",
           "mime",
-          "size_bytes"
+          "size"
+        ],
+        "title": "AssignmentPresignIn",
+        "type": "object"
+      },
+      "AssignmentPresignOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
+          },
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "url",
+          "expires_at",
+          "headers"
+        ],
+        "title": "AssignmentPresignOut",
+        "type": "object"
+      },
+      "AssignmentSubmissionIn": {
+        "properties": {
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
         ],
         "title": "AssignmentSubmissionIn",
+        "type": "object"
+      },
+      "AssignmentSummaryOut": {
+        "properties": {
+          "available_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available From"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "enrolled_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrolled Count"
+          },
+          "graded_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graded Count"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "late_penalty_percent": {
+            "title": "Late Penalty Percent",
+            "type": "string"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_points": {
+            "title": "Max Points",
+            "type": "string"
+          },
+          "my_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "not_submitted",
+                  "submitted",
+                  "graded"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Status"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "submitted_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted Count"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offering",
+          "title",
+          "available_from",
+          "deadline",
+          "max_points",
+          "late_policy",
+          "late_penalty_percent",
+          "can_manage",
+          "my_status",
+          "enrolled_count",
+          "submitted_count",
+          "graded_count"
+        ],
+        "title": "AssignmentSummaryOut",
         "type": "object"
       },
       "AttachmentOut": {
@@ -832,6 +1087,22 @@
         "title": "AttachmentOut",
         "type": "object"
       },
+      "AttemptListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AttemptListOut",
+        "type": "object"
+      },
       "AttemptOut": {
         "properties": {
           "answers": {
@@ -856,7 +1127,6 @@
             "title": "Expires At"
           },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
@@ -871,8 +1141,128 @@
             ],
             "title": "Max Score"
           },
+          "pending_review": {
+            "title": "Pending Review",
+            "type": "boolean"
+          },
+          "questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/QuestionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions"
+          },
           "quiz_id": {
-            "format": "uuid",
+            "title": "Quiz Id",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "server_time": {
+            "format": "date-time",
+            "title": "Server Time",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttemptStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          }
+        },
+        "required": [
+          "id",
+          "attempt_number",
+          "status",
+          "started_at",
+          "submitted_at",
+          "score",
+          "max_score",
+          "pending_review",
+          "quiz_id",
+          "expires_at",
+          "answers",
+          "questions",
+          "server_time"
+        ],
+        "title": "AttemptOut",
+        "type": "object"
+      },
+      "AttemptReviewOut": {
+        "properties": {
+          "answers": {
+            "additionalProperties": true,
+            "title": "Answers",
+            "type": "object"
+          },
+          "attempt_number": {
+            "title": "Attempt Number",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "manual_scores": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Manual Scores",
+            "type": "object"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "pending_review": {
+            "title": "Pending Review",
+            "type": "boolean"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/ManagerQuestionOut"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "quiz_id": {
             "title": "Quiz Id",
             "type": "string"
           },
@@ -895,10 +1285,8 @@
           "status": {
             "$ref": "#/components/schemas/AttemptStatus"
           },
-          "student_id": {
-            "format": "uuid",
-            "title": "Student Id",
-            "type": "string"
+          "student": {
+            "$ref": "#/components/schemas/StudentOut"
           },
           "submitted_at": {
             "anyOf": [
@@ -915,18 +1303,94 @@
         },
         "required": [
           "id",
-          "quiz_id",
-          "student_id",
           "attempt_number",
           "status",
           "started_at",
-          "expires_at",
           "submitted_at",
-          "answers",
           "score",
-          "max_score"
+          "max_score",
+          "pending_review",
+          "student",
+          "quiz_id",
+          "answers",
+          "manual_scores",
+          "questions"
         ],
-        "title": "AttemptOut",
+        "title": "AttemptReviewOut",
+        "type": "object"
+      },
+      "AttemptRowOut": {
+        "properties": {
+          "attempt_number": {
+            "title": "Attempt Number",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "pending_review": {
+            "title": "Pending Review",
+            "type": "boolean"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttemptStatus"
+          },
+          "student": {
+            "$ref": "#/components/schemas/StudentOut"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          }
+        },
+        "required": [
+          "id",
+          "attempt_number",
+          "status",
+          "started_at",
+          "submitted_at",
+          "score",
+          "max_score",
+          "pending_review",
+          "student"
+        ],
+        "title": "AttemptRowOut",
         "type": "object"
       },
       "AttemptStatus": {
@@ -937,6 +1401,76 @@
         ],
         "title": "AttemptStatus",
         "type": "string"
+      },
+      "AttemptSummaryOut": {
+        "properties": {
+          "attempt_number": {
+            "title": "Attempt Number",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "pending_review": {
+            "title": "Pending Review",
+            "type": "boolean"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttemptStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          }
+        },
+        "required": [
+          "id",
+          "attempt_number",
+          "status",
+          "started_at",
+          "submitted_at",
+          "score",
+          "max_score",
+          "pending_review"
+        ],
+        "title": "AttemptSummaryOut",
+        "type": "object"
       },
       "AttendeeOut": {
         "properties": {
@@ -1173,7 +1707,12 @@
           "tip.reviewed",
           "community.hidden",
           "community.shown",
-          "community.auto_hidden"
+          "community.auto_hidden",
+          "assignment.created",
+          "assignment.graded",
+          "quiz.created",
+          "quiz.published",
+          "quiz.graded"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -2139,6 +2678,59 @@
         "title": "ContactVisibility",
         "type": "string"
       },
+      "CourseOfferingListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CourseOfferingOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "CourseOfferingListOut",
+        "type": "object"
+      },
+      "CourseOfferingOut": {
+        "description": "An offering in a picker or a heading: subject, groups and semester.",
+        "properties": {
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "semester": {
+            "title": "Semester",
+            "type": "string"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "subject_name",
+          "subject_code",
+          "groups",
+          "semester"
+        ],
+        "title": "CourseOfferingOut",
+        "type": "object"
+      },
       "CourseOut": {
         "properties": {
           "groups": {
@@ -2179,6 +2771,24 @@
           "teachers"
         ],
         "title": "CourseOut",
+        "type": "object"
+      },
+      "DistributionBucket": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "count"
+        ],
+        "title": "DistributionBucket",
         "type": "object"
       },
       "DmPolicy": {
@@ -2918,6 +3528,25 @@
         "title": "FeedbackStatusIn",
         "type": "object"
       },
+      "FileDownloadOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at"
+        ],
+        "title": "FileDownloadOut",
+        "type": "object"
+      },
       "FileEncoding": {
         "enum": [
           "utf-8",
@@ -3015,27 +3644,19 @@
             "title": "Graded At",
             "type": "string"
           },
-          "graded_by": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Graded By"
-          },
           "points": {
             "title": "Points",
+            "type": "string"
+          },
+          "raw_points": {
+            "title": "Raw Points",
             "type": "string"
           }
         },
         "required": [
           "points",
+          "raw_points",
           "feedback",
-          "graded_by",
           "graded_at"
         ],
         "title": "GradeOut",
@@ -3888,6 +4509,71 @@
           "page_size"
         ],
         "title": "ManagedAnnouncementPageOut",
+        "type": "object"
+      },
+      "ManagerQuestionOut": {
+        "properties": {
+          "correct_answer": {
+            "title": "Correct Answer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_required": {
+            "title": "Is Required",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/OptionOut"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/QuestionType"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "type",
+          "prompt",
+          "points",
+          "options",
+          "is_required",
+          "correct_answer"
+        ],
+        "title": "ManagerQuestionOut",
+        "type": "object"
+      },
+      "ManualScoresIn": {
+        "properties": {
+          "scores": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Scores",
+            "type": "object"
+          }
+        },
+        "required": [
+          "scores"
+        ],
+        "title": "ManualScoresIn",
         "type": "object"
       },
       "MaterialCreateIn": {
@@ -5363,6 +6049,49 @@
         "title": "MyRegistrationOut",
         "type": "object"
       },
+      "MySubmissionOut": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/SubmissionFileOut"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GradeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_late": {
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "submitted_at",
+          "is_late",
+          "files",
+          "grade"
+        ],
+        "title": "MySubmissionOut",
+        "type": "object"
+      },
       "MyTipOut": {
         "properties": {
           "difficulty": {
@@ -5682,6 +6411,47 @@
           "user_id"
         ],
         "title": "OpenDmIn",
+        "type": "object"
+      },
+      "OptionIn": {
+        "properties": {
+          "id": {
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "OptionIn",
+        "type": "object"
+      },
+      "OptionOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "OptionOut",
         "type": "object"
       },
       "Period": {
@@ -6386,21 +7156,21 @@
           },
           "options": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/OptionIn"
             },
+            "maxItems": 10,
             "title": "Options",
             "type": "array"
           },
           "points": {
             "default": 1,
-            "exclusiveMinimum": 0.0,
-            "maximum": 10000.0,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Points",
             "type": "integer"
           },
           "prompt": {
-            "maxLength": 20000,
+            "maxLength": 5000,
             "minLength": 1,
             "title": "Prompt",
             "type": "string"
@@ -6411,8 +7181,7 @@
         },
         "required": [
           "type",
-          "prompt",
-          "correct_answer"
+          "prompt"
         ],
         "title": "QuestionCreateIn",
         "type": "object"
@@ -6506,9 +7275,9 @@
         "type": "object"
       },
       "QuestionOut": {
+        "description": "What a student sees: never the correct answer.",
         "properties": {
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
@@ -6518,8 +7287,7 @@
           },
           "options": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/OptionOut"
             },
             "title": "Options",
             "type": "array"
@@ -6577,6 +7345,45 @@
           "items"
         ],
         "title": "QuestionPage",
+        "type": "object"
+      },
+      "QuestionStats": {
+        "properties": {
+          "correct_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Percent"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "question_id": {
+            "title": "Question Id",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/QuestionType"
+          }
+        },
+        "required": [
+          "question_id",
+          "position",
+          "prompt",
+          "type",
+          "correct_percent"
+        ],
+        "title": "QuestionStats",
         "type": "object"
       },
       "QuestionSummaryOut": {
@@ -6731,15 +7538,16 @@
           },
           "max_attempts": {
             "default": 1,
-            "exclusiveMinimum": 0.0,
-            "maximum": 100.0,
+            "maximum": 10.0,
+            "minimum": 1.0,
             "title": "Max Attempts",
             "type": "integer"
           },
           "time_limit_seconds": {
             "anyOf": [
               {
-                "exclusiveMinimum": 0.0,
+                "maximum": 28800.0,
+                "minimum": 60.0,
                 "type": "integer"
               },
               {
@@ -6762,8 +7570,19 @@
         "title": "QuizCreateIn",
         "type": "object"
       },
-      "QuizOut": {
+      "QuizDetailOut": {
         "properties": {
+          "attempts_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts Used"
+          },
           "available_from": {
             "anyOf": [
               {
@@ -6776,10 +7595,24 @@
             ],
             "title": "Available From"
           },
-          "course_offering_id": {
-            "format": "uuid",
-            "title": "Course Offering Id",
-            "type": "string"
+          "best_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Percent"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "can_start": {
+            "title": "Can Start",
+            "type": "boolean"
           },
           "deadline": {
             "anyOf": [
@@ -6794,7 +7627,6 @@
             "title": "Deadline"
           },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
@@ -6806,17 +7638,59 @@
             "title": "Max Attempts",
             "type": "integer"
           },
-          "published_at": {
+          "my_attempts": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptSummaryOut"
+            },
+            "title": "My Attempts",
+            "type": "array"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "question_count": {
+            "title": "Question Count",
+            "type": "integer"
+          },
+          "questions": {
             "anyOf": [
               {
-                "format": "date-time",
+                "items": {
+                  "$ref": "#/components/schemas/ManagerQuestionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Questions"
+          },
+          "start_blocked": {
+            "anyOf": [
+              {
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Published At"
+            "title": "Start Blocked"
+          },
+          "students_attempted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Students Attempted"
           },
           "time_limit_seconds": {
             "anyOf": [
@@ -6836,16 +7710,208 @@
         },
         "required": [
           "id",
-          "course_offering_id",
+          "offering",
           "title",
-          "instructions",
           "available_from",
           "deadline",
           "time_limit_seconds",
           "max_attempts",
-          "published_at"
+          "published",
+          "question_count",
+          "can_manage",
+          "attempts_used",
+          "best_percent",
+          "students_attempted",
+          "instructions",
+          "can_start",
+          "start_blocked",
+          "my_attempts",
+          "questions"
         ],
-        "title": "QuizOut",
+        "title": "QuizDetailOut",
+        "type": "object"
+      },
+      "QuizListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/QuizSummaryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "QuizListOut",
+        "type": "object"
+      },
+      "QuizStatsOut": {
+        "properties": {
+          "average_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Percent"
+          },
+          "distribution": {
+            "items": {
+              "$ref": "#/components/schemas/DistributionBucket"
+            },
+            "title": "Distribution",
+            "type": "array"
+          },
+          "pending_review": {
+            "title": "Pending Review",
+            "type": "integer"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionStats"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "students": {
+            "title": "Students",
+            "type": "integer"
+          },
+          "submitted_attempts": {
+            "title": "Submitted Attempts",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "submitted_attempts",
+          "students",
+          "average_percent",
+          "distribution",
+          "questions",
+          "pending_review"
+        ],
+        "title": "QuizStatsOut",
+        "type": "object"
+      },
+      "QuizSummaryOut": {
+        "properties": {
+          "attempts_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts Used"
+          },
+          "available_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available From"
+          },
+          "best_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Percent"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "max_attempts": {
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "published": {
+            "title": "Published",
+            "type": "boolean"
+          },
+          "question_count": {
+            "title": "Question Count",
+            "type": "integer"
+          },
+          "students_attempted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Students Attempted"
+          },
+          "time_limit_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit Seconds"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offering",
+          "title",
+          "available_from",
+          "deadline",
+          "time_limit_seconds",
+          "max_attempts",
+          "published",
+          "question_count",
+          "can_manage",
+          "attempts_used",
+          "best_percent",
+          "students_attempted"
+        ],
+        "title": "QuizSummaryOut",
         "type": "object"
       },
       "ReactionIn": {
@@ -7815,6 +8881,36 @@
         "title": "SendResultOut",
         "type": "object"
       },
+      "StudentOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "group_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Code"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "group_code"
+        ],
+        "title": "StudentOut",
+        "type": "object"
+      },
       "SubjectCatalogOut": {
         "properties": {
           "can_manage": {
@@ -7951,26 +9047,34 @@
         "title": "SubjectTipsOut",
         "type": "object"
       },
-      "SubmissionOut": {
+      "SubmissionDetailOut": {
         "properties": {
           "assignment_id": {
-            "format": "uuid",
             "title": "Assignment Id",
             "type": "string"
           },
-          "filename": {
+          "assignment_title": {
+            "title": "Assignment Title",
+            "type": "string"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/SubmissionFileOut"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "grade": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/GradeOut"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Filename"
+            ]
           },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
@@ -7978,7 +9082,127 @@
             "title": "Is Late",
             "type": "boolean"
           },
+          "late_penalty_percent": {
+            "title": "Late Penalty Percent",
+            "type": "string"
+          },
+          "late_policy": {
+            "$ref": "#/components/schemas/LatePolicy"
+          },
+          "max_points": {
+            "title": "Max Points",
+            "type": "string"
+          },
+          "student": {
+            "$ref": "#/components/schemas/StudentOut"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "assignment_id",
+          "assignment_title",
+          "max_points",
+          "late_policy",
+          "late_penalty_percent",
+          "student",
+          "submitted_at",
+          "is_late",
+          "files",
+          "grade"
+        ],
+        "title": "SubmissionDetailOut",
+        "type": "object"
+      },
+      "SubmissionFileOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
           "mime": {
+            "title": "Mime",
+            "type": "string"
+          },
+          "previewable": {
+            "title": "Previewable",
+            "type": "boolean"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScanStatus"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "filename",
+          "mime",
+          "size_bytes",
+          "status",
+          "previewable",
+          "created_at"
+        ],
+        "title": "SubmissionFileOut",
+        "type": "object"
+      },
+      "SubmissionListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SubmissionRowOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SubmissionListOut",
+        "type": "object"
+      },
+      "SubmissionRowOut": {
+        "properties": {
+          "file_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScanStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graded": {
+            "title": "Graded",
+            "type": "boolean"
+          },
+          "is_late": {
+            "title": "Is Late",
+            "type": "boolean"
+          },
+          "points": {
             "anyOf": [
               {
                 "type": "string"
@@ -7987,26 +9211,21 @@
                 "type": "null"
               }
             ],
-            "title": "Mime"
+            "title": "Points"
           },
-          "size_bytes": {
+          "student": {
+            "$ref": "#/components/schemas/StudentOut"
+          },
+          "submission_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Size Bytes"
-          },
-          "status": {
-            "$ref": "#/components/schemas/SubmissionStatus"
-          },
-          "student_id": {
-            "format": "uuid",
-            "title": "Student Id",
-            "type": "string"
+            "title": "Submission Id"
           },
           "submitted_at": {
             "anyOf": [
@@ -8022,27 +9241,16 @@
           }
         },
         "required": [
-          "id",
-          "assignment_id",
-          "student_id",
-          "status",
-          "filename",
-          "mime",
-          "size_bytes",
+          "student",
+          "submission_id",
           "submitted_at",
-          "is_late"
+          "is_late",
+          "file_status",
+          "points",
+          "graded"
         ],
-        "title": "SubmissionOut",
+        "title": "SubmissionRowOut",
         "type": "object"
-      },
-      "SubmissionStatus": {
-        "enum": [
-          "draft",
-          "submitted",
-          "returned"
-        ],
-        "title": "SubmissionStatus",
-        "type": "string"
       },
       "TagListOut": {
         "properties": {
@@ -10571,37 +11779,37 @@
         ]
       }
     },
-    "/api/v1/assignment-submissions/{submission_id}/grade": {
-      "post": {
-        "operationId": "grade_assignment_api_v1_assignment_submissions__submission_id__grade_post",
+    "/api/v1/assignment-files/{file_id}/download": {
+      "get": {
+        "operationId": "downloadAssignmentFile",
         "parameters": [
           {
             "in": "path",
-            "name": "submission_id",
+            "name": "file_id",
             "required": true,
             "schema": {
               "format": "uuid",
-              "title": "Submission Id",
+              "title": "File Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inline",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Inline",
+              "type": "boolean"
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentGradeIn"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GradeOut"
+                  "$ref": "#/components/schemas/FileDownloadOut"
                 }
               }
             },
@@ -10663,15 +11871,294 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Grade Assignment",
+        "summary": "A one-minute link to a scanned submission file",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignment-submissions/{submission_id}": {
+      "get": {
+        "operationId": "getAssignmentSubmission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Submission Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Submission",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignment-submissions/{submission_id}/grade": {
+      "post": {
+        "operationId": "gradeAssignmentSubmission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Submission Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentGradeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Grade Submission",
         "tags": [
           "assignments"
         ]
       }
     },
     "/api/v1/assignments": {
+      "get": {
+        "operationId": "listAssignments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offering_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Offering Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Assignments",
+        "tags": [
+          "assignments"
+        ]
+      },
       "post": {
-        "operationId": "create_assignment_api_v1_assignments_post",
+        "operationId": "createAssignment",
         "requestBody": {
           "content": {
             "application/json": {
@@ -10687,7 +12174,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignmentOut"
+                  "$ref": "#/components/schemas/AssignmentDetailOut"
                 }
               }
             },
@@ -10755,9 +12242,9 @@
         ]
       }
     },
-    "/api/v1/assignments/{assignment_id}/submissions": {
-      "post": {
-        "operationId": "submit_assignment_api_v1_assignments__assignment_id__submissions_post",
+    "/api/v1/assignments/{assignment_id}": {
+      "get": {
+        "operationId": "getAssignment",
         "parameters": [
           {
             "in": "path",
@@ -10770,22 +12257,12 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentSubmissionIn"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
-          "201": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SubmissionOut"
+                  "$ref": "#/components/schemas/AssignmentDetailOut"
                 }
               }
             },
@@ -10847,7 +12324,289 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Submit Assignment",
+        "summary": "Get Assignment",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_id}/submissions": {
+      "get": {
+        "operationId": "listAssignmentSubmissions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assignment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Every student of the offering with their submission, for the people who manage it",
+        "tags": [
+          "assignments"
+        ]
+      },
+      "post": {
+        "operationId": "submitAssignment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assignment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentSubmissionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit the uploaded file; sending the same upload again returns the same result",
+        "tags": [
+          "assignments"
+        ]
+      }
+    },
+    "/api/v1/assignments/{assignment_id}/uploads/presign": {
+      "post": {
+        "operationId": "presignAssignmentUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assignment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentPresignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentPresignOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reserve a submission upload: a ten-minute URL to PUT one file to (25 MB)",
         "tags": [
           "assignments"
         ]
@@ -14258,6 +16017,82 @@
         "summary": "Set Visibility",
         "tags": [
           "community"
+        ]
+      }
+    },
+    "/api/v1/coursework/offerings": {
+      "get": {
+        "operationId": "listCourseworkOfferings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseOfferingListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Offerings I may add assignments and quizzes to",
+        "tags": [
+          "assignments"
         ]
       }
     },
@@ -21139,8 +22974,94 @@
       }
     },
     "/api/v1/quiz-attempts/{attempt_id}": {
+      "get": {
+        "operationId": "getQuizAttempt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Attempt",
+        "tags": [
+          "quizzes"
+        ]
+      },
       "patch": {
-        "operationId": "save_attempt_answers_api_v1_quiz_attempts__attempt_id__patch",
+        "operationId": "saveQuizAnswers",
         "parameters": [
           {
             "in": "path",
@@ -21230,7 +23151,193 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Save Attempt Answers",
+        "summary": "Save the answers so far; answers that arrive after the time limit are not counted",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/quiz-attempts/{attempt_id}/open-question-scores": {
+      "put": {
+        "operationId": "scoreOpenQuestions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualScoresIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Score Open Questions",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/quiz-attempts/{attempt_id}/review": {
+      "get": {
+        "operationId": "reviewQuizAttempt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attempt_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Attempt Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Review Attempt",
         "tags": [
           "quizzes"
         ]
@@ -21238,7 +23345,7 @@
     },
     "/api/v1/quiz-attempts/{attempt_id}/submit": {
       "post": {
-        "operationId": "submit_attempt_api_v1_quiz_attempts__attempt_id__submit_post",
+        "operationId": "submitQuizAttempt",
         "parameters": [
           {
             "in": "path",
@@ -21335,8 +23442,101 @@
       }
     },
     "/api/v1/quizzes": {
+      "get": {
+        "operationId": "listQuizzes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offering_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Offering Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Quizzes",
+        "tags": [
+          "quizzes"
+        ]
+      },
       "post": {
-        "operationId": "create_quiz_api_v1_quizzes_post",
+        "operationId": "createQuiz",
         "requestBody": {
           "content": {
             "application/json": {
@@ -21352,7 +23552,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QuizOut"
+                  "$ref": "#/components/schemas/QuizDetailOut"
                 }
               }
             },
@@ -21420,9 +23620,183 @@
         ]
       }
     },
+    "/api/v1/quizzes/{quiz_id}": {
+      "get": {
+        "operationId": "getQuiz",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
     "/api/v1/quizzes/{quiz_id}/attempts": {
+      "get": {
+        "operationId": "listQuizAttempts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Every attempt of the quiz, for the people who manage the offering",
+        "tags": [
+          "quizzes"
+        ]
+      },
       "post": {
-        "operationId": "start_attempt_api_v1_quizzes__quiz_id__attempts_post",
+        "operationId": "startQuizAttempt",
         "parameters": [
           {
             "in": "path",
@@ -21502,15 +23876,15 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Start Attempt",
+        "summary": "Start an attempt, or resume the one in progress",
         "tags": [
           "quizzes"
         ]
       }
     },
-    "/api/v1/quizzes/{quiz_id}/questions": {
+    "/api/v1/quizzes/{quiz_id}/publish": {
       "post": {
-        "operationId": "add_question_api_v1_quizzes__quiz_id__questions_post",
+        "operationId": "publishQuiz",
         "parameters": [
           {
             "in": "path",
@@ -21521,14 +23895,93 @@
               "title": "Quiz Id",
               "type": "string"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
           {
-            "in": "query",
-            "name": "position",
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Publish Quiz",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/quizzes/{quiz_id}/questions": {
+      "post": {
+        "operationId": "addQuizQuestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
             "required": true,
             "schema": {
-              "title": "Position",
-              "type": "integer"
+              "format": "uuid",
+              "title": "Quiz Id",
+              "type": "string"
             }
           }
         ],
@@ -21547,7 +24000,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QuestionOut"
+                  "$ref": "#/components/schemas/QuizDetailOut"
                 }
               }
             },
@@ -21610,6 +24063,192 @@
           }
         ],
         "summary": "Add Question",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/quizzes/{quiz_id}/questions/{question_id}": {
+      "delete": {
+        "operationId": "deleteQuizQuestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Question Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Question",
+        "tags": [
+          "quizzes"
+        ]
+      }
+    },
+    "/api/v1/quizzes/{quiz_id}/stats": {
+      "get": {
+        "operationId": "getQuizStats",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "quiz_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Quiz Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuizStatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Stats",
         "tags": [
           "quizzes"
         ]

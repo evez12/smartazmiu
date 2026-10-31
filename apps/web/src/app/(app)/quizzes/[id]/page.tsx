@@ -1,19 +1,23 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { QuizAttempt } from "@/features/quizzes/quiz-forms";
+import { QuizPage } from "@/features/quizzes/quiz-detail";
 
-export default async function QuizPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("quizzes"))("detailTitle") };
+}
+
+export default async function QuizRoute({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations("quizzes");
+  const { id } = await params;
   return (
     <>
       <PageHeader
-        title={t("takeTitle")}
-        description={t("takeDescription")}
-        breadcrumb={[{ label: t("title"), href: "/quizzes" }, { label: t("takeTitle") }]}
+        title={t("detailTitle")}
+        breadcrumb={[{ label: t("title"), href: "/quizzes" }, { label: t("detailTitle") }]}
       />
-      <QuizAttempt quizId={id} />
+      <QuizPage id={id} />
     </>
   );
 }

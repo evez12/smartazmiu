@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ToastProvider } from "@/components/ui/toast";
 import { ApiProvider } from "@/lib/api/provider";
+import { fetchMock, json, serve } from "@/test/api";
 import { renderWithIntl } from "@/test/render";
 
 import { FeedPage } from "./feed-page";
@@ -12,7 +13,6 @@ import { QuestionPage, QuestionsPage } from "./forum-pages";
 const router = { refresh: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/feed" }));
 
-const fetchMock = vi.fn<(request: Request) => Promise<Response>>();
 beforeEach(() => vi.stubGlobal("fetch", fetchMock));
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -28,28 +28,11 @@ function wrap(ui: React.ReactNode) {
   );
 }
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 // The provider retries a failed query once before showing the error state.
 const RETRY_WAIT = { timeout: 4000 };
 
 const TAGS = { items: [{ id: "t-1", slug: "kitabxana", name: "Kitabxana" }] };
 const AUTHOR = { id: "u-1", display_name: "Aysel Məmmədova", photo_url: null, badge: null };
-
-/** Answers each request by its method and path; unknown ones fail the test loudly. */
-function serve(routes: Record<string, (request: Request) => Response>) {
-  fetchMock.mockImplementation(async (request) => {
-    const key = `${request.method} ${new URL(request.url).pathname}`;
-    const route = routes[key];
-    if (!route) throw new Error(`Unexpected request: ${key}`);
-    return route(request);
-  });
-}
 
 const post = {
   id: "p-1",

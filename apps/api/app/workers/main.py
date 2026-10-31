@@ -22,6 +22,7 @@ from app.core.logging import configure_logging
 from app.core.observability import init_sentry
 from app.core.storage import S3Storage
 from app.modules.announcements import service as announcements
+from app.modules.assignments.scanner import SubmissionScanner
 from app.modules.chat import consistency, mentions, partitions
 from app.modules.chat.attachments import AttachmentScanner
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
@@ -36,6 +37,7 @@ from app.modules.notifications.delivery import Dispatcher, RelevanceCheck
 from app.modules.notifications.mail import SmtpMailer
 from app.modules.notifications.push import VapidKeys, WebPushSender
 from app.modules.notifications.service import LateJoinBudget
+from app.modules.quizzes.service import QuizService
 from app.modules.schedule import notifications as schedule_changes
 
 # Per subject type: whether a recipient should still hear about it when the worker sends (§5.6).
@@ -184,6 +186,10 @@ async def scan_attachments(ctx: dict[str, Any]) -> int:
     async with database.sessionmaker() as session:
         materials = await MaterialScanner(session, ctx["storage"], ctx["scanner"]).scan_pending()
     async with database.sessionmaker() as session:
+        submissions = await SubmissionScanner(
+            session, ctx["storage"], ctx["scanner"]
+        ).scan_pending()
+    async with database.sessionmaker() as session:
         report, changed = await AttachmentScanner(
             session, ctx["storage"], ctx["scanner"]
         ).scan_pending()
@@ -202,16 +208,32 @@ async def scan_attachments(ctx: dict[str, Any]) -> int:
                 continue
             if payload is not None:
                 await bus.publish(topic, "message.updated", payload.model_dump(mode="json"))
-    return report.clean + report.rejected + materials.clean + materials.rejected
+    return (
+        report.clean
+        + report.rejected
+        + materials.clean
+        + materials.rejected
+        + submissions.clean
+        + submissions.rejected
+    )
+
+
+async def finalize_quiz_attempts(ctx: dict[str, Any]) -> int:
+    """Closes quiz attempts whose time ran out, with the answers saved so far (§6.1); idempotent."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        return await QuizService(session).finalize_expired()
 
 
 async def purge_attachments(ctx: dict[str, Any]) -> int:
-    """Deletes the objects of rejected and abandoned uploads, chat and materials (§13.2)."""
+    """Deletes the objects of rejected and abandoned uploads: chat, materials and submissions (§13.2)."""
     database: Database = ctx["database"]
     async with database.sessionmaker() as session:
         purged = await AttachmentScanner(session, ctx["storage"], ctx["scanner"]).purge()
     async with database.sessionmaker() as session:
-        return purged + await MaterialScanner(session, ctx["storage"], ctx["scanner"]).purge()
+        purged += await MaterialScanner(session, ctx["storage"], ctx["scanner"]).purge()
+    async with database.sessionmaker() as session:
+        return purged + await SubmissionScanner(session, ctx["storage"], ctx["scanner"]).purge()
 
 
 async def remove_chat_orphans(ctx: dict[str, Any]) -> int:
@@ -239,6 +261,7 @@ class WorkerSettings:
         cron(provision_channels, name=f"{PROVISION_CHANNELS}_cron"),
         # Wake-ups come with every sent attachment; the minute tick retries deferred scans.
         cron(scan_attachments, name=f"{SCAN_ATTACHMENTS}_cron"),
+        cron(finalize_quiz_attempts),
         # Imports wake the guide check; the nightly run catches corrections made any other way.
         cron(sync_guides, name=f"{SYNC_GUIDES}_cron", hour={21}, minute={30}),
         cron(expire_mentor_requests, minute=set(range(0, 60, 10))),

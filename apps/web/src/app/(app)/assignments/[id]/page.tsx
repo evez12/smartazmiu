@@ -1,19 +1,23 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { AssignmentSubmission } from "@/features/assignments/assignment-forms";
+import { AssignmentPage } from "@/features/assignments/assignment-detail";
 
-export default async function AssignmentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("assignments"))("detailTitle") };
+}
+
+export default async function AssignmentRoute({ params }: { params: Promise<{ id: string }> }) {
   const t = await getTranslations("assignments");
+  const { id } = await params;
   return (
     <>
       <PageHeader
-        title={t("submitTitle")}
-        description={t("submitDescription")}
-        breadcrumb={[{ label: t("title"), href: "/assignments" }, { label: t("submitTitle") }]}
+        title={t("detailTitle")}
+        breadcrumb={[{ label: t("title"), href: "/assignments" }, { label: t("detailTitle") }]}
       />
-      <AssignmentSubmission assignmentId={id} />
+      <AssignmentPage id={id} />
     </>
   );
 }

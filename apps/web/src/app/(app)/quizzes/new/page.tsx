@@ -1,15 +1,15 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { QuizBuilder } from "@/features/quizzes/quiz-forms";
+import { QuizBuilder } from "@/features/quizzes/quiz-builder";
 
-export default async function NewQuizPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ courseOfferingId?: string }>;
-}) {
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTranslations("quizzes"))("newTitle") };
+}
+
+export default async function NewQuizRoute() {
   const t = await getTranslations("quizzes");
-  const params = await searchParams;
   return (
     <>
       <PageHeader
@@ -17,7 +17,7 @@ export default async function NewQuizPage({
         description={t("newDescription")}
         breadcrumb={[{ label: t("title"), href: "/quizzes" }, { label: t("newTitle") }]}
       />
-      <QuizBuilder courseOfferingId={params.courseOfferingId ?? ""} />
+      <QuizBuilder />
     </>
   );
 }

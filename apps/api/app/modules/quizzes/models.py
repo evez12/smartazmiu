@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -98,6 +99,13 @@ class QuizAttempt(Base):
         CheckConstraint("attempt_number > 0", name="positive_attempt_number"),
         Index("ix_quiz_attempts_quiz_status", "quiz_id", "status"),
         Index("ix_quiz_attempts_student", "student_id", "created_at"),
+        Index(
+            "uq_quiz_attempts_in_progress",
+            "quiz_id",
+            "student_id",
+            unique=True,
+            postgresql_where=text("status = 'in_progress'"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
@@ -117,6 +125,8 @@ class QuizAttempt(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     answers: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Points a teacher gave to open (short-answer) questions, keyed by question id (D-092).
+    manual_scores: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default="{}")
     score: Mapped[int | None] = mapped_column(Integer)
     max_score: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

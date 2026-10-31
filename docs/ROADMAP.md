@@ -617,8 +617,8 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
 
 #### Sprint 13 (05-17 → 05-28) — Assignments & Quizzes
-- [ ] Assignments: create, deadline, file submission, late policy, grading + feedback.
-- [ ] Quizzes: MCQ / multi / short answer, timer, auto-grading (non-open), stats.
+- [x] Assignments: create, deadline, file submission, late policy, grading + feedback.
+- [x] Quizzes: MCQ / multi / short answer, timer, auto-grading (non-open), stats.
 
 #### Sprint 14 (05-31 → 06-11) — Attendance, Exam Center, GPA
 - [ ] QR attendance: teacher screen with token rotating every 30 s, optional geofence (campus bounds), student scan via PWA camera, reports/export.
