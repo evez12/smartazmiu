@@ -1819,3 +1819,34 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** channel bans remain effective if a provisioning sync recreates membership, while a kick may
   be reversed by a later authoritative sync. The console shows the global-ban option only to admins. Sanctions
   emit the existing channel/user WebSocket events after commit; no grade, e-mail or phone data enters payloads.
+
+## D-088 · 2026-10-31 · Sprint 11 (video lessons) deferred (product owner decision)
+
+- **Context:** Sprints 12 and 13 were built while Sprint 11 (video upload, FFmpeg → HLS, player, progress,
+  "discuss in channel") was left untouched, against §0.1.2. The product owner deferred it intentionally; nothing
+  recorded that.
+- **Options:** build Sprint 11 before Sprint 14; drop video lessons; defer them.
+- **Decision:** Sprint 11 is **deferred, not dropped**; the product owner reschedules it later. Its checkboxes stay
+  unticked. Video lessons remain in scope (§3.1, §6).
+- **Consequences:** no video features exist. Nothing in Sprints 12–14 may depend on video: no "watch the lecture"
+  links, no video-based attendance, no video materials. FFmpeg, hls.js and resumable multipart uploads are not
+  added until Sprint 11 runs.
+
+## D-089 · 2026-10-31 · Sprints 12 and 13 reopened
+
+- **Context:** the Sprint 14 gate (§0.1.2, §11) found that Sprints 12 and 13 were ticked without working end to
+  end. Sprint 12: the feed and forum screens are read-only (no posting, commenting, "faydalı", reporting, asking,
+  answering, voting, accepting or verifying), the web models expect fields the API does not return (names,
+  counts), tags cannot be listed and comments cannot be read, and promoting a chat thread copies held, hidden or
+  anonymous messages into the university-wide forum under the promoter's name (§5.4, D-084, D-086). Sprint 13:
+  no authorisation by course offering (anyone can submit to any assignment or start any quiz; any teacher can
+  create for or grade any offering), the file submission uploads nothing and the API trusts a client-chosen
+  object key (§14), quiz attempts never show questions and always submit empty answers, statistics are a
+  placeholder, there are no read endpoints, and grading is not audited. Neither sprint had an E2E test.
+- **Options:** fix only the security holes and leave the rest open; defer both like Sprint 11; complete both.
+- **Decision:** the product owner chose to **complete both before any Sprint 14 code**: Sprint 12 on
+  `feat/sprint12-completion`, then Sprint 13 on `feat/sprint13-completion`, each with a happy-path E2E using
+  throwaway accounts, `records` cleanup and the seed-data check, its own decision entries for the choices made
+  silently, and a §13 review in the D-076 format. Their checkboxes are unticked until those E2E tests pass.
+- **Consequences:** Sprint 14 starts later. The branch the product owner named `test/backfill-sprint-12-13` is
+  split into the two completion branches, because the work is mostly implementation, not tests.

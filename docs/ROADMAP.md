@@ -612,13 +612,13 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 **Acceptance:** 1 GB lecture uploads, plays adaptively; progress persists.
 
 #### Sprint 12 (05-03 → 05-14) — Feed & Q&A Forum
-- [x] Feed: posts, tags, "faydalı" reaction, comments, report.
-- [x] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
-- [x] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
+- [ ] Feed: posts, tags, "faydalı" reaction, comments, report.
+- [ ] Q&A forum: questions, answers, votes, accepted answer, teacher-verified badge, tag pages.
+- [ ] Cross-link: promote a chat thread to a forum question (keeps knowledge searchable).
 
 #### Sprint 13 (05-17 → 05-28) — Assignments & Quizzes
-- [x] Assignments: create, deadline, file submission, late policy, grading + feedback.
-- [x] Quizzes: MCQ / multi / short answer, timer, auto-grading (non-open), stats.
+- [ ] Assignments: create, deadline, file submission, late policy, grading + feedback.
+- [ ] Quizzes: MCQ / multi / short answer, timer, auto-grading (non-open), stats.
 
 #### Sprint 14 (05-31 → 06-11) — Attendance, Exam Center, GPA
 - [ ] QR attendance: teacher screen with token rotating every 30 s, optional geofence (campus bounds), student scan via PWA camera, reports/export.
