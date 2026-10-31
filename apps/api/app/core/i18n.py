@@ -571,6 +571,218 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Rəy tapılmadı.",
         "en": "The feedback was not found.",
     },
+    "assignments.not_found": {
+        "az": "Tapşırıq tapılmadı.",
+        "en": "The assignment was not found.",
+    },
+    "assignments.offering_not_found": {
+        "az": "Bu fənn üzrə tapşırıq yaratmaq mümkün deyil.",
+        "en": "You cannot add assignments to this course.",
+    },
+    "assignments.submission_not_found": {
+        "az": "Təqdim olunan iş tapılmadı.",
+        "en": "The submission was not found.",
+    },
+    "assignments.not_student": {
+        "az": "Yalnız bu fənnin tələbələri iş təqdim edə bilər.",
+        "en": "Only students of this course can submit work.",
+    },
+    "assignments.not_a_student": {
+        "az": "Yalnız bu fənnin tələbələri iş təqdim edə bilər.",
+        "en": "Only students of this course can submit work.",
+    },
+    "assignments.not_available": {
+        "az": "Tapşırıq hələ açılmayıb.",
+        "en": "The assignment is not open yet.",
+    },
+    "assignments.closed": {
+        "az": "Təqdimetmə müddəti bitib. Müəllimlə əlaqə saxlayın.",
+        "en": "The deadline has passed. Contact your teacher.",
+    },
+    "assignments.graded": {
+        "az": "İş artıq qiymətləndirilib, onu dəyişmək olmaz.",
+        "en": "The work is already graded and cannot be changed.",
+    },
+    "assignments.grade_exceeds_maximum": {
+        "az": "Bal tapşırığın maksimum balından çox ola bilməz.",
+        "en": "The points cannot exceed the maximum of the assignment.",
+    },
+    "assignments.upload_not_found": {
+        "az": "Yüklənmiş fayl tapılmadı. Faylı yenidən seçin.",
+        "en": "The uploaded file was not found. Choose the file again.",
+    },
+    "assignments.upload_missing": {
+        "az": "Fayl hələ yüklənməyib. Yükləmənin bitməsini gözləyin.",
+        "en": "The file has not finished uploading. Wait for the upload to end.",
+    },
+    "assignments.upload_size_mismatch": {
+        "az": "Yüklənən faylın ölçüsü uyğun gəlmir. Faylı yenidən yükləyin.",
+        "en": "The uploaded file size does not match. Upload the file again.",
+    },
+    "assignments.type_not_allowed": {
+        "az": "Bu fayl növü qəbul olunmur. İcazə verilən növlərdən birini seçin.",
+        "en": "This file type is not accepted. Choose one of the allowed types.",
+    },
+    "assignments.too_large": {
+        "az": "Fayl çox böyükdür.",
+        "en": "The file is too large.",
+    },
+    "assignments.file_not_available": {
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "en": "The file is still being checked or did not pass the check.",
+    },
+    "assignments.storage_unavailable": {
+        "az": "Fayl saxlama xidməti müvəqqəti əlçatan deyil. Bir az sonra cəhd edin.",
+        "en": "File storage is temporarily unavailable. Try again shortly.",
+    },
+    "quizzes.not_found": {
+        "az": "Test tapılmadı.",
+        "en": "The quiz was not found.",
+    },
+    "quizzes.offering_not_found": {
+        "az": "Bu fənn üzrə test yaratmaq mümkün deyil.",
+        "en": "You cannot add quizzes to this course.",
+    },
+    "quizzes.question_not_found": {
+        "az": "Sual tapılmadı.",
+        "en": "The question was not found.",
+    },
+    "quizzes.attempt_not_found": {
+        "az": "Cəhd tapılmadı.",
+        "en": "The attempt was not found.",
+    },
+    "quizzes.already_published": {
+        "az": "Test dərc olunub, onu dəyişmək olmaz.",
+        "en": "The quiz is published and cannot be changed.",
+    },
+    "quizzes.no_questions": {
+        "az": "Dərc etməzdən əvvəl ən azı bir sual əlavə edin.",
+        "en": "Add at least one question before publishing.",
+    },
+    "quizzes.too_many_questions": {
+        "az": "Testdə sualların sayı həddi aşıb.",
+        "en": "The quiz has too many questions.",
+    },
+    "quizzes.invalid_answers": {
+        "az": "Cavablar düzgün formatda deyil.",
+        "en": "The answers are not in the expected format.",
+    },
+    "quizzes.points_out_of_range": {
+        "az": "Bal sualın maksimum balı daxilində olmalıdır.",
+        "en": "The points must be within the maximum of the question.",
+    },
+    "quizzes.not_a_student": {
+        "az": "Yalnız bu fənnin tələbələri testi həll edə bilər.",
+        "en": "Only students of this course can take the quiz.",
+    },
+    "quizzes.not_available": {
+        "az": "Test hazırda əlçatan deyil.",
+        "en": "The quiz is not available right now.",
+    },
+    "quizzes.attempt_limit_reached": {
+        "az": "Cəhd sayı bitib.",
+        "en": "You have used all attempts.",
+    },
+    "quizzes.attempt_closed": {
+        "az": "Bu cəhd artıq bitib.",
+        "en": "This attempt is already finished.",
+    },
+    "quizzes.attempt_not_finished": {
+        "az": "Cəhd hələ bitməyib.",
+        "en": "The attempt is not finished yet.",
+    },
+    "quizzes.expired": {
+        "az": "Testin vaxtı bitib.",
+        "en": "The quiz time has run out.",
+    },
+    "quizzes.time_is_up": {
+        "az": "Vaxt bitdi, cavablarınız təqdim olundu.",
+        "en": "Time is up and your answers were submitted.",
+    },
+    "quizzes.not_an_open_question": {
+        "az": "Bu sual əl ilə qiymətləndirilmir.",
+        "en": "This question is not graded by hand.",
+    },
+    "community.not_found": {
+        "az": "Məzmun tapılmadı.",
+        "en": "The content was not found.",
+    },
+    "community.post_not_found": {
+        "az": "Yazı tapılmadı.",
+        "en": "The post was not found.",
+    },
+    "community.question_not_found": {
+        "az": "Sual tapılmadı.",
+        "en": "The question was not found.",
+    },
+    "community.answer_not_found": {
+        "az": "Cavab tapılmadı.",
+        "en": "The answer was not found.",
+    },
+    "community.thread_not_found": {
+        "az": "Mesaj tapılmadı.",
+        "en": "The message was not found.",
+    },
+    "community.tag_not_found": {
+        "az": "Etiket tapılmadı.",
+        "en": "The tag was not found.",
+    },
+    "community.invalid_cursor": {
+        "az": "Səhifə göstəricisi etibarsızdır. Siyahını yeniləyin.",
+        "en": "The page marker is invalid. Refresh the list.",
+    },
+    "community.content_rejected": {
+        "az": "Mətn qaydalara uyğun gəlmir. Onu dəyişib yenidən göndərin.",
+        "en": "The text breaks the rules. Edit it and send again.",
+    },
+    "community.own_content": {
+        "az": "Öz məzmununuza səs vermək və ya şikayət etmək olmaz.",
+        "en": "You cannot vote for or report your own content.",
+    },
+    "community.not_question_author": {
+        "az": "Cavabı yalnız sualın müəllifi qəbul edə bilər.",
+        "en": "Only the author of the question can accept an answer.",
+    },
+    "community.not_verifier": {
+        "az": "Cavabı yalnız müəllim təsdiq edə bilər.",
+        "en": "Only a teacher can verify an answer.",
+    },
+    "community.promotion_not_allowed": {
+        "az": "Bu mesajı foruma çıxarmaq mümkün deyil.",
+        "en": "This message cannot be promoted to the forum.",
+    },
+    "attendance.not_found": {
+        "az": "Dərs tapılmadı.",
+        "en": "The class meeting was not found.",
+    },
+    "attendance.offering_not_found": {
+        "az": "Bu fənn üzrə davamiyyət aça bilməzsiniz.",
+        "en": "You cannot run attendance for this course.",
+    },
+    "attendance.student_not_found": {
+        "az": "Bu tələbə fənnin siyahısında yoxdur.",
+        "en": "This student is not in the course list.",
+    },
+    "attendance.session_open": {
+        "az": "Bu fənn üçün açıq dərs artıq var. Əvvəlcə onu bağlayın.",
+        "en": "A meeting is already open for this course. Close it first.",
+    },
+    "attendance.session_closed": {
+        "az": "Bu dərsin iştirak qeydi bağlanıb.",
+        "en": "Check-in for this meeting is closed.",
+    },
+    "attendance.code_invalid": {
+        "az": "Kod düzgün deyil. Müəllimin ekranındakı koda baxıb yenidən cəhd edin.",
+        "en": "The code is not valid. Check the code on the teacher screen and try again.",
+    },
+    "attendance.code_expired": {
+        "az": "Kodun vaxtı bitib. Ekrandakı yeni kodu skan edin.",
+        "en": "The code has expired. Scan the new code on the screen.",
+    },
+    "attendance.not_enrolled": {
+        "az": "Siz bu fənnə yazılmamısınız.",
+        "en": "You are not enrolled in this course.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",
