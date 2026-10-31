@@ -48,6 +48,12 @@ SEND_ERRORS = Counter(
     ["transport", "code"],
 )
 
+ATTENDANCE_CHECKINS = Counter(
+    "smartazmiu_attendance_checkins",
+    "Attendance check-ins by method and outcome",
+    ["method", "result"],
+)
+
 # ARQ keeps queued jobs in a sorted set scored by the time they may run, in milliseconds.
 ARQ_QUEUE = "arq:queue"
 

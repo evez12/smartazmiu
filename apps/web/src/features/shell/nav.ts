@@ -14,6 +14,7 @@ import {
   MessagesSquare,
   Map as MapIcon,
   Newspaper,
+  QrCode,
   Flag,
   ScrollText,
   UserRound,
@@ -39,6 +40,7 @@ export type NavItem = {
     | "feed"
     | "assignments"
     | "quizzes"
+    | "attendance"
     | "forum"
     | "map"
     | "announcements"
@@ -75,6 +77,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/forum", labelKey: "forum", icon: MessageCircleQuestionMark, inTabBar: false },
       { href: "/assignments", labelKey: "assignments", icon: ClipboardCheck, inTabBar: false },
       { href: "/quizzes", labelKey: "quizzes", icon: ListChecks, inTabBar: false },
+      { href: "/attendance", labelKey: "attendance", icon: QrCode, inTabBar: false },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },

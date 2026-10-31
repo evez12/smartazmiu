@@ -123,6 +123,25 @@ test("the assignment and quiz builders of a staff member", async ({ page, accoun
   await expectTargets(page, "/quizzes/new");
 });
 
+test("the attendance screens of a student", async ({ page }) => {
+  await signIn(page, "aysel.mammadova", "/attendance");
+  await expect(page.getByRole("link", { name: "İştirakı qeyd et" })).toBeVisible();
+  expect(await undersizedTargets(page), "/attendance").toEqual([]);
+  await expectTargets(page, "/attendance/scan");
+});
+
+test("the attendance screen of a staff member", async ({ page, accounts }) => {
+  await signInWithSecondFactor(
+    page,
+    await accounts.create("staff", { givenName: "Günel", familyName: "Səfərova" }),
+    "/attendance",
+  );
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Dərslərin idarə edilməsi" }),
+  ).toBeVisible();
+  expect(await undersizedTargets(page), "/attendance (staff)").toEqual([]);
+});
+
 test("a student's schedule, chat, events and materials", async ({ page }) => {
   await signIn(page, "aysel.mammadova", "/schedule");
   expect(await undersizedTargets(page), "/schedule").toEqual([]);

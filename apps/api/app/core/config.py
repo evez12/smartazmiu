@@ -82,11 +82,16 @@ class Settings(BaseSettings):
     # Signs event tickets; a QR code carries the ticket id and this signature (D-051).
     ticket_secret: str = ""
 
+    # Signs the rotating attendance codes shown on a teacher's screen (D-094).
+    attendance_secret: str = ""
+
     @model_validator(mode="after")
     def production_secrets(self) -> "Settings":
         # An empty signing key would make ticket codes forgeable; development falls back to .env values.
         if self.app_env == "production" and not self.ticket_secret:
             raise ValueError("TICKET_SECRET must be set in production")
+        if self.app_env == "production" and not self.attendance_secret:
+            raise ValueError("ATTENDANCE_SECRET must be set in production")
         return self
 
     @property

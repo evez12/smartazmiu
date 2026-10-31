@@ -33,8 +33,8 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
   `make up` must still start the full stack (including api, web, nginx) in Docker.
 - Single `Makefile` (GNU make via winget `ezwinports.make`); no PowerShell task scripts. Package manager: pnpm.
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
-- Current scope: **Sprint 6** (chat UX, Materials v1, pilot hardening; Sprints 1–5 accepted). Stop and summarize
-  for review after each task group the product owner hands over; never pull Sprint 7+ scope forward.
+- Current scope: **Sprint 14** (QR attendance, exam center, GPA; Sprints 1-13 accepted). Stop and summarize
+  for review after each task group the product owner hands over; never pull Sprint 15+ scope forward.
 - Ask the product owner first for: auth changes, hard deletion of data, anything that could expose grades, and any
   CSP relaxation (e.g. for the Markdown sanitizer or KaTeX delivery).
 

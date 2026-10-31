@@ -621,7 +621,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 - [x] Quizzes: MCQ / multi / short answer, timer, auto-grading (non-open), stats.
 
 #### Sprint 14 (05-31 → 06-11) — Attendance, Exam Center, GPA
-- [ ] QR attendance: teacher screen with token rotating every 30 s, optional geofence (campus bounds), student scan via PWA camera, reports/export.
+- [x] QR attendance: teacher screen with token rotating every 30 s, optional geofence (campus bounds), student scan via PWA camera, reports/export. *(Geofence not built, by decision: D-094.)*
 - [ ] Exam center: timetable, countdown, room → map, past papers archive (teacher-approved).
 - [ ] GPA calculator with what-if simulation.
 *(June exam session: freeze production changes from week of 06-07 except hotfixes.)*

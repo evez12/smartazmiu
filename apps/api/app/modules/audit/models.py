@@ -50,6 +50,8 @@ class AuditAction(StrEnum):
     QUIZ_CREATED = "quiz.created"
     QUIZ_PUBLISHED = "quiz.published"
     QUIZ_GRADED = "quiz.graded"
+    ATTENDANCE_MARKED = "attendance.marked"
+    ATTENDANCE_UNMARKED = "attendance.unmarked"
 
 
 class AuditLog(Base):
