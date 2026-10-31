@@ -16,8 +16,9 @@ from sqlalchemy import Select, and_, exists, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.antivirus import ScannerUnavailableError, VirusScanner
+from app.core.antivirus import VirusScanner
 from app.core.errors import AppError
+from app.core.file_scan import UNSAVED_AFTER, check_file
 from app.core.jobs import JobQueue
 from app.core.ratelimit import RateLimit, enforce_rate_limit
 from app.core.storage import ObjectStorage, StorageUnavailableError
@@ -27,7 +28,6 @@ from app.core.uploads import (
     allowed_extensions,
     allowed_type,
     content_disposition,
-    content_matches,
     safe_filename,
 )
 from app.modules.academics.models import (
@@ -75,7 +75,6 @@ UPLOAD_LIMIT = RateLimit("material_upload", limit=30, window_seconds=3600)
 REPORT_LIMIT = RateLimit("material_report", limit=10, window_seconds=3600)
 UPLOAD_TTL = timedelta(minutes=10)
 DOWNLOAD_TTL = timedelta(minutes=1)
-UNSAVED_AFTER = timedelta(hours=24)
 # Bumped whenever the copyright wording in the upload form changes; stored with each version (§6.1).
 CONSENT_TEXT_VERSION = "2026-10-26"
 
@@ -731,58 +730,28 @@ class MaterialScanner:
         return MaterialScanReport(clean, rejected, waiting)
 
     async def _scan(self, version: MaterialVersion) -> ScanStatus | None:
-        try:
-            data = await self.storage.get(version.object_key)
-        except StorageUnavailableError:
-            return self._defer(version, "storage_unavailable")
-        if data is None or len(data) != version.size_bytes:
-            return await self._reject(version, ScanStatus.FAILED)
-        if not content_matches(version.mime, data):
-            return await self._reject(version, ScanStatus.FAILED)
-        try:
-            result = await self.scanner.scan(data)
-        except ScannerUnavailableError as exc:
-            return self._defer(version, f"scanner_unavailable:{exc}")
-        if not result.clean:
-            logger.warning(
-                "material_infected", version_id=str(version.id), signature=result.signature
-            )
-            return await self._reject(version, ScanStatus.INFECTED)
-        return self._finish(version, ScanStatus.CLEAN)
-
-    async def _reject(self, version: MaterialVersion, status: ScanStatus) -> ScanStatus:
-        self._finish(version, status)
-        if version.uploader_id is not None and version.material_id is not None:
-            # In-app only, like rejected chat attachments (D-068): the uploader learns the file is not shown.
-            await Notifier(self.session).notify(
-                select(User.id).where(User.id == version.uploader_id),
-                NotificationSpec(
-                    category=NotificationCategory.CHAT,
-                    kind=NotificationKind.MATERIAL_VERSION_REJECTED,
-                    subject_type="material_version",
-                    subject_id=version.id,
-                    dedupe_key=f"material.version:{version.id}",
-                    title=version.filename,
-                    link=f"/materials/{version.subject_id}/{version.material_id}",
-                ),
-                deliver=False,
-            )
+        status = await check_file(version, self.storage, self.scanner, kind="material")
+        if status is not None and status is not ScanStatus.CLEAN:
+            await self._notify_rejected(version)
         return status
 
-    @staticmethod
-    def _finish(version: MaterialVersion, status: ScanStatus) -> ScanStatus:
-        version.scan_status = status
-        version.scanned_at = utc_now()
-        return status
-
-    @staticmethod
-    def _defer(version: MaterialVersion, reason: str) -> None:
-        version.scan_attempts += 1
-        version.scan_after = utc_now() + timedelta(
-            seconds=min(300, 15 * 2 ** min(version.scan_attempts, 5))
+    async def _notify_rejected(self, version: MaterialVersion) -> None:
+        if version.uploader_id is None or version.material_id is None:
+            return
+        # In-app only, like rejected chat attachments (D-068): the uploader learns the file is not shown.
+        await Notifier(self.session).notify(
+            select(User.id).where(User.id == version.uploader_id),
+            NotificationSpec(
+                category=NotificationCategory.CHAT,
+                kind=NotificationKind.MATERIAL_VERSION_REJECTED,
+                subject_type="material_version",
+                subject_id=version.id,
+                dedupe_key=f"material.version:{version.id}",
+                title=version.filename,
+                link=f"/materials/{version.subject_id}/{version.material_id}",
+            ),
+            deliver=False,
         )
-        logger.warning("material_scan_deferred", version_id=str(version.id), reason=reason)
-        return None
 
     async def purge(self, now: datetime | None = None) -> int:
         """Deletes the objects of rejected versions and of uploads whose form was never saved."""

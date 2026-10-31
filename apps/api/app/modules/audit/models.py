@@ -45,6 +45,11 @@ class AuditAction(StrEnum):
     COMMUNITY_HIDDEN = "community.hidden"
     COMMUNITY_SHOWN = "community.shown"
     COMMUNITY_AUTO_HIDDEN = "community.auto_hidden"
+    ASSIGNMENT_CREATED = "assignment.created"
+    ASSIGNMENT_GRADED = "assignment.graded"
+    QUIZ_CREATED = "quiz.created"
+    QUIZ_PUBLISHED = "quiz.published"
+    QUIZ_GRADED = "quiz.graded"
 
 
 class AuditLog(Base):

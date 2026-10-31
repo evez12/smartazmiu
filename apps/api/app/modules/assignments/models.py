@@ -4,22 +4,25 @@ from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
     Index,
-    Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
 from app.core.ids import uuid7
+from app.modules.chat.models import ScanStatus
 
 
 def _enum(enum: type[StrEnum], name: str) -> Enum:
@@ -85,7 +88,6 @@ class AssignmentSubmission(Base):
     __tablename__ = "assignment_submissions"
     __table_args__ = (
         UniqueConstraint("assignment_id", "student_id"),
-        CheckConstraint("size_bytes >= 0", name="non_negative_size_bytes"),
         Index("ix_assignment_submissions_student_status", "student_id", "status"),
     )
 
@@ -101,10 +103,6 @@ class AssignmentSubmission(Base):
         default=SubmissionStatus.DRAFT,
         server_default=SubmissionStatus.DRAFT.value,
     )
-    object_key: Mapped[str | None] = mapped_column(String(300))
-    filename: Mapped[str | None] = mapped_column(String(255))
-    mime: Mapped[str | None] = mapped_column(String(127))
-    size_bytes: Mapped[int | None] = mapped_column(Integer)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_late: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -126,8 +124,57 @@ class AssignmentGrade(Base):
     )
     graded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     points: Mapped[Decimal] = mapped_column(Numeric(7, 2))
+    # What the teacher entered, before the late penalty (D-092).
+    raw_points: Mapped[Decimal] = mapped_column(Numeric(7, 2))
     feedback: Mapped[str] = mapped_column(Text, default="", server_default="")
     graded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class AssignmentFile(Base):
+    """One uploaded submission file. ``submission_id`` is NULL between the presigned upload and the submission
+    being saved; a resubmission adds the next version and the older ones are kept (D-092)."""
+
+    __tablename__ = "assignment_files"
+    __table_args__ = (
+        UniqueConstraint("submission_id", "version"),
+        CheckConstraint("size_bytes > 0", name="positive_file_size"),
+        Index(
+            "ix_assignment_files_pending",
+            "scan_after",
+            postgresql_where=text("scan_status = 'pending' AND submission_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_assignment_files_unsaved",
+            "created_at",
+            postgresql_where=text("submission_id IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
+    assignment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("assignments.id", ondelete="CASCADE"), index=True
+    )
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    submission_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("assignment_submissions.id", ondelete="CASCADE")
+    )
+    version: Mapped[int | None] = mapped_column(SmallInteger)
+    object_key: Mapped[str] = mapped_column(String(300))
+    filename: Mapped[str] = mapped_column(String(255))
+    mime: Mapped[str] = mapped_column(String(127))
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    scan_status: Mapped[ScanStatus] = mapped_column(
+        _enum(ScanStatus, "scan_status"),
+        default=ScanStatus.PENDING,
+        server_default=ScanStatus.PENDING.value,
+    )
+    scan_attempts: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    scan_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    purged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
