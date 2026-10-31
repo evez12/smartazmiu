@@ -69,7 +69,7 @@ class QuestionCreate(BaseModel):
     tag_ids: list[uuid.UUID] = Field(default_factory=list, max_length=5)
 
 
-class QuestionOut(BaseModel):
+class QuestionSummaryOut(BaseModel):
     id: str
     author: AuthorOut | None
     title: str
@@ -84,7 +84,7 @@ class QuestionOut(BaseModel):
 
 
 class QuestionPage(BaseModel):
-    items: list[QuestionOut]
+    items: list[QuestionSummaryOut]
     next_cursor: str | None = None
 
 

@@ -225,6 +225,26 @@ function Target({ item }: { item: ReportItem }) {
       </span>
     );
   }
+  if (item.content) {
+    return (
+      <span className="flex flex-col gap-1">
+        <span className="text-sm text-muted">
+          {t(`content.${item.target_type as "post" | "comment" | "question" | "answer"}`)} ·{" "}
+          {item.reported_user?.display_name ?? t("deletedAccount")}
+        </span>
+        <span className="line-clamp-4 break-words whitespace-pre-wrap">{item.content.excerpt}</span>
+        {item.content.deleted ? (
+          <span className="text-xs text-muted">{t("contentGone")}</span>
+        ) : null}
+        {item.content.hidden ? (
+          <span className="text-xs text-muted">{t("contentHidden")}</span>
+        ) : null}
+      </span>
+    );
+  }
+  if (["post", "comment", "question", "answer"].includes(item.target_type)) {
+    return <span className="text-muted">{t("contentGone")}</span>;
+  }
   const message = item.message;
   if (!message) return <span className="text-muted">{t("deletedMessage")}</span>;
   return (

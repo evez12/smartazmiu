@@ -45,8 +45,8 @@ from app.modules.community.schemas import (
     PostPage,
     QuestionCreate,
     QuestionDetailOut,
-    QuestionOut,
     QuestionPage,
+    QuestionSummaryOut,
     TagOut,
 )
 from app.modules.users.models import PersonType, User
@@ -179,6 +179,13 @@ class CommunityService:
         )
         if not result.rowcount:  # type: ignore[attr-defined]
             raise AppError("community.not_found", 404)
+        if kind == "answer":
+            # A removed answer cannot stay the accepted one.
+            await self.session.execute(
+                update(ForumQuestion)
+                .where(ForumQuestion.accepted_answer_id == item_id)
+                .values(accepted_answer_id=None)
+            )
         await self.session.commit()
 
     async def set_hidden(
@@ -440,7 +447,7 @@ class CommunityService:
         last = rows[-1][0] if rows else None
         return QuestionPage(
             items=[
-                QuestionOut(
+                QuestionSummaryOut(
                     id=str(question.id),
                     author=_author(author),
                     title=question.title,

@@ -511,7 +511,7 @@ export interface paths {
     get?: never;
     put?: never;
     /** Promote */
-    post: operations["promote_api_v1_chat_channels__channel_id__messages__message_id__promote_post"];
+    post: operations["promoteMessageToForum"];
     delete?: never;
     options?: never;
     head?: never;
@@ -794,15 +794,15 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/community/tags/{tag_id}/posts": {
+  "/api/v1/community/tags": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Tag Posts */
-    get: operations["tag_posts_api_v1_community_tags__tag_id__posts_get"];
+    /** List Tags */
+    get: operations["listCommunityTags"];
     put?: never;
     post?: never;
     delete?: never;
@@ -811,24 +811,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/community/tags/{tag_id}/questions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Tag Questions */
-    get: operations["tag_questions_api_v1_community_tags__tag_id__questions_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/community/{target_type}/{target_id}/reports": {
+  "/api/v1/community/{kind}/{item_id}/visibility": {
     parameters: {
       query?: never;
       header?: never;
@@ -836,9 +819,9 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
-    /** Report */
-    post: operations["report_api_v1_community__target_type___target_id__reports_post"];
+    /** Set Visibility */
+    put: operations["setCommunityVisibility"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -950,6 +933,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/feed/comments/{comment_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Comment */
+    delete: operations["deleteFeedComment"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/feed/posts": {
     parameters: {
       query?: never;
@@ -958,11 +958,28 @@ export interface paths {
       cookie?: never;
     };
     /** List Posts */
-    get: operations["list_posts_api_v1_feed_posts_get"];
+    get: operations["listFeedPosts"];
     put?: never;
     /** Create Post */
-    post: operations["create_post_api_v1_feed_posts_post"];
+    post: operations["createFeedPost"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/feed/posts/{post_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Post */
+    delete: operations["deleteFeedPost"];
     options?: never;
     head?: never;
     patch?: never;
@@ -975,10 +992,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** List Comments */
+    get: operations["listFeedComments"];
     put?: never;
-    /** Comment */
-    post: operations["comment_api_v1_feed_posts__post_id__comments_post"];
+    /** Create Comment */
+    post: operations["createFeedComment"];
     delete?: never;
     options?: never;
     head?: never;
@@ -993,11 +1011,11 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    /** Helpful */
-    put: operations["helpful_api_v1_feed_posts__post_id__helpful_put"];
+    /** Mark Helpful */
+    put: operations["markPostHelpful"];
     post?: never;
-    /** Unhelpful */
-    delete: operations["unhelpful_api_v1_feed_posts__post_id__helpful_delete"];
+    /** Unmark Helpful */
+    delete: operations["unmarkPostHelpful"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1020,7 +1038,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/forum/answers/{answer_id}/verify": {
+  "/api/v1/forum/answers/{answer_id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1029,9 +1047,27 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    post?: never;
+    /** Delete Answer */
+    delete: operations["deleteForumAnswer"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/forum/answers/{answer_id}/verification": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
     /** Verify */
-    post: operations["verify_api_v1_forum_answers__answer_id__verify_post"];
-    delete?: never;
+    put: operations["verifyForumAnswer"];
+    post?: never;
+    /** Unverify */
+    delete: operations["unverifyForumAnswer"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1046,7 +1082,7 @@ export interface paths {
     };
     get?: never;
     /** Vote */
-    put: operations["vote_api_v1_forum_answers__answer_id__vote_put"];
+    put: operations["voteForumAnswer"];
     post?: never;
     delete?: never;
     options?: never;
@@ -1062,10 +1098,10 @@ export interface paths {
       cookie?: never;
     };
     /** List Questions */
-    get: operations["list_questions_api_v1_forum_questions_get"];
+    get: operations["listForumQuestions"];
     put?: never;
     /** Create Question */
-    post: operations["create_question_api_v1_forum_questions_post"];
+    post: operations["createForumQuestion"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1079,17 +1115,18 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Question Detail */
-    get: operations["question_detail_api_v1_forum_questions__question_id__get"];
+    /** Get Question */
+    get: operations["getForumQuestion"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete Question */
+    delete: operations["deleteForumQuestion"];
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/api/v1/forum/questions/{question_id}/accept/{answer_id}": {
+  "/api/v1/forum/questions/{question_id}/accepted-answer": {
     parameters: {
       query?: never;
       header?: never;
@@ -1097,9 +1134,9 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put?: never;
-    /** Accept */
-    post: operations["accept_api_v1_forum_questions__question_id__accept__answer_id__post"];
+    /** Set Accepted */
+    put: operations["setAcceptedAnswer"];
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1115,25 +1152,8 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Answer */
-    post: operations["answer_api_v1_forum_questions__question_id__answers_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/forum/tags/{tag_slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Tag Questions By Slug */
-    get: operations["tag_questions_by_slug_api_v1_forum_tags__tag_slug__get"];
-    put?: never;
-    post?: never;
+    /** Create Answer */
+    post: operations["createForumAnswer"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2141,6 +2161,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AcceptIn */
+    AcceptIn: {
+      /** Answer Id */
+      answer_id: string | null;
+    };
     /** AdminUserDetail */
     AdminUserDetail: {
       /**
@@ -2272,11 +2297,9 @@ export interface components {
     };
     /** AnswerOut */
     AnswerOut: {
-      /**
-       * Author Id
-       * Format: uuid
-       */
-      author_id: string;
+      /** Accepted */
+      accepted: boolean;
+      author: components["schemas"]["AuthorOut"] | null;
       /** Body */
       body: string;
       /**
@@ -2284,22 +2307,20 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
       id: string;
+      /** Mine */
+      mine: boolean;
       /**
-       * Question Id
-       * Format: uuid
+       * My Vote
+       * @enum {integer}
        */
-      question_id: string;
+      my_vote: -1 | 0 | 1;
       /** Score */
       score: number;
-      /** Teacher Verified */
-      teacher_verified: boolean;
-      /** Version Id */
-      version_id: number;
+      verified_by: components["schemas"]["AuthorOut"] | null;
     };
     /** AnswersIn */
     AnswersIn: {
@@ -2545,7 +2566,10 @@ export interface components {
       | "blocked_term.removed"
       | "message.auto_hidden"
       | "moderation.action"
-      | "tip.reviewed";
+      | "tip.reviewed"
+      | "community.hidden"
+      | "community.shown"
+      | "community.auto_hidden";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -2826,11 +2850,7 @@ export interface components {
     };
     /** CommentOut */
     CommentOut: {
-      /**
-       * Author Id
-       * Format: uuid
-       */
-      author_id: string;
+      author: components["schemas"]["AuthorOut"] | null;
       /** Body */
       body: string;
       /**
@@ -2838,27 +2858,21 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
       id: string;
-      /**
-       * Post Id
-       * Format: uuid
-       */
+      /** Mine */
+      mine: boolean;
+      /** Post Id */
       post_id: string;
-      /** Version Id */
-      version_id: number;
     };
-    /** CommunityReportIn */
-    CommunityReportIn: {
-      /**
-       * Details
-       * @default
-       */
-      details: string;
-      reason: components["schemas"]["app__modules__community__models__ReportReason"];
+    /** CommentPage */
+    CommentPage: {
+      /** Items */
+      items: components["schemas"]["CommentOut"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
     };
     /**
      * ConsentPurpose
@@ -4241,37 +4255,28 @@ export interface components {
     };
     /** PostOut */
     PostOut: {
-      /**
-       * Author Id
-       * Format: uuid
-       */
-      author_id: string;
+      author: components["schemas"]["AuthorOut"] | null;
       /** Body */
       body: string;
-      /**
-       * Comment Count
-       * @default 0
-       */
+      /** Comment Count */
       comment_count: number;
       /**
        * Created At
        * Format: date-time
        */
       created_at: string;
-      /**
-       * Helpful Count
-       * @default 0
-       */
+      /** Helpful Count */
       helpful_count: number;
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
       id: string;
+      /** Mine */
+      mine: boolean;
+      /** My Helpful */
+      my_helpful: boolean;
       /** Tags */
-      tags?: string[];
-      /** Version Id */
-      version_id: number;
+      tags: components["schemas"]["TagOut"][];
     };
     /** PostPage */
     PostPage: {
@@ -4420,42 +4425,84 @@ export interface components {
       /** Accepted Answer Id */
       accepted_answer_id: string | null;
       /** Answers */
-      answers?: components["schemas"]["AnswerOut"][];
-      /**
-       * Author Id
-       * Format: uuid
-       */
-      author_id: string;
+      answers: components["schemas"]["AnswerOut"][];
+      author: components["schemas"]["AuthorOut"] | null;
       /** Body */
       body: string;
+      /** Can Verify */
+      can_verify: boolean;
       /**
        * Created At
        * Format: date-time
        */
       created_at: string;
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
+      id: string;
+      /** Mine */
+      mine: boolean;
+      /** Tags */
+      tags: components["schemas"]["TagOut"][];
+      /** Teacher Verified */
+      teacher_verified: boolean;
+      /** Title */
+      title: string;
+    };
+    /** QuestionOut */
+    QuestionOut: {
       /**
        * Id
        * Format: uuid
        */
       id: string;
-      /** Tags */
-      tags?: string[];
-      /**
-       * Teacher Verified
-       * @default false
-       */
-      teacher_verified: boolean;
-      /** Title */
-      title: string;
-      /** Version Id */
-      version_id: number;
+      /** Is Required */
+      is_required: boolean;
+      /** Options */
+      options: {
+        [key: string]: unknown;
+      }[];
+      /** Points */
+      points: number;
+      /** Position */
+      position: number;
+      /** Prompt */
+      prompt: string;
+      type: components["schemas"]["QuestionType"];
     };
     /** QuestionPage */
     QuestionPage: {
       /** Items */
-      items: components["schemas"]["app__modules__community__schemas__QuestionOut"][];
+      items: components["schemas"]["QuestionSummaryOut"][];
       /** Next Cursor */
       next_cursor?: string | null;
+    };
+    /** QuestionSummaryOut */
+    QuestionSummaryOut: {
+      /** Accepted */
+      accepted: boolean;
+      /** Answer Count */
+      answer_count: number;
+      author: components["schemas"]["AuthorOut"] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Excerpt */
+      excerpt: string;
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
+      id: string;
+      /** Mine */
+      mine: boolean;
+      /** Tags */
+      tags: components["schemas"]["TagOut"][];
+      /** Teacher Verified */
+      teacher_verified: boolean;
+      /** Title */
+      title: string;
     };
     /**
      * QuestionType
@@ -4603,13 +4650,14 @@ export interface components {
        * @default
        */
       note: string;
-      reason: components["schemas"]["app__modules__reports__models__ReportReason"];
+      reason: components["schemas"]["ReportReason"];
       /** Target Id */
       target_id: string;
       target_type: components["schemas"]["ReportTarget"];
     };
     /** ReportOut */
     ReportOut: {
+      content?: components["schemas"]["ReportedContentOut"] | null;
       /**
        * Created At
        * Format: date-time
@@ -4623,7 +4671,7 @@ export interface components {
       message: components["schemas"]["ReportedMessageOut"] | null;
       /** Note */
       note: string;
-      reason: components["schemas"]["ReportReason-Output"];
+      reason: components["schemas"]["ReportReason"];
       reported_user: components["schemas"]["AuthorOut"] | null;
       reporter: components["schemas"]["AuthorOut"] | null;
       /** Reporters */
@@ -4650,7 +4698,7 @@ export interface components {
      * ReportReason
      * @enum {string}
      */
-    "ReportReason-Output": "spam" | "harassment" | "hate" | "exam_leak" | "privacy" | "other";
+    ReportReason: "spam" | "harassment" | "hate" | "exam_leak" | "privacy" | "other";
     /**
      * ReportStatus
      * @enum {string}
@@ -4664,7 +4712,23 @@ export interface components {
      * ReportTarget
      * @enum {string}
      */
-    ReportTarget: "message" | "user" | "tip";
+    ReportTarget: "message" | "user" | "tip" | "post" | "comment" | "question" | "answer";
+    /**
+     * ReportedContentOut
+     * @description A feed post or comment, or a forum question or answer (D-090).
+     */
+    ReportedContentOut: {
+      /** Deleted */
+      deleted: boolean;
+      /** Excerpt */
+      excerpt: string;
+      /** Hidden */
+      hidden: boolean;
+      /** Id */
+      id: string;
+      /** Question Id */
+      question_id: string | null;
+    };
     /** ReportedMessageOut */
     ReportedMessageOut: {
       author: components["schemas"]["AuthorOut"] | null;
@@ -4961,6 +5025,20 @@ export interface components {
      * @enum {string}
      */
     SubmissionStatus: "draft" | "submitted" | "returned";
+    /** TagListOut */
+    TagListOut: {
+      /** Items */
+      items: components["schemas"]["TagOut"][];
+    };
+    /** TagOut */
+    TagOut: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Slug */
+      slug: string;
+    };
     /** TeachingCourseOut */
     TeachingCourseOut: {
       /** Groups */
@@ -5214,71 +5292,6 @@ export interface components {
       count: number;
       weekly_hours: components["schemas"]["WeeklyHours"];
     };
-    /**
-     * ReportReason
-     * @enum {string}
-     */
-    app__modules__community__models__ReportReason: "spam" | "abuse" | "misinformation" | "other";
-    /** QuestionOut */
-    app__modules__community__schemas__QuestionOut: {
-      /** Accepted Answer Id */
-      accepted_answer_id: string | null;
-      /**
-       * Author Id
-       * Format: uuid
-       */
-      author_id: string;
-      /** Body */
-      body: string;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Tags */
-      tags?: string[];
-      /**
-       * Teacher Verified
-       * @default false
-       */
-      teacher_verified: boolean;
-      /** Title */
-      title: string;
-      /** Version Id */
-      version_id: number;
-    };
-    /** QuestionOut */
-    app__modules__quizzes__schemas__QuestionOut: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Is Required */
-      is_required: boolean;
-      /** Options */
-      options: {
-        [key: string]: unknown;
-      }[];
-      /** Points */
-      points: number;
-      /** Position */
-      position: number;
-      /** Prompt */
-      prompt: string;
-      type: components["schemas"]["QuestionType"];
-    };
-    /**
-     * ReportReason
-     * @enum {string}
-     */
-    app__modules__reports__models__ReportReason:
-      "spam" | "harassment" | "hate" | "exam_leak" | "privacy" | "other";
   };
   responses: never;
   parameters: never;
@@ -7587,7 +7600,7 @@ export interface operations {
       };
     };
   };
-  promote_api_v1_chat_channels__channel_id__messages__message_id__promote_post: {
+  promoteMessageToForum: {
     parameters: {
       query?: never;
       header?: never;
@@ -7609,7 +7622,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["app__modules__community__schemas__QuestionOut"];
+          "application/json": components["schemas"]["QuestionDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -9032,15 +9045,11 @@ export interface operations {
       };
     };
   };
-  tag_posts_api_v1_community_tags__tag_id__posts_get: {
+  listCommunityTags: {
     parameters: {
-      query?: {
-        limit?: number;
-      };
+      query?: never;
       header?: never;
-      path: {
-        tag_id: string;
-      };
+      path?: never;
       cookie?: never;
     };
     requestBody?: never;
@@ -9051,7 +9060,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PostOut"][];
+          "application/json": components["schemas"]["TagListOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -9101,88 +9110,19 @@ export interface operations {
       };
     };
   };
-  tag_questions_api_v1_community_tags__tag_id__questions_get: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        tag_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["app__modules__community__schemas__QuestionOut"][];
-        };
-      };
-      /** @description Missing, expired or invalid access token */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Authenticated but not allowed */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflicts with existing data */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Request validation failed */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unexpected server error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  report_api_v1_community__target_type___target_id__reports_post: {
+  setCommunityVisibility: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        target_type: string;
-        target_id: string;
+        kind: "post" | "comment" | "question" | "answer";
+        item_id: string;
       };
       cookie?: never;
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["CommunityReportIn"];
+        "application/json": components["schemas"]["VisibilityIn"];
       };
     };
     responses: {
@@ -9860,11 +9800,76 @@ export interface operations {
       };
     };
   };
-  list_posts_api_v1_feed_posts_get: {
+  deleteFeedComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        comment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listFeedPosts: {
     parameters: {
       query?: {
         cursor?: string | null;
-        limit?: number;
+        tag?: string | null;
       };
       header?: never;
       path?: never;
@@ -9928,10 +9933,13 @@ export interface operations {
       };
     };
   };
-  create_post_api_v1_feed_posts_post: {
+  createFeedPost: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Repeating it returns the first result */
+        "Idempotency-Key"?: string | null;
+      };
       path?: never;
       cookie?: never;
     };
@@ -9997,10 +10005,147 @@ export interface operations {
       };
     };
   };
-  comment_api_v1_feed_posts__post_id__comments_post: {
+  deleteFeedPost: {
     parameters: {
       query?: never;
       header?: never;
+      path: {
+        post_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listFeedComments: {
+    parameters: {
+      query?: {
+        after?: string | null;
+      };
+      header?: never;
+      path: {
+        post_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentPage"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  createFeedComment: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Repeating it returns the first result */
+        "Idempotency-Key"?: string | null;
+      };
       path: {
         post_id: string;
       };
@@ -10068,7 +10213,7 @@ export interface operations {
       };
     };
   };
-  helpful_api_v1_feed_posts__post_id__helpful_put: {
+  markPostHelpful: {
     parameters: {
       query?: never;
       header?: never;
@@ -10133,7 +10278,7 @@ export interface operations {
       };
     };
   };
-  unhelpful_api_v1_feed_posts__post_id__helpful_delete: {
+  unmarkPostHelpful: {
     parameters: {
       query?: never;
       header?: never;
@@ -10267,7 +10412,7 @@ export interface operations {
       };
     };
   };
-  verify_api_v1_forum_answers__answer_id__verify_post: {
+  deleteForumAnswer: {
     parameters: {
       query?: never;
       header?: never;
@@ -10332,7 +10477,137 @@ export interface operations {
       };
     };
   };
-  vote_api_v1_forum_answers__answer_id__vote_put: {
+  verifyForumAnswer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        answer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  unverifyForumAnswer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        answer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  voteForumAnswer: {
     parameters: {
       query: {
         value: number;
@@ -10399,11 +10674,11 @@ export interface operations {
       };
     };
   };
-  list_questions_api_v1_forum_questions_get: {
+  listForumQuestions: {
     parameters: {
       query?: {
         cursor?: string | null;
-        limit?: number;
+        tag?: string | null;
       };
       header?: never;
       path?: never;
@@ -10467,10 +10742,13 @@ export interface operations {
       };
     };
   };
-  create_question_api_v1_forum_questions_post: {
+  createForumQuestion: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Repeating it returns the first result */
+        "Idempotency-Key"?: string | null;
+      };
       path?: never;
       cookie?: never;
     };
@@ -10486,7 +10764,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["app__modules__community__schemas__QuestionOut"];
+          "application/json": components["schemas"]["QuestionDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -10536,7 +10814,7 @@ export interface operations {
       };
     };
   };
-  question_detail_api_v1_forum_questions__question_id__get: {
+  getForumQuestion: {
     parameters: {
       query?: never;
       header?: never;
@@ -10603,13 +10881,12 @@ export interface operations {
       };
     };
   };
-  accept_api_v1_forum_questions__question_id__accept__answer_id__post: {
+  deleteForumQuestion: {
     parameters: {
       query?: never;
       header?: never;
       path: {
         question_id: string;
-        answer_id: string;
       };
       cookie?: never;
     };
@@ -10669,7 +10946,7 @@ export interface operations {
       };
     };
   };
-  answer_api_v1_forum_questions__question_id__answers_post: {
+  setAcceptedAnswer: {
     parameters: {
       query?: never;
       header?: never;
@@ -10680,18 +10957,16 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AnswerCreate"];
+        "application/json": components["schemas"]["AcceptIn"];
       };
     };
     responses: {
       /** @description Successful Response */
-      201: {
+      204: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": components["schemas"]["AnswerOut"];
-        };
+        content?: never;
       };
       /** @description Missing, expired or invalid access token */
       401: {
@@ -10740,26 +11015,31 @@ export interface operations {
       };
     };
   };
-  tag_questions_by_slug_api_v1_forum_tags__tag_slug__get: {
+  createForumAnswer: {
     parameters: {
-      query?: {
-        limit?: number;
+      query?: never;
+      header?: {
+        /** @description Repeating it returns the first result */
+        "Idempotency-Key"?: string | null;
       };
-      header?: never;
       path: {
-        tag_slug: string;
+        question_id: string;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AnswerCreate"];
+      };
+    };
     responses: {
       /** @description Successful Response */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["QuestionPage"];
+          "application/json": components["schemas"]["QuestionDetailOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -14382,7 +14662,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["app__modules__quizzes__schemas__QuestionOut"];
+          "application/json": components["schemas"]["QuestionOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

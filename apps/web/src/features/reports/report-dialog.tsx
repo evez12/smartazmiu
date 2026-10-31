@@ -27,7 +27,7 @@ export const REASONS: readonly Reason[] = [
 ] as const;
 const MAX_NOTE = 500;
 
-/** Report a message or a person (§5.4); a second report of the same target changes nothing (§5.5). */
+/** Report a message, a person or a feed or forum item (§5.4, D-090); a second report of the same target changes nothing (§5.5). */
 export function ReportDialog({
   open,
   onOpenChange,
@@ -46,6 +46,12 @@ export function ReportDialog({
   const [reason, setReason] = useState<Reason | "">("");
   const [note, setNote] = useState("");
   const [missingReason, setMissingReason] = useState(false);
+  const dialogTitle =
+    targetType === "message"
+      ? t("titleMessage")
+      : targetType === "user"
+        ? t("titleUser")
+        : t("titleContent");
 
   const send = useMutation({
     mutationFn: async () =>
@@ -63,7 +69,7 @@ export function ReportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={targetType === "message" ? t("titleMessage") : t("titleUser")}
+        title={dialogTitle}
         description={t("description")}
         footer={
           <>

@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { expect, type Page } from "@playwright/test";
 
 import { openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
@@ -65,6 +67,38 @@ test("a new student's dashboard, tour, profile and feedback dialog", async ({ pa
   await page.getByRole("menuitem", { name: "Rəy bildirin" }).click();
   await expect(page.getByRole("dialog", { name: "Rəy bildirin" })).toBeVisible();
   expect(await undersizedTargets(page), "feedback dialog").toEqual([]);
+});
+
+test("the feed, the forum and a question with an answer", async ({ page, accounts, records }) => {
+  const marker = records.community(randomBytes(6).toString("hex"));
+  await signIn(
+    page,
+    await accounts.create("student", { givenName: "Səbinə", familyName: "Rəsulova" }),
+    "/feed",
+  );
+  await page
+    .getByRole("textbox", { name: /Yeni paylaşım/ })
+    .fill(`Kitabxana yeni saatlarla işləyir. ${marker}`);
+  await page.getByRole("button", { name: "Paylaşın" }).click();
+  await page.getByRole("button", { name: /Şərh yazın/ }).click();
+  await expect(page.getByRole("textbox", { name: "Şərhiniz" })).toBeVisible();
+  expect(await undersizedTargets(page), "/feed").toEqual([]);
+
+  await openPage(page, "/forum");
+  await page.getByRole("button", { name: "Sual verin" }).click();
+  await page
+    .getByRole("textbox", { name: /Sualın başlığı/ })
+    .fill(`İmtahan cədvəli haradadır? ${marker}`);
+  await page
+    .getByRole("textbox", { name: /Sualın mətni/ })
+    .fill(`Cədvəl hələ dərc olunmayıb. ${marker}`);
+  expect(await undersizedTargets(page), "/forum").toEqual([]);
+  await page.getByRole("button", { name: "Sualı dərc edin" }).click();
+  await expect(page).toHaveURL(/\/forum\/questions\//);
+  await page.getByRole("textbox", { name: "Cavabınız" }).fill(`Elanlar bölməsinə baxın. ${marker}`);
+  await page.getByRole("button", { name: "Cavabı göndərin" }).click();
+  await expect(page.getByText(`Elanlar bölməsinə baxın. ${marker}`)).toBeVisible();
+  expect(await undersizedTargets(page), "question").toEqual([]);
 });
 
 test("a student's schedule, chat, events and materials", async ({ page }) => {

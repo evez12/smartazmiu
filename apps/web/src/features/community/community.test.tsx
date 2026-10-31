@@ -1,67 +1,236 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ToastProvider } from "@/components/ui/toast";
+import { ApiProvider } from "@/lib/api/provider";
 import { renderWithIntl } from "@/test/render";
 
-import { FeedPage, QuestionsPage } from "./community-pages";
+import { FeedPage } from "./feed-page";
+import { QuestionPage, QuestionsPage } from "./forum-pages";
 
-const fetchMock = vi.fn();
+const router = { refresh: vi.fn(), push: vi.fn() };
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/feed" }));
 
+const fetchMock = vi.fn<(request: Request) => Promise<Response>>();
+beforeEach(() => vi.stubGlobal("fetch", fetchMock));
 afterEach(() => {
   vi.unstubAllGlobals();
   fetchMock.mockReset();
+  router.push.mockReset();
 });
 
-function renderQuery(ui: React.ReactNode) {
+function wrap(ui: React.ReactNode) {
   return renderWithIntl(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      {ui}
-    </QueryClientProvider>,
+    <ApiProvider csrfToken="csrf-0123">
+      <ToastProvider>{ui}</ToastProvider>
+    </ApiProvider>,
   );
 }
 
-describe("community pages", () => {
-  it("renders feed posts from the typed endpoint", async () => {
-    vi.stubGlobal(
-      "fetch",
-      fetchMock.mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            items: [
-              {
-                id: "p-1",
-                author_id: "u-1",
-                author_name: "Aysel Məmmədli",
-                body: "İmtahan materialını paylaşdım.",
-                created_at: "2026-10-27T12:00:00Z",
-                tags: ["riyaziyyat"],
-                useful_count: 2,
-                comment_count: 1,
-                useful: false,
-              },
-            ],
-          }),
-          { status: 200 },
-        ),
-      ),
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// The provider retries a failed query once before showing the error state.
+const RETRY_WAIT = { timeout: 4000 };
+
+const TAGS = { items: [{ id: "t-1", slug: "kitabxana", name: "Kitabxana" }] };
+const AUTHOR = { id: "u-1", display_name: "Aysel Məmmədova", photo_url: null, badge: null };
+
+/** Answers each request by its method and path; unknown ones fail the test loudly. */
+function serve(routes: Record<string, (request: Request) => Response>) {
+  fetchMock.mockImplementation(async (request) => {
+    const key = `${request.method} ${new URL(request.url).pathname}`;
+    const route = routes[key];
+    if (!route) throw new Error(`Unexpected request: ${key}`);
+    return route(request);
+  });
+}
+
+const post = {
+  id: "p-1",
+  author: AUTHOR,
+  body: "Kitabxana şənbə günü də açıqdır.",
+  tags: TAGS.items,
+  helpful_count: 2,
+  comment_count: 1,
+  my_helpful: false,
+  mine: false,
+  hidden: false,
+  created_at: "2026-10-27T08:00:00Z",
+};
+
+describe("feed", () => {
+  it("shows posts with the author, tags and counts, and a composer", async () => {
+    serve({
+      "GET /api/v1/feed/posts": () => json({ items: [post], next_cursor: null }),
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    wrap(<FeedPage canModerate={false} />);
+    expect(await screen.findByText("Kitabxana şənbə günü də açıqdır.")).toBeVisible();
+    expect(screen.getAllByText("Aysel Məmmədova").length).toBeGreaterThan(0);
+    expect(screen.getByRole("textbox", { name: /Yeni paylaşım/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Faydalıdır/ })).toHaveAttribute(
+      "aria-pressed",
+      "false",
     );
-    renderQuery(<FeedPage />);
-    expect(await screen.findByText("İmtahan materialını paylaşdım.")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/feed/posts",
-      expect.objectContaining({ credentials: "include" }),
-    );
+    expect(screen.getByRole("button", { name: "Şikayət edin" })).toBeVisible();
   });
 
-  it("shows a clear empty state for questions", async () => {
-    vi.stubGlobal(
-      "fetch",
-      fetchMock.mockResolvedValue(new Response(JSON.stringify({ items: [] }), { status: 200 })),
+  it("offers delete instead of report on your own post, and hide to staff", async () => {
+    serve({
+      "GET /api/v1/feed/posts": () => json({ items: [{ ...post, mine: true }], next_cursor: null }),
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    wrap(<FeedPage canModerate />);
+    await screen.findByText(post.body);
+    expect(screen.getByRole("button", { name: "Silin" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Şikayət edin" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Gizlədin" })).toBeVisible();
+    // Your own post has no "helpful" button: the API refuses it (D-090).
+    expect(screen.queryByRole("button", { name: /Faydalıdır/ })).toBeNull();
+  });
+
+  it("publishes a post with an idempotency key and refuses an empty one", async () => {
+    let created: Request | null = null;
+    serve({
+      "GET /api/v1/feed/posts": () => json({ items: [], next_cursor: null }),
+      "GET /api/v1/community/tags": () => json(TAGS),
+      "POST /api/v1/feed/posts": (request) => {
+        created = request.clone();
+        return json({ ...post, mine: true }, 201);
+      },
+    });
+    wrap(<FeedPage canModerate={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Paylaşın" }));
+    expect(screen.getByText("Paylaşımın mətnini yazın.")).toBeVisible();
+    expect(created).toBeNull();
+
+    await userEvent.type(screen.getByRole("textbox", { name: /Yeni paylaşım/ }), "Salam");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Kitabxana" }));
+    await userEvent.click(screen.getByRole("button", { name: "Paylaşın" }));
+    await waitFor(() => expect(created).not.toBeNull());
+    const request = created as unknown as Request;
+    expect(request.headers.get("Idempotency-Key")).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await request.json()).toEqual({ body: "Salam", tag_ids: ["t-1"] });
+  });
+
+  it("shows the explanatory empty state, and a retry when loading fails", async () => {
+    serve({
+      "GET /api/v1/feed/posts": () => json({ items: [], next_cursor: null }),
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    const { unmount } = wrap(<FeedPage canModerate={false} />);
+    expect(await screen.findByText(/Hələ heç bir paylaşım yoxdur/)).toBeVisible();
+    unmount();
+
+    serve({
+      "GET /api/v1/feed/posts": () => json({ error: { code: "x", message: "x" } }, 500),
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    wrap(<FeedPage canModerate={false} />);
+    expect(
+      await screen.findByRole("button", { name: "Yenidən cəhd edin" }, RETRY_WAIT),
+    ).toBeVisible();
+  });
+});
+
+const question = {
+  id: "q-1",
+  author: AUTHOR,
+  title: "Statistika imtahanında kalkulyator olar?",
+  excerpt: "Keçən il icazə verilirdi.",
+  tags: [],
+  answer_count: 2,
+  accepted: true,
+  teacher_verified: true,
+  mine: false,
+  hidden: false,
+  created_at: "2026-10-27T08:00:00Z",
+};
+
+describe("forum", () => {
+  it("lists questions with the answer count and the accepted and verified marks", async () => {
+    serve({
+      "GET /api/v1/forum/questions": () => json({ items: [question], next_cursor: null }),
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    wrap(<QuestionsPage />);
+    const link = await screen.findByRole("link", { name: question.title });
+    expect(link).toHaveAttribute("href", "/forum/questions/q-1");
+    expect(screen.getByText("2 cavab")).toBeVisible();
+    expect(screen.getByText("Qəbul edilmiş cavab")).toBeVisible();
+    expect(screen.getByText("Müəllim təsdiqləyib")).toBeVisible();
+  });
+
+  const detail = {
+    ...question,
+    body: "Keçən il icazə verilirdi.",
+    accepted_answer_id: "a-1",
+    can_verify: true,
+    answers: [
+      {
+        id: "a-1",
+        author: { ...AUTHOR, id: "u-2", display_name: "Ramin Əliyev" },
+        body: "Bəli, sadə kalkulyator olar.",
+        score: 3,
+        my_vote: 1,
+        accepted: true,
+        verified_by: { ...AUTHOR, id: "u-3", display_name: "Leyla Həsənova" },
+        mine: false,
+        hidden: false,
+        created_at: "2026-10-27T09:00:00Z",
+      },
+    ],
+  };
+
+  it("shows answers with votes, the verifier, and only the actions your role allows", async () => {
+    serve({ "GET /api/v1/forum/questions/q-1": () => json({ ...detail, mine: true }) });
+    wrap(<QuestionPage id="q-1" canModerate={false} />);
+    const answer = (await screen.findByText("Bəli, sadə kalkulyator olar.")).closest("article")!;
+    expect(within(answer).getByText("Leyla Həsənova təsdiqləyib")).toBeVisible();
+    expect(within(answer).getByRole("button", { name: "Faydalı cavab" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
-    renderQuery(<QuestionsPage />);
-    await waitFor(() => expect(screen.getByText(/payla/i)).toBeInTheDocument());
+    // The question's author accepts; a teacher or staff verifies.
+    expect(within(answer).getByRole("button", { name: "Qəbulu ləğv edin" })).toBeVisible();
+    expect(within(answer).getByRole("button", { name: "Təsdiqi götürün" })).toBeVisible();
+    // Exactly one top-level heading belongs to the page header, not to the question.
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
+  it("hides accept and verify from people who may not use them, and votes once per click", async () => {
+    let vote: Request | null = null;
+    serve({
+      "GET /api/v1/forum/questions/q-1": () =>
+        json({ ...detail, can_verify: false, answers: [{ ...detail.answers[0], my_vote: 0 }] }),
+      "PUT /api/v1/forum/answers/a-1/vote": (request) => {
+        vote = request.clone();
+        return new Response(null, { status: 204 });
+      },
+    });
+    wrap(<QuestionPage id="q-1" canModerate={false} />);
+    await screen.findByText("Bəli, sadə kalkulyator olar.");
+    expect(screen.queryByRole("button", { name: "Cavabı qəbul edin" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cavabı təsdiqləyin" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Faydalı cavab" }));
+    await waitFor(() => expect(vote).not.toBeNull());
+    expect(new URL((vote as unknown as Request).url).searchParams.get("value")).toBe("1");
+  });
+
+  it("shows a not-found style error for a hidden or deleted question", async () => {
+    serve({
+      "GET /api/v1/forum/questions/q-9": () =>
+        json({ error: { code: "community.question_not_found", message: "x" } }, 404),
+    });
+    wrap(<QuestionPage id="q-9" canModerate={false} />);
+    expect(
+      await screen.findByRole("button", { name: "Yenidən cəhd edin" }, RETRY_WAIT),
+    ).toBeVisible();
   });
 });

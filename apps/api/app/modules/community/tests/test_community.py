@@ -336,9 +336,17 @@ async def test_questions_answers_votes_accept_and_verify(
     assert (detail["accepted_answer_id"], detail["teacher_verified"]) == (None, False)
     assert detail["can_verify"] is False
 
+    await client.put(
+        f"{API}/forum/questions/{question_id}/accepted-answer",
+        headers=asker.headers,
+        json={"answer_id": answer_id},
+    )
     assert (
         await client.delete(f"{API}/forum/answers/{answer_id}", headers=helper.headers)
     ).status_code == 204
+    after = (await client.get(f"{API}/forum/questions/{question_id}", headers=asker.headers)).json()
+    # Deleting the accepted answer clears the mark instead of leaving a question that points at nothing.
+    assert (after["accepted_answer_id"], after["answers"]) == (None, [])
     assert (
         await client.delete(f"{API}/forum/questions/{question_id}", headers=asker.headers)
     ).status_code == 204
