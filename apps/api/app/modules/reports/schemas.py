@@ -39,6 +39,17 @@ class ReportedTipOut(BaseModel):
     status: str
 
 
+class ReportedContentOut(BaseModel):
+    """A feed post or comment, or a forum question or answer (D-090)."""
+
+    id: str
+    excerpt: str
+    question_id: str | None
+    """The forum question to open, for questions and answers."""
+    hidden: bool
+    deleted: bool
+
+
 class ReportOut(BaseModel):
     id: str
     target_type: ReportTarget
@@ -51,6 +62,7 @@ class ReportOut(BaseModel):
     """The reported person, or the author of the reported message."""
     message: ReportedMessageOut | None
     tip: ReportedTipOut | None = None
+    content: ReportedContentOut | None = None
     handled_by: AuthorOut | None
     handled_at: datetime | None
     reporters: int

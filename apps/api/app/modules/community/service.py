@@ -1,17 +1,28 @@
+"""Feed and Q&A forum (§6, Sprint 12, D-090): university-wide spaces for every signed-in account."""
+
 import base64
+import re
 import uuid
+from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from redis.asyncio import Redis
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
-from app.modules.chat.models import ChannelMember, Message
+from app.core.ratelimit import RateLimit, enforce_rate_limit
+from app.core.time import utc_now
+from app.modules.audit.models import AuditAction
+from app.modules.audit.service import record_audit
+from app.modules.chat.blocked_terms import BlockedTermService
+from app.modules.chat.lookup import find_message
+from app.modules.chat.mentions import USER_MENTION
+from app.modules.chat.models import ChannelMember, MessageModeration
+from app.modules.chat.schemas import AuthorOut
 from app.modules.community.models import (
-    CommunityReport,
     CommunityTag,
     FeedComment,
     FeedPost,
@@ -27,14 +38,40 @@ from app.modules.community.schemas import (
     AnswerOut,
     CommentCreate,
     CommentOut,
-    CommunityReportIn,
+    CommentPage,
+    ContentKind,
     PostCreate,
     PostOut,
+    PostPage,
     QuestionCreate,
     QuestionDetailOut,
     QuestionOut,
+    QuestionPage,
+    TagOut,
 )
+from app.modules.users.models import PersonType, User
+from app.modules.users.profile import photo_url
 from app.modules.users.service import CurrentUser
+
+POST_LIMIT = RateLimit("community_post", limit=10, window_seconds=3600)
+QUESTION_LIMIT = RateLimit("community_question", limit=10, window_seconds=3600)
+COMMENT_LIMIT = RateLimit("community_comment", limit=60, window_seconds=3600)
+ANSWER_LIMIT = RateLimit("community_answer", limit=30, window_seconds=3600)
+REACTION_LIMIT = RateLimit("community_reaction", limit=60, window_seconds=60)
+
+MODERATE = "admin.reports.handle"
+"""Report handlers (staff, admin) see hidden content and hide or restore it (D-070, D-090)."""
+VERIFIERS = frozenset({"teacher", "staff"})
+EXCERPT = 300
+SPACES = re.compile(r" {2,}")
+PAGE = 20
+
+CONTENT: dict[str, Any] = {
+    "post": FeedPost,
+    "comment": FeedComment,
+    "question": ForumQuestion,
+    "answer": ForumAnswer,
+}
 
 
 def _cursor(value: datetime, item_id: uuid.UUID) -> str:
@@ -51,89 +88,288 @@ def _decode(value: str | None) -> tuple[datetime, uuid.UUID] | None:
         raise AppError("community.invalid_cursor", 422) from exc
 
 
-class CommunityService:
-    def __init__(self, session: AsyncSession) -> None:
-        self.session = session
+def _author(user: User | None) -> AuthorOut | None:
+    if user is None:
+        return None
+    badge = "teacher" if user.person_type is PersonType.TEACHER else None
+    return AuthorOut(
+        id=str(user.id), display_name=user.display_name, photo_url=photo_url(user), badge=badge
+    )
 
-    async def _tag_names(
-        self, link_model: type[Any], parent_column: Any, parent_id: uuid.UUID
-    ) -> list[str]:
-        rows = await self.session.scalars(
-            select(CommunityTag.name)
-            .join(link_model, link_model.tag_id == CommunityTag.id)
-            .where(parent_column == parent_id)
+
+def visible(model: Any, viewer: CurrentUser) -> ColumnElement[bool]:
+    """Deleted content is gone for everyone; hidden content stays visible to its author and to report
+    handlers, so nobody else can read it while it waits for review (§5.5)."""
+    alive: ColumnElement[bool] = model.deleted_at.is_(None)
+    if viewer.has_permission(MODERATE):
+        return alive
+    return and_(alive, or_(model.hidden_at.is_(None), model.author_id == viewer.id))
+
+
+def _public(model: Any) -> ColumnElement[bool]:
+    """What counts towards the numbers everyone sees."""
+    return and_(model.deleted_at.is_(None), model.hidden_at.is_(None))
+
+
+class CommunityService:
+    def __init__(self, session: AsyncSession, cache: Redis) -> None:
+        self.session = session
+        self.cache = cache
+
+    # --- shared -----------------------------------------------------------------------------
+
+    async def tags(self) -> list[TagOut]:
+        rows = await self.session.scalars(select(CommunityTag).order_by(CommunityTag.name))
+        return [TagOut(id=str(tag.id), slug=tag.slug, name=tag.name) for tag in rows]
+
+    async def _tags_of(
+        self, link: Any, parent: Any, ids: list[uuid.UUID]
+    ) -> dict[Any, list[TagOut]]:
+        found: dict[Any, list[TagOut]] = defaultdict(list)
+        if not ids:
+            return found
+        rows = await self.session.execute(
+            select(parent, CommunityTag)
+            .join(CommunityTag, CommunityTag.id == link.tag_id)
+            .where(parent.in_(ids))
             .order_by(CommunityTag.name)
         )
-        return list(rows.all())
+        for parent_id, tag in rows:
+            found[parent_id].append(TagOut(id=str(tag.id), slug=tag.slug, name=tag.name))
+        return found
 
-    async def posts(self, cursor: str | None, limit: int) -> tuple[list[PostOut], str | None]:
-        marker = _decode(cursor)
-        query = (
-            select(FeedPost)
-            .where(FeedPost.deleted_at.is_(None))
-            .order_by(FeedPost.created_at.desc(), FeedPost.id.desc())
-            .limit(limit + 1)
+    async def _check_tags(self, tag_ids: list[uuid.UUID]) -> list[uuid.UUID]:
+        unique = list(dict.fromkeys(tag_ids))
+        if unique:
+            known = await self.session.scalar(
+                select(func.count()).select_from(CommunityTag).where(CommunityTag.id.in_(unique))
+            )
+            if known != len(unique):
+                raise AppError("community.tag_not_found", 422)
+        return unique
+
+    async def _check_text(self, *parts: str) -> None:
+        """The admin's blocked terms (§5.5, D-086) apply here too. There is no review queue for the feed or the
+        forum, so a held term also refuses publication (D-090)."""
+        if await BlockedTermService(self.session).check("\n".join(parts)) is not None:
+            raise AppError("community.content_rejected", 422)
+
+    async def _replay(self, model: Any, user: CurrentUser, key: str | None) -> Any:
+        if not key:
+            return None
+        return await self.session.scalar(
+            select(model).where(model.author_id == user.id, model.idempotency_key == key)
         )
+
+    async def _people(self, ids: set[uuid.UUID | None]) -> dict[uuid.UUID, User]:
+        wanted = {person for person in ids if person is not None}
+        if not wanted:
+            return {}
+        return {
+            person.id: person
+            for person in await self.session.scalars(select(User).where(User.id.in_(wanted)))
+        }
+
+    async def delete_own(self, user: CurrentUser, kind: ContentKind, item_id: uuid.UUID) -> None:
+        model = CONTENT[kind]
+        result = await self.session.execute(
+            update(model)
+            .where(model.id == item_id, model.author_id == user.id, model.deleted_at.is_(None))
+            .values(deleted_at=utc_now())
+        )
+        if not result.rowcount:  # type: ignore[attr-defined]
+            raise AppError("community.not_found", 404)
+        await self.session.commit()
+
+    async def set_hidden(
+        self, actor: CurrentUser, kind: ContentKind, item_id: uuid.UUID, hidden: bool
+    ) -> None:
+        model = CONTENT[kind]
+        item = await self.session.scalar(
+            select(model).where(model.id == item_id, model.deleted_at.is_(None)).with_for_update()
+        )
+        if item is None:
+            raise AppError("community.not_found", 404)
+        if (item.hidden_at is not None) is hidden:
+            return
+        item.hidden_at = utc_now() if hidden else None
+        record_audit(
+            self.session,
+            AuditAction.COMMUNITY_HIDDEN if hidden else AuditAction.COMMUNITY_SHOWN,
+            actor_id=actor.id,
+            target_type=kind,
+            target_id=item_id,
+        )
+        await self.session.commit()
+
+    # --- feed -------------------------------------------------------------------------------
+
+    def _posts(self, viewer: CurrentUser) -> Select[Any]:
+        helpful = (
+            select(func.count())
+            .where(HelpfulReaction.post_id == FeedPost.id)
+            .correlate(FeedPost)
+            .scalar_subquery()
+        )
+        comments = (
+            select(func.count())
+            .where(FeedComment.post_id == FeedPost.id, _public(FeedComment))
+            .correlate(FeedPost)
+            .scalar_subquery()
+        )
+        mine = exists().where(
+            HelpfulReaction.post_id == FeedPost.id, HelpfulReaction.user_id == viewer.id
+        )
+        return (
+            select(FeedPost, User, helpful, comments, mine)
+            .outerjoin(User, User.id == FeedPost.author_id)
+            .where(visible(FeedPost, viewer))
+        )
+
+    async def _post_out(self, viewer: CurrentUser, rows: list[Any]) -> list[PostOut]:
+        tags = await self._tags_of(FeedPostTag, FeedPostTag.post_id, [row[0].id for row in rows])
+        return [
+            PostOut(
+                id=str(post.id),
+                author=_author(author),
+                body=post.body,
+                tags=tags[post.id],
+                helpful_count=helpful,
+                comment_count=comments,
+                my_helpful=mine,
+                mine=post.author_id == viewer.id,
+                hidden=post.hidden_at is not None,
+                created_at=post.created_at,
+            )
+            for post, author, helpful, comments, mine in rows
+        ]
+
+    async def posts(
+        self, viewer: CurrentUser, cursor: str | None, tag: str | None, limit: int = PAGE
+    ) -> PostPage:
+        query = self._posts(viewer)
+        if tag:
+            query = query.where(
+                exists().where(
+                    FeedPostTag.post_id == FeedPost.id,
+                    FeedPostTag.tag_id == CommunityTag.id,
+                    CommunityTag.slug == tag,
+                )
+            )
+        marker = _decode(cursor)
         if marker:
             created, item_id = marker
             query = query.where(
-                (FeedPost.created_at < created)
-                | ((FeedPost.created_at == created) & (FeedPost.id < item_id))
-            )
-        rows = list((await self.session.scalars(query)).all())
-        more = len(rows) > limit
-        rows = rows[:limit]
-        result = []
-        for post in rows:
-            helpful = await self.session.scalar(
-                select(func.count())
-                .select_from(HelpfulReaction)
-                .where(HelpfulReaction.post_id == post.id)
-            )
-            comments = await self.session.scalar(
-                select(func.count())
-                .select_from(FeedComment)
-                .where(FeedComment.post_id == post.id, FeedComment.deleted_at.is_(None))
-            )
-            result.append(
-                PostOut.model_validate(post, from_attributes=True).model_copy(
-                    update={
-                        "helpful_count": helpful or 0,
-                        "comment_count": comments or 0,
-                        "tags": await self._tag_names(FeedPostTag, FeedPostTag.post_id, post.id),
-                    }
+                or_(
+                    FeedPost.created_at < created,
+                    and_(FeedPost.created_at == created, FeedPost.id < item_id),
                 )
             )
-        return result, (_cursor(rows[-1].created_at, rows[-1].id) if more and rows else None)
-
-    async def create_post(self, user: CurrentUser, body: PostCreate) -> PostOut:
-        post = FeedPost(author_id=user.id, body=body.body.strip())
-        self.session.add(post)
-        await self.session.flush()
-        self.session.add_all([FeedPostTag(post_id=post.id, tag_id=tag) for tag in body.tag_ids])
-        await self.session.commit()
-        return PostOut.model_validate(post, from_attributes=True).model_copy(
-            update={"tags": await self._tag_names(FeedPostTag, FeedPostTag.post_id, post.id)}
+        rows = list(
+            await self.session.execute(
+                query.order_by(FeedPost.created_at.desc(), FeedPost.id.desc()).limit(limit + 1)
+            )
+        )
+        more = len(rows) > limit
+        rows = rows[:limit]
+        last = rows[-1][0] if rows else None
+        return PostPage(
+            items=await self._post_out(viewer, rows),
+            next_cursor=_cursor(last.created_at, last.id) if more and last else None,
         )
 
-    async def comment(
-        self, user: CurrentUser, post_id: uuid.UUID, body: CommentCreate
-    ) -> CommentOut:
+    async def _post(self, viewer: CurrentUser, post_id: uuid.UUID) -> PostOut:
+        rows = list(await self.session.execute(self._posts(viewer).where(FeedPost.id == post_id)))
+        if not rows:
+            raise AppError("community.post_not_found", 404)
+        return (await self._post_out(viewer, rows))[0]
+
+    async def create_post(self, user: CurrentUser, body: PostCreate, key: str | None) -> PostOut:
+        replay = await self._replay(FeedPost, user, key)
+        if replay is not None:
+            return await self._post(user, replay.id)
+        tag_ids = await self._check_tags(body.tag_ids)
+        await self._check_text(body.body)
+        await enforce_rate_limit(self.cache, POST_LIMIT, str(user.id))
+        post = FeedPost(author_id=user.id, body=body.body.strip(), idempotency_key=key)
+        self.session.add(post)
+        await self.session.flush()
+        self.session.add_all([FeedPostTag(post_id=post.id, tag_id=tag) for tag in tag_ids])
+        await self.session.commit()
+        return await self._post(user, post.id)
+
+    async def _readable_post(self, viewer: CurrentUser, post_id: uuid.UUID) -> FeedPost:
         post = await self.session.scalar(
-            select(FeedPost).where(FeedPost.id == post_id, FeedPost.deleted_at.is_(None))
+            select(FeedPost).where(FeedPost.id == post_id, visible(FeedPost, viewer))
         )
         if post is None:
             raise AppError("community.post_not_found", 404)
-        comment = FeedComment(post_id=post_id, author_id=user.id, body=body.body.strip())
-        self.session.add(comment)
-        await self.session.commit()
-        return CommentOut.model_validate(comment, from_attributes=True)
+        return post
 
-    async def react(self, user: CurrentUser, post_id: uuid.UUID, active: bool) -> None:
-        if not await self.session.scalar(
-            select(FeedPost.id).where(FeedPost.id == post_id, FeedPost.deleted_at.is_(None))
-        ):
-            raise AppError("community.post_not_found", 404)
+    async def comments(
+        self, viewer: CurrentUser, post_id: uuid.UUID, after: str | None, limit: int = 50
+    ) -> CommentPage:
+        await self._readable_post(viewer, post_id)
+        query = (
+            select(FeedComment, User)
+            .outerjoin(User, User.id == FeedComment.author_id)
+            .where(FeedComment.post_id == post_id, visible(FeedComment, viewer))
+        )
+        marker = _decode(after)
+        if marker:
+            created, item_id = marker
+            query = query.where(
+                or_(
+                    FeedComment.created_at > created,
+                    and_(FeedComment.created_at == created, FeedComment.id > item_id),
+                )
+            )
+        rows = list(
+            await self.session.execute(
+                query.order_by(FeedComment.created_at, FeedComment.id).limit(limit + 1)
+            )
+        )
+        more = len(rows) > limit
+        rows = rows[:limit]
+        last = rows[-1][0] if rows else None
+        return CommentPage(
+            items=[self._comment_out(viewer, comment, author) for comment, author in rows],
+            next_cursor=_cursor(last.created_at, last.id) if more and last else None,
+        )
+
+    def _comment_out(
+        self, viewer: CurrentUser, comment: FeedComment, author: User | None
+    ) -> CommentOut:
+        return CommentOut(
+            id=str(comment.id),
+            post_id=str(comment.post_id),
+            author=_author(author),
+            body=comment.body,
+            mine=comment.author_id == viewer.id,
+            hidden=comment.hidden_at is not None,
+            created_at=comment.created_at,
+        )
+
+    async def comment(
+        self, user: CurrentUser, post_id: uuid.UUID, body: CommentCreate, key: str | None
+    ) -> CommentOut:
+        replay = await self._replay(FeedComment, user, key)
+        if replay is None:
+            await self._readable_post(user, post_id)
+            await self._check_text(body.body)
+            await enforce_rate_limit(self.cache, COMMENT_LIMIT, str(user.id))
+            replay = FeedComment(
+                post_id=post_id, author_id=user.id, body=body.body.strip(), idempotency_key=key
+            )
+            self.session.add(replay)
+            await self.session.commit()
+        return self._comment_out(user, replay, await self.session.get(User, user.id))
+
+    async def set_helpful(self, user: CurrentUser, post_id: uuid.UUID, active: bool) -> None:
+        post = await self._readable_post(user, post_id)
+        if post.author_id == user.id:
+            raise AppError("community.own_content", 422)
+        await enforce_rate_limit(self.cache, REACTION_LIMIT, str(user.id))
         if active:
             await self.session.execute(
                 insert(HelpfulReaction)
@@ -148,261 +384,292 @@ class CommunityService:
             )
         await self.session.commit()
 
-    async def report(
-        self, user: CurrentUser, target_type: str, target_id: uuid.UUID, body: CommunityReportIn
-    ) -> None:
-        if target_type not in {"post", "comment", "question", "answer"}:
-            raise AppError("community.invalid_target", 422)
-        report = CommunityReport(
-            reporter_id=user.id,
-            target_type=target_type,
-            target_id=target_id,
-            reason=body.reason,
-            details=body.details,
-        )
-        self.session.add(report)
-        try:
-            await self.session.commit()
-        except IntegrityError:
-            await self.session.rollback()
-            # Repeated reports are intentionally idempotent.
+    # --- forum ------------------------------------------------------------------------------
 
-    async def question_detail(self, question_id: uuid.UUID) -> QuestionDetailOut:
+    def _questions(self, viewer: CurrentUser) -> Select[Any]:
+        answers = (
+            select(func.count())
+            .where(ForumAnswer.question_id == ForumQuestion.id, _public(ForumAnswer))
+            .correlate(ForumQuestion)
+            .scalar_subquery()
+        )
+        verified = exists().where(
+            ForumAnswer.question_id == ForumQuestion.id,
+            ForumAnswer.teacher_verified.is_(True),
+            _public(ForumAnswer),
+        )
+        return (
+            select(ForumQuestion, User, answers, verified)
+            .outerjoin(User, User.id == ForumQuestion.author_id)
+            .where(visible(ForumQuestion, viewer))
+        )
+
+    async def questions(
+        self, viewer: CurrentUser, cursor: str | None, tag: str | None, limit: int = PAGE
+    ) -> QuestionPage:
+        query = self._questions(viewer)
+        if tag:
+            query = query.where(
+                exists().where(
+                    ForumQuestionTag.question_id == ForumQuestion.id,
+                    ForumQuestionTag.tag_id == CommunityTag.id,
+                    CommunityTag.slug == tag,
+                )
+            )
+        marker = _decode(cursor)
+        if marker:
+            created, item_id = marker
+            query = query.where(
+                or_(
+                    ForumQuestion.created_at < created,
+                    and_(ForumQuestion.created_at == created, ForumQuestion.id < item_id),
+                )
+            )
+        rows = list(
+            await self.session.execute(
+                query.order_by(ForumQuestion.created_at.desc(), ForumQuestion.id.desc()).limit(
+                    limit + 1
+                )
+            )
+        )
+        more = len(rows) > limit
+        rows = rows[:limit]
+        tags = await self._tags_of(
+            ForumQuestionTag, ForumQuestionTag.question_id, [row[0].id for row in rows]
+        )
+        last = rows[-1][0] if rows else None
+        return QuestionPage(
+            items=[
+                QuestionOut(
+                    id=str(question.id),
+                    author=_author(author),
+                    title=question.title,
+                    excerpt=question.body[:EXCERPT],
+                    tags=tags[question.id],
+                    answer_count=answer_count,
+                    accepted=question.accepted_answer_id is not None,
+                    teacher_verified=verified,
+                    mine=question.author_id == viewer.id,
+                    hidden=question.hidden_at is not None,
+                    created_at=question.created_at,
+                )
+                for question, author, answer_count, verified in rows
+            ],
+            next_cursor=_cursor(last.created_at, last.id) if more and last else None,
+        )
+
+    async def _readable_question(
+        self, viewer: CurrentUser, question_id: uuid.UUID
+    ) -> ForumQuestion:
         question = await self.session.scalar(
             select(ForumQuestion).where(
-                ForumQuestion.id == question_id, ForumQuestion.deleted_at.is_(None)
+                ForumQuestion.id == question_id, visible(ForumQuestion, viewer)
             )
         )
         if question is None:
             raise AppError("community.question_not_found", 404)
-        answers = list(
-            (
-                await self.session.scalars(
-                    select(ForumAnswer)
-                    .where(
-                        ForumAnswer.question_id == question_id,
-                        ForumAnswer.deleted_at.is_(None),
-                    )
-                    .order_by(ForumAnswer.created_at.asc(), ForumAnswer.id.asc())
-                )
-            ).all()
+        return question
+
+    async def question(self, viewer: CurrentUser, question_id: uuid.UUID) -> QuestionDetailOut:
+        question = await self._readable_question(viewer, question_id)
+        score = (
+            select(func.coalesce(func.sum(ForumVote.value), 0))
+            .where(ForumVote.answer_id == ForumAnswer.id)
+            .correlate(ForumAnswer)
+            .scalar_subquery()
         )
-        answer_ids = [answer.id for answer in answers]
-        scores: dict[uuid.UUID, int] = {}
-        if answer_ids:
-            score_rows = await self.session.execute(
-                select(ForumVote.answer_id, func.coalesce(func.sum(ForumVote.value), 0))
-                .where(ForumVote.answer_id.in_(answer_ids))
-                .group_by(ForumVote.answer_id)
+        my_vote = (
+            select(ForumVote.value)
+            .where(ForumVote.answer_id == ForumAnswer.id, ForumVote.user_id == viewer.id)
+            .correlate(ForumAnswer)
+            .scalar_subquery()
+        )
+        answers = list(
+            await self.session.execute(
+                select(ForumAnswer, score, my_vote)
+                .where(ForumAnswer.question_id == question.id, visible(ForumAnswer, viewer))
+                .order_by(ForumAnswer.created_at, ForumAnswer.id)
             )
-            scores = {answer_id: int(score) for answer_id, score in score_rows}
+        )
+        people = await self._people(
+            {question.author_id}
+            | {answer.author_id for answer, _, _ in answers}
+            | {answer.verified_by for answer, _, _ in answers}
+        )
+        tags = await self._tags_of(ForumQuestionTag, ForumQuestionTag.question_id, [question.id])
+        accepted = question.accepted_answer_id
         return QuestionDetailOut(
-            **(await self._question_out(question)).model_dump(),
+            id=str(question.id),
+            author=_author(people.get(question.author_id)),
+            title=question.title,
+            body=question.body,
+            tags=tags[question.id],
+            accepted_answer_id=str(accepted) if accepted else None,
+            teacher_verified=any(
+                answer.teacher_verified and answer.hidden_at is None for answer, _, _ in answers
+            ),
+            mine=question.author_id == viewer.id,
+            hidden=question.hidden_at is not None,
+            created_at=question.created_at,
+            can_verify=bool(viewer.roles & VERIFIERS),
             answers=[
-                AnswerOut.model_validate(answer, from_attributes=True).model_copy(
-                    update={"score": scores.get(answer.id, 0)}
+                AnswerOut(
+                    id=str(answer.id),
+                    author=_author(people.get(answer.author_id)),
+                    body=answer.body,
+                    score=int(answer_score),
+                    my_vote=vote or 0,
+                    accepted=answer.id == accepted,
+                    verified_by=_author(people.get(answer.verified_by))
+                    if answer.teacher_verified and answer.verified_by
+                    else None,
+                    mine=answer.author_id == viewer.id,
+                    hidden=answer.hidden_at is not None,
+                    created_at=answer.created_at,
                 )
-                for answer in answers
+                for answer, answer_score, vote in answers
             ],
         )
 
-    async def _question_out(self, question: ForumQuestion) -> QuestionOut:
-        verified = bool(
-            await self.session.scalar(
-                select(ForumAnswer.id).where(
-                    ForumAnswer.question_id == question.id,
-                    ForumAnswer.teacher_verified.is_(True),
-                    ForumAnswer.deleted_at.is_(None),
-                )
-            )
-        )
-        return QuestionOut.model_validate(question, from_attributes=True).model_copy(
-            update={
-                "tags": await self._tag_names(
-                    ForumQuestionTag, ForumQuestionTag.question_id, question.id
-                ),
-                "teacher_verified": verified,
-            }
-        )
+    async def create_question(
+        self, user: CurrentUser, body: QuestionCreate, key: str | None
+    ) -> QuestionDetailOut:
+        replay = await self._replay(ForumQuestion, user, key)
+        if replay is not None:
+            return await self.question(user, replay.id)
+        tag_ids = await self._check_tags(body.tag_ids)
+        await self._check_text(body.title, body.body)
+        await enforce_rate_limit(self.cache, QUESTION_LIMIT, str(user.id))
+        question = await self._add_question(user, body.title, body.body, tag_ids, key)
+        await self.session.commit()
+        return await self.question(user, question.id)
 
-    async def questions(
-        self, cursor: str | None, limit: int
-    ) -> tuple[list[QuestionOut], str | None]:
-        marker = _decode(cursor)
-        query = (
-            select(ForumQuestion)
-            .where(ForumQuestion.deleted_at.is_(None))
-            .order_by(ForumQuestion.created_at.desc(), ForumQuestion.id.desc())
-            .limit(limit + 1)
-        )
-        if marker:
-            created, item_id = marker
-            query = query.where(
-                (ForumQuestion.created_at < created)
-                | ((ForumQuestion.created_at == created) & (ForumQuestion.id < item_id))
-            )
-        rows = list((await self.session.scalars(query)).all())
-        more = len(rows) > limit
-        rows = rows[:limit]
-        return [
-            (
-                QuestionOut.model_validate(row, from_attributes=True).model_copy(
-                    update={
-                        "tags": await self._tag_names(
-                            ForumQuestionTag, ForumQuestionTag.question_id, row.id
-                        )
-                    }
-                )
-            )
-            for row in rows
-        ], (_cursor(rows[-1].created_at, rows[-1].id) if more and rows else None)
-
-    async def tag_questions(self, tag_id: uuid.UUID, limit: int) -> list[QuestionOut]:
-        rows = await self.session.scalars(
-            select(ForumQuestion)
-            .join(ForumQuestionTag, ForumQuestionTag.question_id == ForumQuestion.id)
-            .where(ForumQuestionTag.tag_id == tag_id, ForumQuestion.deleted_at.is_(None))
-            .order_by(ForumQuestion.created_at.desc())
-            .limit(limit)
-        )
-        return [
-            QuestionOut.model_validate(row, from_attributes=True).model_copy(
-                update={
-                    "tags": await self._tag_names(
-                        ForumQuestionTag, ForumQuestionTag.question_id, row.id
-                    )
-                }
-            )
-            for row in rows
-        ]
-
-    async def questions_for_tag_slug(self, slug: str, limit: int) -> list[QuestionOut]:
-        tag = await self.session.scalar(select(CommunityTag).where(CommunityTag.slug == slug))
-        if tag is None:
-            return []
-        return await self.tag_questions(tag.id, limit)
-
-    async def tag_posts(self, tag_id: uuid.UUID, limit: int) -> list[PostOut]:
-        rows = await self.session.scalars(
-            select(FeedPost)
-            .join(FeedPostTag, FeedPostTag.post_id == FeedPost.id)
-            .where(FeedPostTag.tag_id == tag_id, FeedPost.deleted_at.is_(None))
-            .order_by(FeedPost.created_at.desc())
-            .limit(limit)
-        )
-        return [
-            PostOut.model_validate(row, from_attributes=True).model_copy(
-                update={"tags": await self._tag_names(FeedPostTag, FeedPostTag.post_id, row.id)}
-            )
-            for row in rows
-        ]
-
-    async def create_question(self, user: CurrentUser, body: QuestionCreate) -> QuestionOut:
+    async def _add_question(
+        self, user: CurrentUser, title: str, body: str, tag_ids: list[uuid.UUID], key: str | None
+    ) -> ForumQuestion:
         question = ForumQuestion(
-            author_id=user.id, title=body.title.strip(), body=body.body.strip()
+            author_id=user.id, title=title.strip(), body=body.strip(), idempotency_key=key
         )
         self.session.add(question)
         await self.session.flush()
         self.session.add_all(
-            [ForumQuestionTag(question_id=question.id, tag_id=tag) for tag in body.tag_ids]
+            [ForumQuestionTag(question_id=question.id, tag_id=tag) for tag in tag_ids]
         )
-        await self.session.commit()
-        return QuestionOut.model_validate(question, from_attributes=True).model_copy(
-            update={
-                "tags": await self._tag_names(
-                    ForumQuestionTag, ForumQuestionTag.question_id, question.id
-                )
-            }
-        )
+        return question
 
     async def answer(
-        self, user: CurrentUser, question_id: uuid.UUID, body: AnswerCreate
-    ) -> AnswerOut:
-        if not await self.session.scalar(
-            select(ForumQuestion.id).where(
-                ForumQuestion.id == question_id, ForumQuestion.deleted_at.is_(None)
+        self, user: CurrentUser, question_id: uuid.UUID, body: AnswerCreate, key: str | None
+    ) -> QuestionDetailOut:
+        if await self._replay(ForumAnswer, user, key) is None:
+            await self._readable_question(user, question_id)
+            await self._check_text(body.body)
+            await enforce_rate_limit(self.cache, ANSWER_LIMIT, str(user.id))
+            self.session.add(
+                ForumAnswer(
+                    question_id=question_id,
+                    author_id=user.id,
+                    body=body.body.strip(),
+                    idempotency_key=key,
+                )
             )
-        ):
-            raise AppError("community.question_not_found", 404)
-        answer = ForumAnswer(question_id=question_id, author_id=user.id, body=body.body.strip())
-        self.session.add(answer)
-        await self.session.commit()
-        return AnswerOut.model_validate(answer, from_attributes=True).model_copy(
-            update={"score": 0}
-        )
+            await self.session.commit()
+        return await self.question(user, question_id)
 
-    async def accept(self, user: CurrentUser, question_id: uuid.UUID, answer_id: uuid.UUID) -> None:
-        question = await self.session.scalar(
-            select(ForumQuestion).where(
-                ForumQuestion.id == question_id, ForumQuestion.deleted_at.is_(None)
-            )
-        )
+    async def _readable_answer(self, viewer: CurrentUser, answer_id: uuid.UUID) -> ForumAnswer:
         answer = await self.session.scalar(
-            select(ForumAnswer).where(
+            select(ForumAnswer)
+            .join(ForumQuestion, ForumQuestion.id == ForumAnswer.question_id)
+            .where(
                 ForumAnswer.id == answer_id,
-                ForumAnswer.question_id == question_id,
-                ForumAnswer.deleted_at.is_(None),
+                visible(ForumAnswer, viewer),
+                visible(ForumQuestion, viewer),
             )
         )
-        if question is None or answer is None:
+        if answer is None:
             raise AppError("community.answer_not_found", 404)
+        return answer
+
+    async def accept(
+        self, user: CurrentUser, question_id: uuid.UUID, answer_id: uuid.UUID | None
+    ) -> None:
+        question = await self._readable_question(user, question_id)
         if question.author_id != user.id:
-            raise AppError("auth.forbidden", 403)
-        question.accepted_answer_id = answer.id
+            raise AppError("community.not_question_author", 403)
+        if answer_id is not None:
+            answer = await self._readable_answer(user, answer_id)
+            if answer.question_id != question.id:
+                raise AppError("community.answer_not_found", 404)
+        question.accepted_answer_id = answer_id
         await self.session.commit()
 
     async def vote(self, user: CurrentUser, answer_id: uuid.UUID, value: int) -> None:
-        if value not in {-1, 1}:
-            raise AppError("community.invalid_vote", 422)
-        if not await self.session.scalar(
-            select(ForumAnswer.id).where(
-                ForumAnswer.id == answer_id, ForumAnswer.deleted_at.is_(None)
+        answer = await self._readable_answer(user, answer_id)
+        if answer.author_id == user.id:
+            raise AppError("community.own_content", 422)
+        await enforce_rate_limit(self.cache, REACTION_LIMIT, str(user.id))
+        if value == 0:
+            await self.session.execute(
+                delete(ForumVote).where(
+                    ForumVote.answer_id == answer_id, ForumVote.user_id == user.id
+                )
             )
-        ):
-            raise AppError("community.answer_not_found", 404)
-        await self.session.execute(
-            insert(ForumVote)
-            .values(answer_id=answer_id, user_id=user.id, value=value)
-            .on_conflict_do_update(index_elements=["answer_id", "user_id"], set_={"value": value})
-        )
+        else:
+            await self.session.execute(
+                insert(ForumVote)
+                .values(answer_id=answer_id, user_id=user.id, value=value)
+                .on_conflict_do_update(
+                    index_elements=["answer_id", "user_id"], set_={"value": value}
+                )
+            )
         await self.session.commit()
 
-    async def verify_answer(self, user: CurrentUser, answer_id: uuid.UUID) -> None:
-        if "teacher" not in user.roles and not user.has_permission("forum.verify"):
-            raise AppError("auth.forbidden", 403)
-        answer = await self.session.get(ForumAnswer, answer_id)
-        if answer is None or answer.deleted_at is not None:
-            raise AppError("community.answer_not_found", 404)
-        answer.teacher_verified, answer.verified_by = True, user.id
+    async def set_verified(self, user: CurrentUser, answer_id: uuid.UUID, verified: bool) -> None:
+        answer = await self._readable_answer(user, answer_id)
+        if not user.roles & VERIFIERS:
+            raise AppError("community.not_verifier", 403)
+        if answer.teacher_verified is verified:
+            return
+        answer.teacher_verified = verified
+        answer.verified_by = user.id if verified else None
         await self.session.commit()
 
-    async def promote_thread(
+    async def promote(
         self,
         user: CurrentUser,
         channel_id: uuid.UUID,
         message_id: int,
         title: str,
         tag_ids: list[uuid.UUID],
-    ) -> QuestionOut:
+    ) -> QuestionDetailOut:
+        """Only the author of a visible, signed thread root may republish it, so nobody else's words, an anonymous
+        question or held content reach the university-wide forum (§5.4, D-084, D-086, D-090)."""
+        message = await find_message(self.session, message_id)
         member = await self.session.scalar(
-            select(ChannelMember).where(
+            select(ChannelMember.user_id).where(
                 ChannelMember.channel_id == channel_id, ChannelMember.user_id == user.id
             )
         )
-        message = await self.session.scalar(
-            select(Message).where(
-                Message.channel_id == channel_id,
-                Message.id == message_id,
-                Message.deleted_at.is_(None),
-            )
-        )
-        if member is None or message is None:
+        if (
+            message is None
+            or member is None
+            or message.channel_id != channel_id
+            or message.deleted_at is not None
+        ):
             raise AppError("community.thread_not_found", 404)
-        question = ForumQuestion(author_id=user.id, title=title.strip(), body=message.body)
-        self.session.add(question)
-        await self.session.flush()
-        self.session.add_all(
-            [ForumQuestionTag(question_id=question.id, tag_id=tag) for tag in tag_ids]
-        )
+        if (
+            message.author_id != user.id
+            or message.is_anonymous
+            or message.parent_id is not None
+            or message.moderation is not MessageModeration.VISIBLE
+        ):
+            raise AppError("community.promotion_not_allowed", 403)
+        # Mention tokens name channel members by id; the forum is not the channel, so they are dropped.
+        body = SPACES.sub(" ", USER_MENTION.sub("", message.body)).strip()
+        if not body:
+            raise AppError("community.promotion_not_allowed", 403)
+        tags = await self._check_tags(tag_ids)
+        await self._check_text(title, body)
+        await enforce_rate_limit(self.cache, QUESTION_LIMIT, str(user.id))
+        question = await self._add_question(user, title, body, tags, None)
         await self.session.commit()
-        return await self._question_out(question)
+        return await self.question(user, question.id)

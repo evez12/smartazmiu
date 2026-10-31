@@ -20,6 +20,10 @@ class ReportTarget(StrEnum):
     MESSAGE = "message"
     USER = "user"
     TIP = "tip"
+    POST = "post"
+    COMMENT = "comment"
+    QUESTION = "question"
+    ANSWER = "answer"
 
 
 class ReportReason(StrEnum):
