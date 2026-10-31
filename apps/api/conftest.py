@@ -37,6 +37,7 @@ def settings() -> Settings:
         app_public_url="https://smartazmiu.test",
         vapid_secret="test-vapid-secret",
         ticket_secret="test-ticket-secret",
+        attendance_secret="test-attendance-secret",
     )
     database = settings.database_url.path or ""
     # The suite truncates tables; refuse to run against anything but a dedicated test database.

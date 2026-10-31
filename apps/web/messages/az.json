@@ -679,7 +679,9 @@
         "quiz_created": "Test yaradıldı",
         "quiz_published": "Test dərc olundu",
         "quiz_graded": "Testin açıq sualları qiymətləndirildi",
-        "community_auto_hidden": "Lent və ya forum məzmunu şikayətlərə görə avtomatik gizlədildi"
+        "community_auto_hidden": "Lent və ya forum məzmunu şikayətlərə görə avtomatik gizlədildi",
+        "attendance_marked": "Tələbə dərsdə əl ilə iştirak edən kimi qeyd olundu",
+        "attendance_unmarked": "Tələbənin dərs iştirakı əl ilə ləğv edildi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",

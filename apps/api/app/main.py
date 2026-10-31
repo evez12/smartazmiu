@@ -22,6 +22,7 @@ from app.modules.academics.router import router as academics_router
 from app.modules.admin.router import router as admin_router
 from app.modules.announcements.router import router as announcements_router
 from app.modules.assignments.router import router as assignments_router
+from app.modules.attendance.router import router as attendance_router
 from app.modules.audiences.router import router as audiences_router
 from app.modules.campus.router import router as campus_router
 from app.modules.chat.hub import Hub
@@ -142,6 +143,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(audiences_router, prefix=API_PREFIX)
     app.include_router(events_router, prefix=API_PREFIX)
     app.include_router(assignments_router, prefix=API_PREFIX)
+    app.include_router(attendance_router, prefix=API_PREFIX)
     app.include_router(chat_router, prefix=API_PREFIX)
     app.include_router(reports_router, prefix=API_PREFIX)
     app.include_router(materials_router, prefix=API_PREFIX)
