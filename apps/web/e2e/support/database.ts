@@ -60,6 +60,16 @@ const SEED_TABLES: Record<string, string> = {
   materials: "SELECT count(*) FROM materials",
   material_reports: "SELECT count(*) FROM material_reports",
   feedback: "SELECT count(*) FROM feedback",
+  // The feed and forum are test data in every run (D-090); the tag catalogue is seeded by a migration.
+  community_tags: "SELECT count(*) FROM community_tags",
+  feed_posts: "SELECT count(*) FROM feed_posts",
+  feed_comments: "SELECT count(*) FROM feed_comments",
+  helpful_reactions: "SELECT count(*) FROM helpful_reactions",
+  forum_questions: "SELECT count(*) FROM forum_questions",
+  forum_answers: "SELECT count(*) FROM forum_answers",
+  forum_votes: "SELECT count(*) FROM forum_votes",
+  "reports (feed and forum)":
+    "SELECT count(*) FROM reports WHERE target_type IN ('post', 'comment', 'question', 'answer')",
 };
 
 export type RowCounts = Record<string, number>;
@@ -97,6 +107,7 @@ export class TestRecords {
   private readonly chat = { markers: [] as string[], people: [] as string[] };
   private readonly materialMarkers: string[] = [];
   private readonly feedbackMarkers: string[] = [];
+  private readonly communityMarkers: string[] = [];
   private readonly mailboxes: string[] = [];
   private readonly limited: { emails: string[]; rule: string }[] = [];
 
@@ -156,6 +167,13 @@ export class TestRecords {
     return marker;
   }
 
+  /** Feed posts and forum questions whose text contains `marker`, with everything under them (D-090). */
+  community(marker: string): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.communityMarkers.push(marker);
+    return marker;
+  }
+
   event(id: string): void {
     this.published.events.push(id);
   }
@@ -210,6 +228,21 @@ export class TestRecords {
       await client.query("DELETE FROM feedback WHERE message LIKE ANY($1)", [
         this.feedbackMarkers.map((marker) => `%${marker}%`),
       ]);
+      const marked = this.communityMarkers.map((marker) => `%${marker}%`);
+      const posts = "SELECT id FROM feed_posts WHERE body LIKE ANY($1)";
+      const questions =
+        "SELECT id FROM forum_questions WHERE title LIKE ANY($1) OR body LIKE ANY($1)";
+      // Reports point at their target without a foreign key; answers, comments, votes and reactions cascade.
+      await client.query(
+        `DELETE FROM reports WHERE target_type IN ('post', 'comment', 'question', 'answer') AND target_id IN (
+           SELECT id::text FROM (${posts}) AS p
+           UNION SELECT id::text FROM feed_comments WHERE post_id IN (${posts})
+           UNION SELECT id::text FROM (${questions}) AS q
+           UNION SELECT id::text FROM forum_answers WHERE question_id IN (${questions}))`,
+        [marked],
+      );
+      await client.query(`DELETE FROM feed_posts WHERE id IN (${posts})`, [marked]);
+      await client.query(`DELETE FROM forum_questions WHERE id IN (${questions})`, [marked]);
       const materials = "SELECT id FROM materials WHERE title LIKE ANY($1)";
       const titles = this.materialMarkers.map((marker) => `%${marker}%`);
       await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
@@ -297,6 +330,7 @@ export class TestRecords {
         this.chat.people,
         this.materialMarkers,
         this.feedbackMarkers,
+        this.communityMarkers,
       ]) {
         list.length = 0;
       }

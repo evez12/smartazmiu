@@ -42,6 +42,9 @@ class AuditAction(StrEnum):
     MESSAGE_AUTO_HIDDEN = "message.auto_hidden"
     MODERATION_ACTION = "moderation.action"
     TIP_REVIEWED = "tip.reviewed"
+    COMMUNITY_HIDDEN = "community.hidden"
+    COMMUNITY_SHOWN = "community.shown"
+    COMMUNITY_AUTO_HIDDEN = "community.auto_hidden"
 
 
 class AuditLog(Base):

@@ -1850,3 +1850,79 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   silently, and a §13 review in the D-076 format. Their checkboxes are unticked until those E2E tests pass.
 - **Consequences:** Sprint 14 starts later. The branch the product owner named `test/backfill-sprint-12-13` is
   split into the two completion branches, because the work is mostly implementation, not tests.
+
+## D-090 · 2026-10-31 · Feed and forum completed (Sprint 12; retroactive for choices made silently)
+
+- **Context:** the Sprint 12 screens were read-only and the API shape did not match the web models (D-089). The
+  spec (§6, §8) lists posts, tags, a "faydalı" reaction, comments, reports, questions, answers, votes, an accepted
+  answer, a teacher-verified badge, tag pages and promotion of a chat thread, and says nothing about who sees
+  what, how reports work, or what a promoted thread may contain.
+- **Decision:**
+  - **Audience:** every signed-in account reads and writes (university-wide, like the chat support channel); no
+    subject or group scoping. Tags are a fixed catalogue of 11 seeded by migration 0029 (`/community/tags`), up to
+    five per item, so nobody invents tags and the filter stays meaningful. Tag pages are the list filtered by
+    slug: `/forum/tags/<slug>` redirects to `/forum?tag=<slug>`, and `/feed?tag=` works the same way.
+  - **Contract:** authors are the chat `AuthorOut` (name, photo, `teacher` badge from the registry; `null` shows
+    as "Silinmiş istifadəçi"), lists carry counts and the viewer's own state (`my_helpful`, `my_vote`, `mine`) from
+    set-based queries instead of one query per row. Question list rows carry an excerpt of 300 characters.
+    The generated schema name of the forum summary is `QuestionSummaryOut` because the quiz module already owns
+    `QuestionOut`.
+  - **Reports:** the separate `community_reports` table is folded into the shared `reports` table with four new
+    targets (`post`, `comment`, `question`, `answer`) and the §5.4 reasons, so staff see one list with one SLA
+    (migration 0029 copies existing rows, mapping `abuse` to `harassment` and `misinformation` to `other`; the
+    downgrade copies them back). The third different reporter hides the item (`hidden_at`) and writes
+    `community.auto_hidden`, like messages (D-086). A hidden item stays visible to its author and to holders of
+    `admin.reports.handle` (staff, admin), who can hide or restore it by hand (`community.hidden`/`community.shown`
+    in the audit log); everyone else gets the same 404 as for a deleted one, so a hidden item cannot be reported
+    or opened by link. Moderators of chat channels have no scope here and do not see these reports (they have no
+    channel).
+  - **Rules:** you cannot report, vote on or mark helpful your own item (422); the question's author alone
+    accepts (and clears) the accepted answer; teachers and staff by global role verify or unverify an answer; the
+    authors delete their own items (soft delete, `deleted_at`), and deleting the accepted answer clears the mark.
+    Posts and comments cannot be edited (the spec lists no edit). Votes are one per person and answer, −1/0/+1,
+    0 removes the vote.
+  - **Abuse limits:** 10 posts, 10 questions, 60 comments, 30 answers per hour and 60 reactions or votes per
+    minute per person. The admin's blocked terms (§5.5) apply to titles and texts; because there is no review
+    queue for these spaces, a "hold" term refuses publication like a "reject" term (`community.content_rejected`).
+  - **Retries:** creating a post, comment, question or answer accepts `Idempotency-Key` (unique per author and
+    key); the web client sends one key per attempt and renews it after success.
+  - **Promoting a chat thread:** only the author of a visible, non-anonymous top-level message in a channel they
+    belong to; held, hidden, deleted, anonymous and reply messages and other people's messages are refused (the
+    first version would have published any member's message under the promoter's name, including content
+    moderators had withheld, §5.4, D-084, D-086). User mention tokens are removed from the copied text. The
+    chat message menu shows the action only when it will be accepted.
+  - **Navigation:** "Lent" and "Sual-cavab" join the main navigation.
+- **Consequences:** blocks between people (D-062) are not applied to the feed or forum (they are university-wide
+  spaces); hiding and reporting are the tools there. The generated client changed (`make openapi`).
+
+## D-091 · 2026-10-31 · §13 review of the feed and forum (Sprint 12)
+
+- **Context:** CLAUDE.md asks for a §13 review per feature, in the D-076 format.
+- **Decision (feed and forum, D-090):**
+  - Tested: visibility of hidden and deleted content for author, staff and others, three reporters hiding an item,
+    restoring it, and its audit entries (`test_three_reports_hide_until_staff_restore`, §13.2 reports); a repeated
+    report returns the first one, own and invisible targets are 422 and 404; the idempotent replay of a post and a
+    question, the hourly limit, a blocked term, tags that do not exist, paging through a cursor
+    (`test_pagination_and_idempotent_creation`, `test_rate_limit_and_blocked_terms`, §13.2 duplicate send); votes
+    (own, out of range, change, remove), accept by a stranger (403), verification by a student (403) and a
+    teacher, deleting the accepted answer (`test_questions_answers_votes_accept_and_verify`); promotion by a
+    non-member (404), of another person's, an anonymous or a held message (403), and the stripped mention
+    (`test_only_the_author_promotes_a_visible_signed_thread_root`, §5.4); the migration up and down
+    (`test_migrations_are_reversible`). In the browser: loading, empty, error-with-retry states, role-dependent
+    actions and the idempotency header (`community.test.tsx`), plain-text rendering of reported content
+    (`reports.test.tsx`), the whole flow with three accounts, the 320 px dark-mode layout with axe, and 44 px
+    touch targets (`community.spec.ts`, `touch-targets.spec.ts`). The seed-data check counts the new tables.
+  - By design, not asserted: posts are plain text and rendered as text (no Markdown, no HTML), so §13.2 malicious
+    markup does not apply; `author_id` cascades on account deletion, so the items of a deleted account would
+    disappear with it, unlike chat messages, which §13.2 keeps under "Silinmiş istifadəçi" (there is no account
+    deletion yet, §5.4; the "deleted user" label in the screens is only a safeguard; see the open items); an account that is not active is refused by
+    the shared authentication dependency before these routes run; a vote and a "faydalı" are atomic upserts, so
+    concurrent clicks keep the count exact; no object storage or ARQ job is involved, so §13.5 outages do not
+    apply; Redis down disables only the rate limits, as elsewhere.
+  - Open: when account deletion is built, feed and forum items should keep their text with no author, as chat
+    messages do (§13.2); today the foreign key removes them with the account. The 403 state of the lists is implemented (`ForbiddenState`) but has no test because no role is refused
+    today; blocks are not applied (D-090); the exam-integrity rule has no enforcement beyond the `exam_leak`
+    report reason and the blocked terms (a question published during an exam cannot be told from any other);
+    there is no screenshot baseline of the two screens (signed-in screens are covered by the E2E accessibility
+    and overflow checks, D-075); the list of the report queue in the browser has no E2E check of hide and restore.
+- **Consequences:** none for behaviour. The open items are not scheduled.

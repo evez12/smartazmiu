@@ -3,6 +3,7 @@
 import uuid
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
 from redis.asyncio import Redis
 from sqlalchemy import exists, func, select, update
@@ -29,16 +30,30 @@ from app.modules.chat.models import (
 from app.modules.chat.payloads import message_payload
 from app.modules.chat.policy import Action
 from app.modules.chat.schemas import AuthorOut
+from app.modules.community.models import FeedComment, FeedPost, ForumAnswer, ForumQuestion
+from app.modules.community.service import visible
 from app.modules.knowledge.models import CourseTip, TipStatus
 from app.modules.mentorship.service import readable_subject
 from app.modules.reports.models import Report, ReportReason, ReportStatus, ReportTarget
-from app.modules.reports.schemas import ReportedMessageOut, ReportedTipOut, ReportOut
+from app.modules.reports.schemas import (
+    ReportedContentOut,
+    ReportedMessageOut,
+    ReportedTipOut,
+    ReportOut,
+)
 from app.modules.users.models import User
 from app.modules.users.profile import photo_url
 from app.modules.users.service import CurrentUser
 
 # Enough for someone working through a bad thread; stops a script flooding the queue (§14).
 REPORT_LIMIT = RateLimit("report_create", limit=10, window_seconds=3600)
+COMMUNITY: dict[ReportTarget, Any] = {
+    ReportTarget.POST: FeedPost,
+    ReportTarget.COMMENT: FeedComment,
+    ReportTarget.QUESTION: ForumQuestion,
+    ReportTarget.ANSWER: ForumAnswer,
+}
+AUTO_HIDE_REPORTERS = 3
 # Staff see enough of a message to judge it, not more.
 EXCERPT = 1000
 
@@ -138,6 +153,8 @@ class ReportService:
                     details={"channel_id": str(message.channel_id)},
                 )
                 hidden_message = message
+        elif target_type in COMMUNITY:
+            await self._hide_after_reports(target_type, normalized)
         await self.session.commit()
         if hidden_message is not None:
             bus = ChatBus(self.cache)
@@ -176,6 +193,34 @@ class ReportService:
         assert report is not None
         return Created(report, duplicate=False)
 
+    async def _hide_after_reports(self, target_type: ReportTarget, target_id: str) -> None:
+        """The third different reporter hides a feed or forum item until staff review it (§5.5, D-090)."""
+        model = COMMUNITY[target_type]
+        distinct = await self.session.scalar(
+            select(func.count(func.distinct(Report.reporter_id))).where(
+                Report.target_type == target_type, Report.target_id == target_id
+            )
+        )
+        if (distinct or 0) < AUTO_HIDE_REPORTERS:
+            return
+        hidden = await self.session.execute(
+            update(model)
+            .where(
+                model.id == uuid.UUID(target_id),
+                model.hidden_at.is_(None),
+                model.deleted_at.is_(None),
+            )
+            .values(hidden_at=utc_now())
+        )
+        if hidden.rowcount:  # type: ignore[attr-defined]
+            record_audit(
+                self.session,
+                AuditAction.COMMUNITY_AUTO_HIDDEN,
+                actor_id=None,
+                target_type=target_type.value,
+                target_id=target_id,
+            )
+
     async def _existing(
         self, reporter: uuid.UUID, target_type: ReportTarget, target_id: str
     ) -> Report | None:
@@ -203,6 +248,20 @@ class ReportService:
             if message.author_id == user.id:
                 raise AppError("reports.own_content", 422)
             return message.channel_id, str(message.id)
+        if target_type in COMMUNITY:
+            model = COMMUNITY[target_type]
+            try:
+                item_id = uuid.UUID(target_id)
+            except ValueError as exc:
+                raise AppError("reports.target_not_found", 404) from exc
+            item = await self.session.scalar(
+                select(model).where(model.id == item_id, visible(model, user))
+            )
+            if item is None:
+                raise AppError("reports.target_not_found", 404)
+            if item.author_id == user.id:
+                raise AppError("reports.own_content", 422)
+            return None, str(item.id)
         if target_type is ReportTarget.TIP:
             try:
                 tip_id = uuid.UUID(target_id)
@@ -317,6 +376,15 @@ class ReportService:
                     )
                     tips[report.target_id] = (tip, subject_name or "")
                     people_ids.add(tip.author_id)
+        contents: dict[str, Any] = {}
+        for report in reports:
+            if report.target_type in COMMUNITY:
+                item = await self.session.get(
+                    COMMUNITY[report.target_type], uuid.UUID(report.target_id)
+                )
+                if item is not None:
+                    contents[report.target_id] = item
+                    people_ids.add(item.author_id)
         people_ids.discard(None)
         people = {
             person.id: person
@@ -334,6 +402,7 @@ class ReportService:
             message_out = None
             reported = None
             tip_out = None
+            content_out = None
             if report.target_type is ReportTarget.MESSAGE:
                 pair = messages.get(report.target_id)
                 if pair is not None:
@@ -360,6 +429,29 @@ class ReportService:
                         excerpt=tip.exam_advice[:EXCERPT],
                         status=tip.status.value,
                     )
+            elif report.target_type in COMMUNITY:
+                item = contents.get(report.target_id)
+                if item is not None:
+                    reported = _person(people.get(item.author_id))
+                    question_id = (
+                        item.id
+                        if isinstance(item, ForumQuestion)
+                        else item.question_id
+                        if isinstance(item, ForumAnswer)
+                        else None
+                    )
+                    text = (
+                        f"{item.title}. {item.body}"
+                        if isinstance(item, ForumQuestion)
+                        else item.body
+                    )
+                    content_out = ReportedContentOut(
+                        id=str(item.id),
+                        excerpt=text[:EXCERPT],
+                        question_id=str(question_id) if question_id else None,
+                        hidden=item.hidden_at is not None,
+                        deleted=item.deleted_at is not None,
+                    )
             else:
                 reported = _person(people.get(uuid.UUID(report.target_id)))
             result.append(
@@ -376,6 +468,7 @@ class ReportService:
                     reported_user=reported,
                     message=message_out,
                     tip=tip_out,
+                    content=content_out,
                     handled_by=_person(people.get(report.handled_by))
                     if report.handled_by
                     else None,

@@ -1,176 +1,249 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
+from fastapi import Path as FastPath
 
-from app.core.deps import SessionDep
+from app.core.deps import RedisDep, SessionDep
 from app.core.errors import COMMON_ERROR_RESPONSES
-from app.core.rbac import CurrentUserDep
+from app.core.rbac import CurrentUserDep, require_permission
+from app.modules.chat.lookup import MAX_MESSAGE_ID
 from app.modules.community.schemas import (
+    AcceptIn,
     AnswerCreate,
-    AnswerOut,
     CommentCreate,
     CommentOut,
-    CommunityReportIn,
+    CommentPage,
+    ContentKind,
     PostCreate,
     PostOut,
     PostPage,
     PromotionIn,
     QuestionCreate,
     QuestionDetailOut,
-    QuestionOut,
     QuestionPage,
+    TagListOut,
+    VisibilityIn,
 )
-from app.modules.community.service import CommunityService
+from app.modules.community.service import MODERATE, CommunityService
+from app.modules.users.service import CurrentUser
 
 router = APIRouter(tags=["community"], responses=COMMON_ERROR_RESPONSES)
+Moderator = Annotated[CurrentUser, Depends(require_permission(MODERATE))]
+IdempotencyKey = Annotated[
+    str | None,
+    Header(
+        alias="Idempotency-Key", max_length=100, description="Repeating it returns the first result"
+    ),
+]
+Cursor = Annotated[str | None, Query(max_length=200)]
+TagSlug = Annotated[str | None, Query(max_length=80)]
 
 
-def dep(session: SessionDep) -> CommunityService:
-    return CommunityService(session)
+def get_community(session: SessionDep, cache: RedisDep) -> CommunityService:
+    return CommunityService(session, cache)
 
 
-ServiceDep = Annotated[CommunityService, Depends(dep)]
+CommunityDep = Annotated[CommunityService, Depends(get_community)]
 
 
-@router.get("/feed/posts", response_model=PostPage)
+@router.get("/community/tags", response_model=TagListOut, operation_id="listCommunityTags")
+async def list_tags(user: CurrentUserDep, community: CommunityDep) -> TagListOut:
+    return TagListOut(items=await community.tags())
+
+
+@router.get("/feed/posts", response_model=PostPage, operation_id="listFeedPosts")
 async def list_posts(
-    _: CurrentUserDep,
-    service: ServiceDep,
-    cursor: str | None = None,
-    limit: Annotated[int, Query(ge=1, le=50)] = 25,
+    user: CurrentUserDep, community: CommunityDep, cursor: Cursor = None, tag: TagSlug = None
 ) -> PostPage:
-    items, next_cursor = await service.posts(cursor, limit)
-    return PostPage(items=items, next_cursor=next_cursor)
+    return await community.posts(user, cursor, tag)
 
 
-@router.post("/feed/posts", response_model=PostOut, status_code=201)
-async def create_post(user: CurrentUserDep, service: ServiceDep, body: PostCreate) -> PostOut:
-    return await service.create_post(user, body)
-
-
-@router.post("/feed/posts/{post_id}/comments", response_model=CommentOut, status_code=201)
-async def comment(
-    user: CurrentUserDep, service: ServiceDep, post_id: uuid.UUID, body: CommentCreate
-) -> CommentOut:
-    return await service.comment(user, post_id, body)
-
-
-@router.put("/feed/posts/{post_id}/helpful", status_code=204)
-async def helpful(user: CurrentUserDep, service: ServiceDep, post_id: uuid.UUID) -> None:
-    await service.react(user, post_id, True)
-
-
-@router.delete("/feed/posts/{post_id}/helpful", status_code=204)
-async def unhelpful(user: CurrentUserDep, service: ServiceDep, post_id: uuid.UUID) -> None:
-    await service.react(user, post_id, False)
-
-
-@router.post("/community/{target_type}/{target_id}/reports", status_code=204)
-async def report(
+@router.post("/feed/posts", response_model=PostOut, status_code=201, operation_id="createFeedPost")
+async def create_post(
     user: CurrentUserDep,
-    service: ServiceDep,
-    target_type: str,
-    target_id: uuid.UUID,
-    body: CommunityReportIn,
+    community: CommunityDep,
+    body: PostCreate,
+    idempotency_key: IdempotencyKey = None,
+) -> PostOut:
+    return await community.create_post(user, body, idempotency_key)
+
+
+@router.delete("/feed/posts/{post_id}", status_code=204, operation_id="deleteFeedPost")
+async def delete_post(user: CurrentUserDep, community: CommunityDep, post_id: uuid.UUID) -> None:
+    await community.delete_own(user, "post", post_id)
+
+
+@router.get(
+    "/feed/posts/{post_id}/comments", response_model=CommentPage, operation_id="listFeedComments"
+)
+async def list_comments(
+    user: CurrentUserDep, community: CommunityDep, post_id: uuid.UUID, after: Cursor = None
+) -> CommentPage:
+    return await community.comments(user, post_id, after)
+
+
+@router.post(
+    "/feed/posts/{post_id}/comments",
+    response_model=CommentOut,
+    status_code=201,
+    operation_id="createFeedComment",
+)
+async def create_comment(
+    user: CurrentUserDep,
+    community: CommunityDep,
+    post_id: uuid.UUID,
+    body: CommentCreate,
+    idempotency_key: IdempotencyKey = None,
+) -> CommentOut:
+    return await community.comment(user, post_id, body, idempotency_key)
+
+
+@router.delete("/feed/comments/{comment_id}", status_code=204, operation_id="deleteFeedComment")
+async def delete_comment(
+    user: CurrentUserDep, community: CommunityDep, comment_id: uuid.UUID
 ) -> None:
-    await service.report(user, target_type, target_id, body)
+    await community.delete_own(user, "comment", comment_id)
 
 
-@router.get("/forum/questions", response_model=QuestionPage)
+@router.put("/feed/posts/{post_id}/helpful", status_code=204, operation_id="markPostHelpful")
+async def mark_helpful(user: CurrentUserDep, community: CommunityDep, post_id: uuid.UUID) -> None:
+    await community.set_helpful(user, post_id, True)
+
+
+@router.delete("/feed/posts/{post_id}/helpful", status_code=204, operation_id="unmarkPostHelpful")
+async def unmark_helpful(user: CurrentUserDep, community: CommunityDep, post_id: uuid.UUID) -> None:
+    await community.set_helpful(user, post_id, False)
+
+
+@router.get("/forum/questions", response_model=QuestionPage, operation_id="listForumQuestions")
 async def list_questions(
-    _: CurrentUserDep,
-    service: ServiceDep,
-    cursor: str | None = None,
-    limit: Annotated[int, Query(ge=1, le=50)] = 25,
+    user: CurrentUserDep, community: CommunityDep, cursor: Cursor = None, tag: TagSlug = None
 ) -> QuestionPage:
-    items, next_cursor = await service.questions(cursor, limit)
-    return QuestionPage(items=items, next_cursor=next_cursor)
+    return await community.questions(user, cursor, tag)
 
 
-@router.get("/community/tags/{tag_id}/posts", response_model=list[PostOut])
-async def tag_posts(
-    _: CurrentUserDep,
-    service: ServiceDep,
-    tag_id: uuid.UUID,
-    limit: Annotated[int, Query(ge=1, le=50)] = 25,
-) -> list[PostOut]:
-    return await service.tag_posts(tag_id, limit)
-
-
-@router.get("/community/tags/{tag_id}/questions", response_model=list[QuestionOut])
-async def tag_questions(
-    _: CurrentUserDep,
-    service: ServiceDep,
-    tag_id: uuid.UUID,
-    limit: Annotated[int, Query(ge=1, le=50)] = 25,
-) -> list[QuestionOut]:
-    return await service.tag_questions(tag_id, limit)
-
-
-@router.get("/forum/tags/{tag_slug}", response_model=QuestionPage)
-async def tag_questions_by_slug(
-    _: CurrentUserDep,
-    service: ServiceDep,
-    tag_slug: str,
-    limit: Annotated[int, Query(ge=1, le=50)] = 25,
-) -> QuestionPage:
-    return QuestionPage(items=await service.questions_for_tag_slug(tag_slug, limit))
-
-
-@router.post("/forum/questions", response_model=QuestionOut, status_code=201)
+@router.post(
+    "/forum/questions",
+    response_model=QuestionDetailOut,
+    status_code=201,
+    operation_id="createForumQuestion",
+)
 async def create_question(
-    user: CurrentUserDep, service: ServiceDep, body: QuestionCreate
-) -> QuestionOut:
-    return await service.create_question(user, body)
-
-
-@router.get("/forum/questions/{question_id}", response_model=QuestionDetailOut)
-async def question_detail(
-    _: CurrentUserDep, service: ServiceDep, question_id: uuid.UUID
+    user: CurrentUserDep,
+    community: CommunityDep,
+    body: QuestionCreate,
+    idempotency_key: IdempotencyKey = None,
 ) -> QuestionDetailOut:
-    return await service.question_detail(question_id)
+    return await community.create_question(user, body, idempotency_key)
 
 
-@router.post("/forum/questions/{question_id}/answers", response_model=AnswerOut, status_code=201)
-async def answer(
-    user: CurrentUserDep, service: ServiceDep, question_id: uuid.UUID, body: AnswerCreate
-) -> AnswerOut:
-    return await service.answer(user, question_id, body)
+@router.get(
+    "/forum/questions/{question_id}",
+    response_model=QuestionDetailOut,
+    operation_id="getForumQuestion",
+)
+async def get_question(
+    user: CurrentUserDep, community: CommunityDep, question_id: uuid.UUID
+) -> QuestionDetailOut:
+    return await community.question(user, question_id)
 
 
-@router.post("/forum/questions/{question_id}/accept/{answer_id}", status_code=204)
-async def accept(
-    user: CurrentUserDep, service: ServiceDep, question_id: uuid.UUID, answer_id: uuid.UUID
+@router.delete(
+    "/forum/questions/{question_id}", status_code=204, operation_id="deleteForumQuestion"
+)
+async def delete_question(
+    user: CurrentUserDep, community: CommunityDep, question_id: uuid.UUID
 ) -> None:
-    await service.accept(user, question_id, answer_id)
+    await community.delete_own(user, "question", question_id)
 
 
-@router.put("/forum/answers/{answer_id}/vote", status_code=204)
+@router.post(
+    "/forum/questions/{question_id}/answers",
+    response_model=QuestionDetailOut,
+    status_code=201,
+    operation_id="createForumAnswer",
+)
+async def create_answer(
+    user: CurrentUserDep,
+    community: CommunityDep,
+    question_id: uuid.UUID,
+    body: AnswerCreate,
+    idempotency_key: IdempotencyKey = None,
+) -> QuestionDetailOut:
+    return await community.answer(user, question_id, body, idempotency_key)
+
+
+@router.delete("/forum/answers/{answer_id}", status_code=204, operation_id="deleteForumAnswer")
+async def delete_answer(
+    user: CurrentUserDep, community: CommunityDep, answer_id: uuid.UUID
+) -> None:
+    await community.delete_own(user, "answer", answer_id)
+
+
+@router.put(
+    "/forum/questions/{question_id}/accepted-answer",
+    status_code=204,
+    operation_id="setAcceptedAnswer",
+)
+async def set_accepted(
+    user: CurrentUserDep, community: CommunityDep, question_id: uuid.UUID, body: AcceptIn
+) -> None:
+    await community.accept(user, question_id, body.answer_id)
+
+
+@router.put("/forum/answers/{answer_id}/vote", status_code=204, operation_id="voteForumAnswer")
 async def vote(
     user: CurrentUserDep,
-    service: ServiceDep,
+    community: CommunityDep,
     answer_id: uuid.UUID,
     value: Annotated[int, Query(ge=-1, le=1)],
 ) -> None:
-    await service.vote(user, answer_id, value)
+    await community.vote(user, answer_id, value)
 
 
-@router.post("/forum/answers/{answer_id}/verify", status_code=204)
-async def verify(user: CurrentUserDep, service: ServiceDep, answer_id: uuid.UUID) -> None:
-    await service.verify_answer(user, answer_id)
+@router.put(
+    "/forum/answers/{answer_id}/verification", status_code=204, operation_id="verifyForumAnswer"
+)
+async def verify(user: CurrentUserDep, community: CommunityDep, answer_id: uuid.UUID) -> None:
+    await community.set_verified(user, answer_id, True)
+
+
+@router.delete(
+    "/forum/answers/{answer_id}/verification",
+    status_code=204,
+    operation_id="unverifyForumAnswer",
+)
+async def unverify(user: CurrentUserDep, community: CommunityDep, answer_id: uuid.UUID) -> None:
+    await community.set_verified(user, answer_id, False)
+
+
+@router.put(
+    "/community/{kind}/{item_id}/visibility",
+    status_code=204,
+    operation_id="setCommunityVisibility",
+)
+async def set_visibility(
+    actor: Moderator,
+    community: CommunityDep,
+    kind: ContentKind,
+    item_id: uuid.UUID,
+    body: VisibilityIn,
+) -> None:
+    await community.set_hidden(actor, kind, item_id, body.hidden)
 
 
 @router.post(
     "/chat/channels/{channel_id}/messages/{message_id}/promote",
-    response_model=QuestionOut,
+    response_model=QuestionDetailOut,
     status_code=201,
+    operation_id="promoteMessageToForum",
 )
 async def promote(
     user: CurrentUserDep,
-    service: ServiceDep,
+    community: CommunityDep,
     channel_id: uuid.UUID,
-    message_id: int,
+    message_id: Annotated[int, FastPath(gt=0, le=MAX_MESSAGE_ID)],
     body: PromotionIn,
-) -> QuestionOut:
-    return await service.promote_thread(user, channel_id, message_id, body.title, body.tag_ids)
+) -> QuestionDetailOut:
+    return await community.promote(user, channel_id, message_id, body.title, body.tag_ids)

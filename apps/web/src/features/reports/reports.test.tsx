@@ -112,4 +112,33 @@ describe("ReportTable", () => {
     expect(screen.getByText("3 şikayətçi")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Rədd edin" })).toBeNull();
   });
+
+  it("shows a reported feed or forum item as plain text with its state, and a gone item as such", () => {
+    wrap(
+      <ReportTable
+        caption="Şikayətlər"
+        canHandle
+        canGlobalBan={false}
+        items={[
+          item({
+            target_type: "question",
+            message: null,
+            content: {
+              id: "q-1",
+              excerpt: "<b>Cavablar satılır</b>",
+              question_id: "q-1",
+              hidden: true,
+              deleted: false,
+            },
+          }),
+          item({ target_type: "post", message: null, content: null }),
+        ]}
+      />,
+    );
+    expect(screen.getByText("<b>Cavablar satılır</b>")).toBeVisible();
+    expect(document.querySelector("b")).toBeNull();
+    expect(screen.getByText(/Forumda sual/)).toBeVisible();
+    expect(screen.getByText("Gizlədilib")).toBeVisible();
+    expect(screen.getByText("Məzmun artıq mövcud deyil")).toBeVisible();
+  });
 });

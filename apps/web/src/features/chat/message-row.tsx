@@ -9,6 +9,7 @@ import {
   Eye,
   Flag,
   MessagesSquare,
+  MessageSquarePlus,
   Pin,
   PinOff,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { Icon } from "@/components/ui/icon";
 import { ConfirmDialog, MenuItem } from "@/components/ui/overlay";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
+import { PromoteDialog } from "@/features/community/promote-dialog";
 import { ReportDialog } from "@/features/reports/report-dialog";
 import { ApiRequestError, unwrap } from "@/lib/api/browser";
 import { useOptionalApi } from "@/lib/api/provider";
@@ -124,6 +126,7 @@ export function MessageRow({
 }) {
   const t = useTranslations("chat");
   const tReports = useTranslations("reports");
+  const tCommunity = useTranslations("community");
   const runtime = useOptionalChatRuntime();
   const toast = useToast();
   const refusal = useChangeErrorText();
@@ -132,6 +135,7 @@ export function MessageRow({
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [promoting, setPromoting] = useState(false);
   // Checked when the menu renders; the server has the final word on the 15-minute window (§13.2).
   const [now, setNow] = useState(() => Date.now());
   const api = useOptionalApi();
@@ -142,6 +146,13 @@ export function MessageRow({
   const deleted = message.deleted_at !== null;
   const moderated = message.moderation !== "visible";
   const own = canChange(message, context.currentUser.id, now);
+  // The forum takes only the author's own visible, signed, top-level message (D-090).
+  const canPromote =
+    message.author?.id === context.currentUser.id &&
+    !message.is_anonymous &&
+    message.parent_id === null &&
+    !moderated &&
+    !deleted;
   const canReact = context.canPost && !deleted && runtime !== null;
 
   const fail = (error: unknown) =>
@@ -386,6 +397,12 @@ export function MessageRow({
             extra: runtime ? (
               <>
                 {curationItems}
+                {canPromote ? (
+                  <MenuItem onSelect={() => setPromoting(true)}>
+                    <Icon icon={MessageSquarePlus} />
+                    {tCommunity("promoteAction")}
+                  </MenuItem>
+                ) : null}
                 {message.author?.id !== context.currentUser.id ? (
                   <MenuItem onSelect={() => setReporting(true)}>
                     <Icon icon={Flag} />
@@ -395,6 +412,14 @@ export function MessageRow({
               </>
             ) : undefined,
           }}
+        />
+      ) : null}
+      {promoting ? (
+        <PromoteDialog
+          open={promoting}
+          onOpenChange={setPromoting}
+          channelId={message.channel_id}
+          messageId={message.id}
         />
       ) : null}
       {reporting ? (

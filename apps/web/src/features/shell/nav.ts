@@ -7,9 +7,11 @@ import {
   FileUp,
   House,
   Megaphone,
+  MessageCircleQuestionMark,
   MessageSquareText,
   MessagesSquare,
   Map as MapIcon,
+  Newspaper,
   Flag,
   ScrollText,
   UserRound,
@@ -32,6 +34,8 @@ export type NavItem = {
     | "chat"
     | "materials"
     | "guides"
+    | "feed"
+    | "forum"
     | "map"
     | "announcements"
     | "events"
@@ -63,6 +67,8 @@ export const NAVIGATION: NavSection[] = [
       { href: "/chat", labelKey: "chat", icon: MessagesSquare, inTabBar: true },
       { href: "/materials", labelKey: "materials", icon: BookOpen, inTabBar: false },
       { href: "/guides", labelKey: "guides", icon: Compass, inTabBar: false },
+      { href: "/feed", labelKey: "feed", icon: Newspaper, inTabBar: false },
+      { href: "/forum", labelKey: "forum", icon: MessageCircleQuestionMark, inTabBar: false },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },

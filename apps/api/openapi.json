@@ -1,6 +1,27 @@
 {
   "components": {
     "schemas": {
+      "AcceptIn": {
+        "properties": {
+          "answer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Id"
+          }
+        },
+        "required": [
+          "answer_id"
+        ],
+        "title": "AcceptIn",
+        "type": "object"
+      },
       "AdminUserDetail": {
         "properties": {
           "created_at": {
@@ -434,10 +455,19 @@
       },
       "AnswerOut": {
         "properties": {
-          "author_id": {
-            "format": "uuid",
-            "title": "Author Id",
-            "type": "string"
+          "accepted": {
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "body": {
             "title": "Body",
@@ -448,38 +478,53 @@
             "title": "Created At",
             "type": "string"
           },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
-          "question_id": {
-            "format": "uuid",
-            "title": "Question Id",
-            "type": "string"
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "my_vote": {
+            "enum": [
+              -1,
+              0,
+              1
+            ],
+            "title": "My Vote",
+            "type": "integer"
           },
           "score": {
             "title": "Score",
             "type": "integer"
           },
-          "teacher_verified": {
-            "title": "Teacher Verified",
-            "type": "boolean"
-          },
-          "version_id": {
-            "title": "Version Id",
-            "type": "integer"
+          "verified_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "id",
-          "question_id",
-          "author_id",
+          "author",
           "body",
           "score",
-          "teacher_verified",
-          "created_at",
-          "version_id"
+          "my_vote",
+          "accepted",
+          "verified_by",
+          "mine",
+          "hidden",
+          "created_at"
         ],
         "title": "AnswerOut",
         "type": "object"
@@ -1125,7 +1170,10 @@
           "blocked_term.removed",
           "message.auto_hidden",
           "moderation.action",
-          "tip.reviewed"
+          "tip.reviewed",
+          "community.hidden",
+          "community.shown",
+          "community.auto_hidden"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -1960,10 +2008,15 @@
       },
       "CommentOut": {
         "properties": {
-          "author_id": {
-            "format": "uuid",
-            "title": "Author Id",
-            "type": "string"
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "body": {
             "title": "Body",
@@ -1974,48 +2027,60 @@
             "title": "Created At",
             "type": "string"
           },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
           "post_id": {
-            "format": "uuid",
             "title": "Post Id",
             "type": "string"
-          },
-          "version_id": {
-            "title": "Version Id",
-            "type": "integer"
           }
         },
         "required": [
           "id",
           "post_id",
-          "author_id",
+          "author",
           "body",
-          "created_at",
-          "version_id"
+          "mine",
+          "hidden",
+          "created_at"
         ],
         "title": "CommentOut",
         "type": "object"
       },
-      "CommunityReportIn": {
+      "CommentPage": {
         "properties": {
-          "details": {
-            "default": "",
-            "maxLength": 500,
-            "title": "Details",
-            "type": "string"
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommentOut"
+            },
+            "title": "Items",
+            "type": "array"
           },
-          "reason": {
-            "$ref": "#/components/schemas/app__modules__community__models__ReportReason"
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
           }
         },
         "required": [
-          "reason"
+          "items"
         ],
-        "title": "CommunityReportIn",
+        "title": "CommentPage",
         "type": "object"
       },
       "ConsentPurpose": {
@@ -5848,7 +5913,7 @@
               "format": "uuid",
               "type": "string"
             },
-            "maxItems": 10,
+            "maxItems": 5,
             "title": "Tag Ids",
             "type": "array"
           }
@@ -5861,17 +5926,21 @@
       },
       "PostOut": {
         "properties": {
-          "author_id": {
-            "format": "uuid",
-            "title": "Author Id",
-            "type": "string"
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "body": {
             "title": "Body",
             "type": "string"
           },
           "comment_count": {
-            "default": 0,
             "title": "Comment Count",
             "type": "integer"
           },
@@ -5881,33 +5950,44 @@
             "type": "string"
           },
           "helpful_count": {
-            "default": 0,
             "title": "Helpful Count",
             "type": "integer"
           },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "my_helpful": {
+            "title": "My Helpful",
+            "type": "boolean"
+          },
           "tags": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TagOut"
             },
             "title": "Tags",
             "type": "array"
-          },
-          "version_id": {
-            "title": "Version Id",
-            "type": "integer"
           }
         },
         "required": [
           "id",
-          "author_id",
+          "author",
           "body",
-          "created_at",
-          "version_id"
+          "tags",
+          "helpful_count",
+          "comment_count",
+          "my_helpful",
+          "mine",
+          "hidden",
+          "created_at"
         ],
         "title": "PostOut",
         "type": "object"
@@ -6206,7 +6286,7 @@
               "format": "uuid",
               "type": "string"
             },
-            "maxItems": 10,
+            "maxItems": 5,
             "title": "Tag Ids",
             "type": "array"
           },
@@ -6276,7 +6356,7 @@
               "format": "uuid",
               "type": "string"
             },
-            "maxItems": 10,
+            "maxItems": 5,
             "title": "Tag Ids",
             "type": "array"
           },
@@ -6342,7 +6422,6 @@
           "accepted_answer_id": {
             "anyOf": [
               {
-                "format": "uuid",
                 "type": "string"
               },
               {
@@ -6358,63 +6437,126 @@
             "title": "Answers",
             "type": "array"
           },
-          "author_id": {
-            "format": "uuid",
-            "title": "Author Id",
-            "type": "string"
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "body": {
             "title": "Body",
             "type": "string"
+          },
+          "can_verify": {
+            "title": "Can Verify",
+            "type": "boolean"
           },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
           "id": {
-            "format": "uuid",
             "title": "Id",
             "type": "string"
           },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
           "tags": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TagOut"
             },
             "title": "Tags",
             "type": "array"
           },
           "teacher_verified": {
-            "default": false,
             "title": "Teacher Verified",
             "type": "boolean"
           },
           "title": {
             "title": "Title",
             "type": "string"
-          },
-          "version_id": {
-            "title": "Version Id",
-            "type": "integer"
           }
         },
         "required": [
           "id",
-          "author_id",
+          "author",
           "title",
           "body",
+          "tags",
           "accepted_answer_id",
+          "teacher_verified",
+          "mine",
+          "hidden",
           "created_at",
-          "version_id"
+          "answers",
+          "can_verify"
         ],
         "title": "QuestionDetailOut",
+        "type": "object"
+      },
+      "QuestionOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_required": {
+            "title": "Is Required",
+            "type": "boolean"
+          },
+          "options": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/QuestionType"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "type",
+          "prompt",
+          "points",
+          "options",
+          "is_required"
+        ],
+        "title": "QuestionOut",
         "type": "object"
       },
       "QuestionPage": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/app__modules__community__schemas__QuestionOut"
+              "$ref": "#/components/schemas/QuestionSummaryOut"
             },
             "title": "Items",
             "type": "array"
@@ -6435,6 +6577,79 @@
           "items"
         ],
         "title": "QuestionPage",
+        "type": "object"
+      },
+      "QuestionSummaryOut": {
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "boolean"
+          },
+          "answer_count": {
+            "title": "Answer Count",
+            "type": "integer"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/TagOut"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "teacher_verified": {
+            "title": "Teacher Verified",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "author",
+          "title",
+          "excerpt",
+          "tags",
+          "answer_count",
+          "accepted",
+          "teacher_verified",
+          "mine",
+          "hidden",
+          "created_at"
+        ],
+        "title": "QuestionSummaryOut",
         "type": "object"
       },
       "QuestionType": {
@@ -6783,7 +6998,7 @@
             "type": "string"
           },
           "reason": {
-            "$ref": "#/components/schemas/app__modules__reports__models__ReportReason"
+            "$ref": "#/components/schemas/ReportReason"
           },
           "target_id": {
             "maxLength": 64,
@@ -6805,6 +7020,16 @@
       },
       "ReportOut": {
         "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportedContentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -6851,7 +7076,7 @@
             "type": "string"
           },
           "reason": {
-            "$ref": "#/components/schemas/ReportReason-Output"
+            "$ref": "#/components/schemas/ReportReason"
           },
           "reported_user": {
             "anyOf": [
@@ -6943,7 +7168,7 @@
         "title": "ReportPageOut",
         "type": "object"
       },
-      "ReportReason-Output": {
+      "ReportReason": {
         "enum": [
           "spam",
           "harassment",
@@ -6980,10 +7205,55 @@
         "enum": [
           "message",
           "user",
-          "tip"
+          "tip",
+          "post",
+          "comment",
+          "question",
+          "answer"
         ],
         "title": "ReportTarget",
         "type": "string"
+      },
+      "ReportedContentOut": {
+        "description": "A feed post or comment, or a forum question or answer (D-090).",
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "question_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Id"
+          }
+        },
+        "required": [
+          "id",
+          "excerpt",
+          "question_id",
+          "hidden",
+          "deleted"
+        ],
+        "title": "ReportedContentOut",
+        "type": "object"
       },
       "ReportedMessageOut": {
         "properties": {
@@ -7774,6 +8044,45 @@
         "title": "SubmissionStatus",
         "type": "string"
       },
+      "TagListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TagOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "TagListOut",
+        "type": "object"
+      },
+      "TagOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ],
+        "title": "TagOut",
+        "type": "object"
+      },
       "TeachingCourseOut": {
         "properties": {
           "groups": {
@@ -8454,141 +8763,6 @@
         ],
         "title": "WorkloadOut",
         "type": "object"
-      },
-      "app__modules__community__models__ReportReason": {
-        "enum": [
-          "spam",
-          "abuse",
-          "misinformation",
-          "other"
-        ],
-        "title": "ReportReason",
-        "type": "string"
-      },
-      "app__modules__community__schemas__QuestionOut": {
-        "properties": {
-          "accepted_answer_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Accepted Answer Id"
-          },
-          "author_id": {
-            "format": "uuid",
-            "title": "Author Id",
-            "type": "string"
-          },
-          "body": {
-            "title": "Body",
-            "type": "string"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Tags",
-            "type": "array"
-          },
-          "teacher_verified": {
-            "default": false,
-            "title": "Teacher Verified",
-            "type": "boolean"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "version_id": {
-            "title": "Version Id",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "author_id",
-          "title",
-          "body",
-          "accepted_answer_id",
-          "created_at",
-          "version_id"
-        ],
-        "title": "QuestionOut",
-        "type": "object"
-      },
-      "app__modules__quizzes__schemas__QuestionOut": {
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "is_required": {
-            "title": "Is Required",
-            "type": "boolean"
-          },
-          "options": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Options",
-            "type": "array"
-          },
-          "points": {
-            "title": "Points",
-            "type": "integer"
-          },
-          "position": {
-            "title": "Position",
-            "type": "integer"
-          },
-          "prompt": {
-            "title": "Prompt",
-            "type": "string"
-          },
-          "type": {
-            "$ref": "#/components/schemas/QuestionType"
-          }
-        },
-        "required": [
-          "id",
-          "position",
-          "type",
-          "prompt",
-          "points",
-          "options",
-          "is_required"
-        ],
-        "title": "QuestionOut",
-        "type": "object"
-      },
-      "app__modules__reports__models__ReportReason": {
-        "enum": [
-          "spam",
-          "harassment",
-          "hate",
-          "exam_leak",
-          "privacy",
-          "other"
-        ],
-        "title": "ReportReason",
-        "type": "string"
       }
     },
     "securitySchemes": {
@@ -11925,7 +12099,7 @@
     },
     "/api/v1/chat/channels/{channel_id}/messages/{message_id}/promote": {
       "post": {
-        "operationId": "promote_api_v1_chat_channels__channel_id__messages__message_id__promote_post",
+        "operationId": "promoteMessageToForum",
         "parameters": [
           {
             "in": "path",
@@ -11942,6 +12116,8 @@
             "name": "message_id",
             "required": true,
             "schema": {
+              "exclusiveMinimum": 0,
+              "maximum": 9223372036854775807,
               "title": "Message Id",
               "type": "integer"
             }
@@ -11962,7 +12138,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__community__schemas__QuestionOut"
+                  "$ref": "#/components/schemas/QuestionDetailOut"
                 }
               }
             },
@@ -13903,43 +14079,15 @@
         ]
       }
     },
-    "/api/v1/community/tags/{tag_id}/posts": {
+    "/api/v1/community/tags": {
       "get": {
-        "operationId": "tag_posts_api_v1_community_tags__tag_id__posts_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "tag_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Tag Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 50,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
+        "operationId": "listCommunityTags",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PostOut"
-                  },
-                  "title": "Response Tag Posts Api V1 Community Tags  Tag Id  Posts Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/TagListOut"
                 }
               }
             },
@@ -14001,136 +14149,38 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Tag Posts",
+        "summary": "List Tags",
         "tags": [
           "community"
         ]
       }
     },
-    "/api/v1/community/tags/{tag_id}/questions": {
-      "get": {
-        "operationId": "tag_questions_api_v1_community_tags__tag_id__questions_get",
+    "/api/v1/community/{kind}/{item_id}/visibility": {
+      "put": {
+        "operationId": "setCommunityVisibility",
         "parameters": [
           {
             "in": "path",
-            "name": "tag_id",
+            "name": "kind",
             "required": true,
             "schema": {
-              "format": "uuid",
-              "title": "Tag Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 50,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/app__modules__community__schemas__QuestionOut"
-                  },
-                  "title": "Response Tag Questions Api V1 Community Tags  Tag Id  Questions Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing, expired or invalid access token"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authenticated but not allowed"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Conflicts with existing data"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Request validation failed"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Unexpected server error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Tag Questions",
-        "tags": [
-          "community"
-        ]
-      }
-    },
-    "/api/v1/community/{target_type}/{target_id}/reports": {
-      "post": {
-        "operationId": "report_api_v1_community__target_type___target_id__reports_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "target_type",
-            "required": true,
-            "schema": {
-              "title": "Target Type",
+              "enum": [
+                "post",
+                "comment",
+                "question",
+                "answer"
+              ],
+              "title": "Kind",
               "type": "string"
             }
           },
           {
             "in": "path",
-            "name": "target_id",
+            "name": "item_id",
             "required": true,
             "schema": {
               "format": "uuid",
-              "title": "Target Id",
+              "title": "Item Id",
               "type": "string"
             }
           }
@@ -14139,7 +14189,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CommunityReportIn"
+                "$ref": "#/components/schemas/VisibilityIn"
               }
             }
           },
@@ -14205,7 +14255,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Report",
+        "summary": "Set Visibility",
         "tags": [
           "community"
         ]
@@ -15076,9 +15126,90 @@
         ]
       }
     },
+    "/api/v1/feed/comments/{comment_id}": {
+      "delete": {
+        "operationId": "deleteFeedComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Comment",
+        "tags": [
+          "community"
+        ]
+      }
+    },
     "/api/v1/feed/posts": {
       "get": {
-        "operationId": "list_posts_api_v1_feed_posts_get",
+        "operationId": "listFeedPosts",
         "parameters": [
           {
             "in": "query",
@@ -15087,6 +15218,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "maxLength": 200,
                   "type": "string"
                 },
                 {
@@ -15098,14 +15230,19 @@
           },
           {
             "in": "query",
-            "name": "limit",
+            "name": "tag",
             "required": false,
             "schema": {
-              "default": 25,
-              "maximum": 50,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
             }
           }
         ],
@@ -15182,7 +15319,28 @@
         ]
       },
       "post": {
-        "operationId": "create_post_api_v1_feed_posts_post",
+        "operationId": "createFeedPost",
+        "parameters": [
+          {
+            "description": "Repeating it returns the first result",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeating it returns the first result",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -15266,9 +15424,9 @@
         ]
       }
     },
-    "/api/v1/feed/posts/{post_id}/comments": {
-      "post": {
-        "operationId": "comment_api_v1_feed_posts__post_id__comments_post",
+    "/api/v1/feed/posts/{post_id}": {
+      "delete": {
+        "operationId": "deleteFeedPost",
         "parameters": [
           {
             "in": "path",
@@ -15278,6 +15436,209 @@
               "format": "uuid",
               "title": "Post Id",
               "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Post",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/feed/posts/{post_id}/comments": {
+      "get": {
+        "operationId": "listFeedComments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Comments",
+        "tags": [
+          "community"
+        ]
+      },
+      "post": {
+        "operationId": "createFeedComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Repeating it returns the first result",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeating it returns the first result",
+              "title": "Idempotency-Key"
             }
           }
         ],
@@ -15358,7 +15719,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Comment",
+        "summary": "Create Comment",
         "tags": [
           "community"
         ]
@@ -15366,7 +15727,7 @@
     },
     "/api/v1/feed/posts/{post_id}/helpful": {
       "delete": {
-        "operationId": "unhelpful_api_v1_feed_posts__post_id__helpful_delete",
+        "operationId": "unmarkPostHelpful",
         "parameters": [
           {
             "in": "path",
@@ -15439,13 +15800,13 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Unhelpful",
+        "summary": "Unmark Helpful",
         "tags": [
           "community"
         ]
       },
       "put": {
-        "operationId": "helpful_api_v1_feed_posts__post_id__helpful_put",
+        "operationId": "markPostHelpful",
         "parameters": [
           {
             "in": "path",
@@ -15518,7 +15879,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Helpful",
+        "summary": "Mark Helpful",
         "tags": [
           "community"
         ]
@@ -15610,9 +15971,169 @@
         ]
       }
     },
-    "/api/v1/forum/answers/{answer_id}/verify": {
-      "post": {
-        "operationId": "verify_api_v1_forum_answers__answer_id__verify_post",
+    "/api/v1/forum/answers/{answer_id}": {
+      "delete": {
+        "operationId": "deleteForumAnswer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "answer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Answer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Answer",
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/api/v1/forum/answers/{answer_id}/verification": {
+      "delete": {
+        "operationId": "unverifyForumAnswer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "answer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Answer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unverify",
+        "tags": [
+          "community"
+        ]
+      },
+      "put": {
+        "operationId": "verifyForumAnswer",
         "parameters": [
           {
             "in": "path",
@@ -15693,7 +16214,7 @@
     },
     "/api/v1/forum/answers/{answer_id}/vote": {
       "put": {
-        "operationId": "vote_api_v1_forum_answers__answer_id__vote_put",
+        "operationId": "voteForumAnswer",
         "parameters": [
           {
             "in": "path",
@@ -15785,7 +16306,7 @@
     },
     "/api/v1/forum/questions": {
       "get": {
-        "operationId": "list_questions_api_v1_forum_questions_get",
+        "operationId": "listForumQuestions",
         "parameters": [
           {
             "in": "query",
@@ -15794,6 +16315,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "maxLength": 200,
                   "type": "string"
                 },
                 {
@@ -15805,14 +16327,19 @@
           },
           {
             "in": "query",
-            "name": "limit",
+            "name": "tag",
             "required": false,
             "schema": {
-              "default": 25,
-              "maximum": 50,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
             }
           }
         ],
@@ -15889,7 +16416,28 @@
         ]
       },
       "post": {
-        "operationId": "create_question_api_v1_forum_questions_post",
+        "operationId": "createForumQuestion",
+        "parameters": [
+          {
+            "description": "Repeating it returns the first result",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeating it returns the first result",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -15905,7 +16453,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__community__schemas__QuestionOut"
+                  "$ref": "#/components/schemas/QuestionDetailOut"
                 }
               }
             },
@@ -15974,8 +16522,87 @@
       }
     },
     "/api/v1/forum/questions/{question_id}": {
+      "delete": {
+        "operationId": "deleteForumQuestion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Question Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Question",
+        "tags": [
+          "community"
+        ]
+      },
       "get": {
-        "operationId": "question_detail_api_v1_forum_questions__question_id__get",
+        "operationId": "getForumQuestion",
         "parameters": [
           {
             "in": "path",
@@ -16055,15 +16682,15 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Question Detail",
+        "summary": "Get Question",
         "tags": [
           "community"
         ]
       }
     },
-    "/api/v1/forum/questions/{question_id}/accept/{answer_id}": {
-      "post": {
-        "operationId": "accept_api_v1_forum_questions__question_id__accept__answer_id__post",
+    "/api/v1/forum/questions/{question_id}/accepted-answer": {
+      "put": {
+        "operationId": "setAcceptedAnswer",
         "parameters": [
           {
             "in": "path",
@@ -16074,18 +16701,18 @@
               "title": "Question Id",
               "type": "string"
             }
-          },
-          {
-            "in": "path",
-            "name": "answer_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Answer Id",
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -16146,7 +16773,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Accept",
+        "summary": "Set Accepted",
         "tags": [
           "community"
         ]
@@ -16154,7 +16781,7 @@
     },
     "/api/v1/forum/questions/{question_id}/answers": {
       "post": {
-        "operationId": "answer_api_v1_forum_questions__question_id__answers_post",
+        "operationId": "createForumAnswer",
         "parameters": [
           {
             "in": "path",
@@ -16164,6 +16791,25 @@
               "format": "uuid",
               "title": "Question Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Repeating it returns the first result",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Repeating it returns the first result",
+              "title": "Idempotency-Key"
             }
           }
         ],
@@ -16182,7 +16828,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnswerOut"
+                  "$ref": "#/components/schemas/QuestionDetailOut"
                 }
               }
             },
@@ -16244,106 +16890,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Answer",
-        "tags": [
-          "community"
-        ]
-      }
-    },
-    "/api/v1/forum/tags/{tag_slug}": {
-      "get": {
-        "operationId": "tag_questions_by_slug_api_v1_forum_tags__tag_slug__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "tag_slug",
-            "required": true,
-            "schema": {
-              "title": "Tag Slug",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 50,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionPage"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing, expired or invalid access token"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Authenticated but not allowed"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Conflicts with existing data"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Request validation failed"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Unexpected server error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Tag Questions By Slug",
+        "summary": "Create Answer",
         "tags": [
           "community"
         ]
@@ -21000,7 +21547,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__quizzes__schemas__QuestionOut"
+                  "$ref": "#/components/schemas/QuestionOut"
                 }
               }
             },
