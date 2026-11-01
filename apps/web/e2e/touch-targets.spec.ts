@@ -199,3 +199,11 @@ test("staff feedback and report lists", async ({ page, accounts }) => {
   await expectTargets(page, "/admin/reports");
   await expectTargets(page, "/admin/reports?tab=materials");
 });
+
+test("the ÜOMG calculator with a simulated course", async ({ page }) => {
+  await signIn(page, "aysel.mammadova", "/gpa");
+  await expect(page.getByRole("heading", { level: 2, name: "Simulyator" })).toBeVisible();
+  await page.getByRole("button", { name: "Fənn əlavə et" }).click();
+  await expect(page.getByLabel("1-ci fənn: kredit")).toBeVisible();
+  expect(await undersizedTargets(page), "/gpa").toEqual([]);
+});

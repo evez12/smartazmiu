@@ -4322,6 +4322,75 @@
         "title": "FilterOptionOut",
         "type": "object"
       },
+      "FinishedCourseListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FinishedCourseOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FinishedCourseListOut",
+        "type": "object"
+      },
+      "FinishedCourseOut": {
+        "description": "One finished course of the signed-in student; the score is the final 0-100 result.",
+        "properties": {
+          "credits": {
+            "title": "Credits",
+            "type": "integer"
+          },
+          "enrollment_id": {
+            "title": "Enrollment Id",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "semester_term": {
+            "$ref": "#/components/schemas/SemesterTerm"
+          },
+          "semester_year": {
+            "title": "Semester Year",
+            "type": "integer"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "enrollment_id",
+          "subject_id",
+          "subject_code",
+          "subject_name",
+          "credits",
+          "semester_year",
+          "semester_term",
+          "score",
+          "passed"
+        ],
+        "title": "FinishedCourseOut",
+        "type": "object"
+      },
       "FinishedSemesterOut": {
         "properties": {
           "id": {
@@ -23366,6 +23435,82 @@
         "summary": "Download everything stored about me (JSON)",
         "tags": [
           "privacy"
+        ]
+      }
+    },
+    "/api/v1/me/grades": {
+      "get": {
+        "operationId": "listMyGrades",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinishedCourseListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My finished courses with their final scores, for the ÜOMG calculator",
+        "tags": [
+          "grades"
         ]
       }
     },

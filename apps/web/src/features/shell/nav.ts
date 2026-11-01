@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   FileUp,
+  Calculator,
   GraduationCap,
   House,
   ListChecks,
@@ -44,6 +45,7 @@ export type NavItem = {
     | "quizzes"
     | "attendance"
     | "exams"
+    | "gpa"
     | "examSlots"
     | "forum"
     | "map"
@@ -83,6 +85,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/quizzes", labelKey: "quizzes", icon: ListChecks, inTabBar: false },
       { href: "/attendance", labelKey: "attendance", icon: QrCode, inTabBar: false },
       { href: "/exams", labelKey: "exams", icon: GraduationCap, inTabBar: false },
+      { href: "/gpa", labelKey: "gpa", icon: Calculator, inTabBar: false },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },

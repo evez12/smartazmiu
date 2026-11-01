@@ -1,3 +1,5 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 
 import { Panel, PanelBody } from "@/components/ui/panel";
@@ -6,6 +8,8 @@ import { ReportTable, type ReportRow } from "@/features/attendance/report-pages"
 import { ExamCard } from "@/features/exams/exams-page";
 import type { ExamSlot } from "@/features/exams/model";
 import { PaperCard } from "@/features/exams/papers-page";
+import { Courses, Rules, Simulator, Summary } from "@/features/gpa/gpa-page";
+import { GPA_DEFAULTS } from "@/features/gpa/uomg";
 import { Overlaps, SlotTable } from "@/features/exams/slots-admin";
 import { ApiProvider } from "@/lib/api/provider";
 
@@ -119,6 +123,41 @@ const PAPER = {
   created_at: "2026-11-01T08:00:00Z",
 };
 
+function result(
+  id: string,
+  subject: string,
+  credits: number,
+  score: number,
+  year: number,
+  term: "fall" | "spring",
+) {
+  return {
+    enrollment_id: id,
+    subject_id: subject,
+    subject_code: subject,
+    subject_name: SUBJECT_NAMES[subject] ?? subject,
+    credits,
+    semester_year: year,
+    semester_term: term,
+    score,
+    passed: score >= 51,
+  };
+}
+
+const SUBJECT_NAMES: Record<string, string> = {
+  "RIY-1101": "Xətti cəbr və riyazi analiz",
+  "IQT-2102": "Statistika",
+  "XDL-1101": "Xarici dil",
+};
+
+/** A failed course retaken the next spring, so the table shows a replaced attempt. */
+const GRADES = [
+  result("g1", "RIY-1101", 8, 40, 2024, "fall"),
+  result("g2", "XDL-1101", 4, 89, 2024, "fall"),
+  result("g3", "RIY-1101", 8, 80, 2025, "spring"),
+  result("g4", "IQT-2102", 10, 93, 2025, "fall"),
+];
+
 function ListPanel({ children }: { children: React.ReactNode }) {
   return (
     <Panel>
@@ -172,6 +211,14 @@ export function Sprint14Specimens() {
             subjectId={OFFERING.id}
           />
         </div>
+      </Section>
+      <Section title={t("gpaSummary")}>
+        <Summary grades={GRADES} config={GPA_DEFAULTS} />
+        <Courses grades={GRADES} config={GPA_DEFAULTS} />
+      </Section>
+      <Section title={t("gpaRules")}>
+        <Rules config={GPA_DEFAULTS} onChange={() => undefined} />
+        <Simulator grades={GRADES} config={GPA_DEFAULTS} />
       </Section>
     </ApiProvider>
   );
