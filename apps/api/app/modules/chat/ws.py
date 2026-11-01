@@ -32,11 +32,12 @@ from app.modules.chat.hub import Close, CloseCode, Connection, Hub
 from app.modules.chat.lookup import parse_message_id
 from app.modules.chat.messages import MessageService
 from app.modules.chat.models import ChannelMember
-from app.modules.chat.policy import Action, DatabaseExamWindows, ExamWindowProvider
+from app.modules.chat.policy import Action, ExamWindowProvider
 from app.modules.chat.presence import OFFLINE_GRACE_SECONDS, Presence
 from app.modules.chat.reactions import ReactionService
 from app.modules.chat.schemas import MESSAGE_ID_PATTERN
 from app.modules.chat.snowflake import Snowflake
+from app.modules.exams.windows import DatabaseExamWindows
 from app.modules.health.metrics import MESSAGES_SENT, WS_CONNECTIONS, counting_send
 from app.modules.users.models import User, UserStatus
 from app.modules.users.service import UserService

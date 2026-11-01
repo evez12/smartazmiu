@@ -52,7 +52,10 @@
       "feedbackList": "Rəylər",
       "reportList": "Mesaj şikayətləri",
       "attendanceScreen": "Davamiyyət: müəllim ekranı",
-      "attendanceReport": "Davamiyyət hesabatı"
+      "attendanceReport": "Davamiyyət hesabatı",
+      "examCards": "İmtahan kartları",
+      "examSlots": "İmtahan cədvəli idarəsi",
+      "pastPapers": "Keçmiş imtahan kağızları"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -268,7 +271,9 @@
       "assignments": "Tapşırıqlar",
       "quizzes": "Testlər",
       "forum": "Sual-cavab",
-      "attendance": "Davamiyyət"
+      "attendance": "Davamiyyət",
+      "exams": "İmtahanlar",
+      "examSlots": "İmtahan cədvəli idarəsi"
     },
     "saved": "Saxlanılanlar"
   },
@@ -381,7 +386,8 @@
       "rooms": "Otaqlar",
       "week_parity": "Həftə növbəsi (üst və alt həftə)",
       "schedule": "Dərs cədvəli",
-      "schedule_changes": "Cədvəl dəyişiklikləri"
+      "schedule_changes": "Cədvəl dəyişiklikləri",
+      "exam_slots": "İmtahan cədvəli"
     },
     "statuses": {
       "ready": "Tətbiqə hazırdır",
@@ -446,7 +452,9 @@
       "wholeFile": "Bütün fayl",
       "downloadReport": "Xəta hesabatını yükləyin",
       "removed": "Cədvəldən çıxarılan dərslər",
-      "confirmConsequenceSchedule": "{created} dərs əlavə ediləcək, {updated} dərs dəyişəcək, faylda olmayan {removed} dərs cədvəldən çıxarılacaq. Dəyişikliklər bu gündən qüvvəyə minir, keçmiş həftələr dəyişmir."
+      "confirmConsequenceSchedule": "{created} dərs əlavə ediləcək, {updated} dərs dəyişəcək, faylda olmayan {removed} dərs cədvəldən çıxarılacaq. Dəyişikliklər bu gündən qüvvəyə minir, keçmiş həftələr dəyişmir.",
+      "warningsTitle": "Xəbərdarlıqlar",
+      "warningsHelp": "Bu xəbərdarlıqlar faylın tətbiq olunmasına mane olmur. Üst-üstə düşmə planlaşdırılıbsa, davam edin."
     },
     "issues": {
       "required": "Xana boşdur. Dəyər daxil edin.",
@@ -487,7 +495,11 @@
       "ambiguous_class": "Bu vaxtda bir neçə dərs var. group_codes sütununu doldurun.",
       "not_allowed_when_cancelled": "Ləğv olunan dərs üçün yeni tarix, vaxt, otaq və ya müəllim göstərilmir.",
       "change_without_details": "Dəyişiklik üçün yeni tarix, vaxt, otaq və ya müəllim göstərin.",
-      "unknown": "Sətirdə xəta var."
+      "unknown": "Sətirdə xəta var.",
+      "window_too_long": "İmtahan 12 saatdan uzun ola bilməz.",
+      "overlaps_group": "Eyni qrupun başqa imtahanı ilə üst-üstə düşür: tələbələr iki imtahana eyni vaxtda düşür.",
+      "overlaps_room": "Eyni otaqda başqa imtahanla üst-üstə düşür.",
+      "overlaps_offering": "Bu fənnin başqa imtahanı ilə üst-üstə düşür."
     }
   },
   "profile": {
@@ -684,7 +696,11 @@
         "quiz_graded": "Testin açıq sualları qiymətləndirildi",
         "community_auto_hidden": "Lent və ya forum məzmunu şikayətlərə görə avtomatik gizlədildi",
         "attendance_marked": "Tələbə dərsdə əl ilə iştirak edən kimi qeyd olundu",
-        "attendance_unmarked": "Tələbənin dərs iştirakı əl ilə ləğv edildi"
+        "attendance_unmarked": "Tələbənin dərs iştirakı əl ilə ləğv edildi",
+        "exam_slot_created": "İmtahan vaxtı əlavə olundu",
+        "exam_slot_edited": "İmtahan vaxtı dəyişdirildi",
+        "exam_slot_deleted": "İmtahan vaxtı silindi",
+        "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -2355,5 +2371,137 @@
     "mineHeading": "Mənim davamiyyətim",
     "scanAction": "İştirakı qeyd et",
     "reportAction": "Hesabat"
+  },
+  "exams": {
+    "title": "İmtahanlar",
+    "description": "Yaxınlaşan imtahanlarınız, otaqlar və keçmiş illərin imtahan kağızları.",
+    "empty": "Yaxın vaxtda imtahanınız yoxdur.",
+    "error": "İmtahanlar yüklənmədi. Bir az sonra yenidən cəhd edin.",
+    "retry": "Yenidən cəhd et",
+    "listLabel": "İmtahanlar",
+    "papersLink": "Keçmiş imtahan kağızları",
+    "calendar": "Təqvimə əlavə et",
+    "room": "Otaq {room}",
+    "roomUnknown": "Otaq hələ elan olunmayıb.",
+    "countdown": {
+      "running": "İmtahan gedir",
+      "days": "{days} gün {hours} saat qalıb",
+      "hours": "{hours} saat {minutes} dəq qalıb",
+      "minutes": "{minutes} dəq qalıb"
+    },
+    "admin": {
+      "title": "İmtahan cədvəli idarəsi",
+      "description": "İmtahan vaxtlarını əlavə edin, dəyişin və toqquşmalara baxın.",
+      "importLink": "Fayldan idxal et",
+      "showPast": "Keçmiş imtahanları göstər",
+      "hidePast": "Keçmiş imtahanları gizlət",
+      "empty": "Planlaşdırılmış imtahan yoxdur.",
+      "error": "İmtahan cədvəli yüklənmədi. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "create": "Yeni imtahan",
+      "offering": "Fənn və qrup",
+      "offeringChoose": "Fənni seçin",
+      "offeringRequired": "Fənni seçin.",
+      "starts": "Başlama vaxtı",
+      "ends": "Bitmə vaxtı",
+      "startsRequired": "Başlama vaxtını yazın.",
+      "endsRequired": "Bitmə vaxtını yazın.",
+      "endsAfterStarts": "Bitmə vaxtı başlama vaxtından sonra olmalıdır.",
+      "room": "Otaq",
+      "roomHelp": "Kampus xəritəsindəki otaq kodu, məsələn 1-301. Boş saxlaya bilərsiniz.",
+      "add": "İmtahanı əlavə et",
+      "saved": "İmtahan saxlanıldı.",
+      "failed": "İmtahan saxlanmadı",
+      "overlapTitle": "Bu imtahan başqa imtahanla üst-üstə düşür",
+      "overlap": {
+        "offering": "Eyni fənnin başqa imtahanı: {course}, {when}.",
+        "group": "Eyni qrupun imtahanı: {course}, {when}. Tələbələr ikisinə eyni vaxtda düşür.",
+        "room": "Eyni otaqda başqa imtahan: {course}, {when}."
+      },
+      "columns": {
+        "course": "Fənn",
+        "when": "Vaxt",
+        "room": "Otaq",
+        "checks": "Yoxlama",
+        "actions": "Əməliyyatlar"
+      },
+      "overlapTag": "{count} toqquşma",
+      "noOverlap": "Toqquşma yoxdur",
+      "edit": "Dəyiş",
+      "remove": "Sil",
+      "save": "Yadda saxla",
+      "cancel": "Ləğv et",
+      "editTitle": "İmtahanı dəyiş",
+      "removeTitle": "İmtahanı sil",
+      "removeBody": "{course}, {when} imtahanı silinəcək. Bu fənnin çat kanalları yenidən açılacaq."
+    },
+    "papers": {
+      "title": "Keçmiş imtahan kağızları",
+      "description": "Bitmiş semestrlərin imtahan kağızları. Yalnız müəllim və ya dekanlıq təsdiq etdikdən sonra görünür.",
+      "noSubjects": "Hələ fənniniz yoxdur.",
+      "error": "Kağızlar yüklənmədi. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "subject": "Fənn",
+      "waiting": "{count} gözləyir",
+      "empty": "Bu fənn üzrə hələ təsdiqlənmiş kağız yoxdur.",
+      "listLabel": "İmtahan kağızları",
+      "status": {
+        "pending": "Təsdiq gözləyir",
+        "approved": "Təsdiqlənib",
+        "rejected": "Rədd edilib"
+      },
+      "scan": {
+        "pending": "Yoxlanılır",
+        "infected": "Təhlükəli fayl",
+        "failed": "Yoxlamadan keçməyib"
+      },
+      "kind": {
+        "midterm": "Aralıq imtahanı",
+        "final": "Yekun imtahanı",
+        "retake": "Təkrar imtahan"
+      },
+      "meta": "{semester} · {kind} · {size}",
+      "note": "Qeyd: {note}",
+      "download": "Yüklə",
+      "downloadFailed": "Fayl açılmadı. Yenidən cəhd edin.",
+      "review": "Qərar ver",
+      "reviewTitle": "Kağıza baxış",
+      "reviewHelp": "Kağız yalnız təsdiqdən sonra fənnin tələbələrinə görünəcək.",
+      "noteLabel": "Qeyd",
+      "noteHelp": "İstəyə bağlı. Yükləyən şəxs bu qeydi görəcək.",
+      "approve": "Təsdiq et",
+      "reject": "Rədd et",
+      "cancel": "Ləğv et",
+      "reviewFailed": "Qərar saxlanmadı",
+      "upload": {
+        "title": "Kağız yüklə",
+        "rule": "Yalnız bitmiş semestrin imtahan kağızını yükləyin. Cari semestrin imtahan sualları paylaşıla bilməz.",
+        "file": "Fayl",
+        "fileHelp": "PDF, DOCX, PPTX, şəkil və ya ZIP, ən çox {max}.",
+        "fileRequired": "Fayl seçin.",
+        "fileType": "Bu fayl növü qəbul olunmur.",
+        "fileSize": "Fayl boş olmamalı və {max} ölçüsündən böyük olmamalıdır.",
+        "semester": "Semestr",
+        "semesterChoose": "Semestri seçin",
+        "semesterRequired": "Semestri seçin.",
+        "noSemesters": "Bu fənn üzrə bitmiş semestr hələ yoxdur.",
+        "kind": "İmtahanın növü",
+        "kinds": {
+          "final": "Yekun imtahanı",
+          "midterm": "Aralıq imtahanı",
+          "retake": "Təkrar imtahan"
+        },
+        "paperTitle": "Ad",
+        "titleRequired": "Ad yazın (ən azı 3 simvol).",
+        "consent": "Bu kağızın bitmiş semestrə aid olduğunu təsdiq edirəm",
+        "consentHelp": "Kağızı paylaşmaq hüququm var və bunlar cari imtahan sualları deyil.",
+        "consentRequired": "Davam etmək üçün təsdiq qutusunu işarələyin.",
+        "uploading": "Yüklənir",
+        "submit": "Kağızı göndər",
+        "sent": "Kağız göndərildi. Təsdiq gözləyir.",
+        "sentApproved": "Kağız yükləndi və təsdiqləndi.",
+        "failed": "Kağız göndərilmədi"
+      }
+    }
   }
 }

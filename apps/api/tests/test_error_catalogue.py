@@ -13,7 +13,7 @@ CODE = re.compile(r'AppError\(\s*"([a-z_]+\.[a-z_]+)"')
 BLOCKERS = ("not_student", "not_available", "graded", "closed")
 
 
-@pytest.mark.parametrize("module", ["assignments", "quizzes", "community", "attendance"])
+@pytest.mark.parametrize("module", ["assignments", "quizzes", "community", "attendance", "exams"])
 def test_every_raised_code_has_an_azerbaijani_and_english_message(module: str) -> None:
     raised = {
         code

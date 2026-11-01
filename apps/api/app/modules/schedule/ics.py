@@ -17,7 +17,7 @@ CLASS_TYPE_LABELS = {
 }
 
 # Baku has had no daylight saving time since 2016; a single STANDARD component describes it.
-_VTIMEZONE = (
+VTIMEZONE = (
     "BEGIN:VTIMEZONE",
     "TZID:Asia/Baku",
     "BEGIN:STANDARD",
@@ -30,7 +30,7 @@ _VTIMEZONE = (
 )
 
 
-def _escape(text: str) -> str:
+def escape(text: str) -> str:
     return (
         text.replace("\\", "\\\\")
         .replace(";", "\\;")
@@ -40,7 +40,7 @@ def _escape(text: str) -> str:
     )
 
 
-def _fold(line: str) -> list[str]:
+def fold(line: str) -> list[str]:
     """Lines longer than 75 octets continue on lines starting with a space, never inside a character."""
     parts: list[str] = []
     current, size, limit = "", 0, 75
@@ -78,13 +78,13 @@ def _event(occurrence: Occurrence, stamp: str) -> list[str]:
         f"DTSTAMP:{stamp}",
         f"DTSTART;TZID=Asia/Baku:{_local(occurrence.day, occurrence.starts_at)}",
         f"DTEND;TZID=Asia/Baku:{_local(occurrence.day, occurrence.ends_at)}",
-        f"SUMMARY:{_escape(summary)}",
+        f"SUMMARY:{escape(summary)}",
     ]
     if occurrence.room is not None:
         lines.append(
-            f"LOCATION:{_escape(f'{occurrence.room.code}, {occurrence.room.building_name}')}"
+            f"LOCATION:{escape(f'{occurrence.room.code}, {occurrence.room.building_name}')}"
         )
-    lines.append(f"DESCRIPTION:{_escape(chr(10).join(description))}")
+    lines.append(f"DESCRIPTION:{escape(chr(10).join(description))}")
     cancelled = occurrence.status is OccurrenceStatus.CANCELLED
     lines += [f"STATUS:{'CANCELLED' if cancelled else 'CONFIRMED'}", "END:VEVENT"]
     return lines
@@ -100,11 +100,11 @@ def calendar(occurrences: Iterable[Occurrence], generated_at: datetime) -> str:
         "METHOD:PUBLISH",
         "X-WR-CALNAME:Dərs cədvəli",
         "X-WR-TIMEZONE:Asia/Baku",
-        *_VTIMEZONE,
+        *VTIMEZONE,
     ]
     for occurrence in occurrences:
         # The moved class is exported on its new day; its original day would only duplicate it.
         if occurrence.status is not OccurrenceStatus.MOVED_AWAY:
             lines += _event(occurrence, stamp)
     lines.append("END:VCALENDAR")
-    return "".join(f"{part}\r\n" for line in lines for part in _fold(line))
+    return "".join(f"{part}\r\n" for line in lines for part in fold(line))

@@ -3,10 +3,9 @@ asks it, so the reason a user sees is the one that actually applies (§13.2). Pu
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
-from importlib import import_module
-from typing import Any, Protocol
+from typing import Protocol
 
 
 class Action(StrEnum):
@@ -62,38 +61,10 @@ class ExamWindowProvider(Protocol):
 
 
 class NoExamWindows:
-    """Sprint 5 stub: exam slots arrive in Sprint 10, so no channel is ever in exam mode yet (D-059)."""
+    """A provider with no windows; the real one reads the exam slots (``exams/windows.py``, D-097)."""
 
     async def windows(self, channel_ids: list[uuid.UUID], at: datetime) -> list[ExamWindow]:
         return []
-
-
-class DatabaseExamWindows:
-    """Reads the authoritative exam schedule at authorization time."""
-
-    def __init__(self, session: Any) -> None:
-        self.session = session
-
-    async def windows(self, channel_ids: list[uuid.UUID], at: datetime) -> list[ExamWindow]:
-        from app.modules.chat.models import ExamSlot
-
-        select = import_module("sqlalchemy").select
-
-        rows = await self.session.execute(
-            select(ExamSlot.channel_id, ExamSlot.starts_at, ExamSlot.ends_at).where(
-                ExamSlot.channel_id.in_(channel_ids),
-                ExamSlot.starts_at - timedelta(minutes=15) <= at,
-                ExamSlot.ends_at > at,
-            )
-        )
-        return [
-            ExamWindow(
-                channel_id=channel_id,
-                starts_at=starts_at,
-                ends_at=ends_at,
-            )
-            for channel_id, starts_at, ends_at in rows
-        ]
 
 
 @dataclass(frozen=True, slots=True)

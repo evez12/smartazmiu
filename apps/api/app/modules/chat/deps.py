@@ -10,8 +10,8 @@ from app.modules.chat.bus import ChatBus
 from app.modules.chat.channels import ChannelService
 from app.modules.chat.curation import CurationService
 from app.modules.chat.messages import MessageService
-from app.modules.chat.policy import DatabaseExamWindows
 from app.modules.chat.reactions import ReactionService
+from app.modules.exams.windows import DatabaseExamWindows
 
 
 def get_durable_redis(request: Request) -> Redis:

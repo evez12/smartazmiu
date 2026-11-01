@@ -19,6 +19,8 @@ from app.modules.academics.models import AcademicImport, ImportKind, ImportStatu
 from app.modules.academics.registry import SPECS
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
+from app.modules.chat.bus import ChatBus
+from app.modules.exams.service import channels_of
 
 logger = structlog.get_logger(__name__)
 
@@ -39,8 +41,9 @@ def expires_at(record: AcademicImport) -> datetime | None:
 
 
 class ImportService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, bus: ChatBus | None = None) -> None:
         self.session = session
+        self.bus = bus
 
     async def create(
         self,
@@ -118,6 +121,9 @@ class ImportService:
             details={"kind": record.kind.value, **record.summary},
         )
         await self.session.commit()
+        if run.exam_offerings and self.bus is not None:
+            # Exam mode follows the new windows on open screens at once (D-097).
+            await self.bus.channels_changed(await channels_of(self.session, run.exam_offerings))
         logger.info("import_applied", kind=record.kind.value, **record.summary)
         return record
 
@@ -176,6 +182,9 @@ def _store_result(record: AcademicImport, run: ImportRun) -> None:
     record.summary = dict(run.counts)
     record.errors = [issue.as_dict() for issue in issues[:MAX_STORED_ISSUES]]
     record.error_count = len(run.issues)
+    record.warnings = [
+        warning.as_dict() for warning in sorted(run.warnings, key=lambda w: w.row or 0)
+    ]
 
 
 def _payload(table: Table) -> dict[str, Any]:

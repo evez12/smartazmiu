@@ -101,6 +101,8 @@ class ImportOut(_Frozen):
 class ImportDetail(ImportOut):
     errors: list[ImportIssueOut]
     """At most the first 1 000 problems; ``error_count`` has the total."""
+    warnings: list[ImportIssueOut]
+    """Findings that do not stop the file from being applied, such as exams that overlap."""
     previously_applied_at: datetime | None
     """Set when the same file was applied before, in which case applying it again changes nothing."""
 

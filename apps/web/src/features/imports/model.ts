@@ -23,6 +23,7 @@ export const IMPORT_KINDS = [
   "week_parity",
   "schedule",
   "schedule_changes",
+  "exam_slots",
 ] as const satisfies readonly ImportKind[];
 
 export const FILE_ENCODINGS = [
