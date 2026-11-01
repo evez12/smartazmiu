@@ -2415,3 +2415,36 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     `formatPoints`, the decimal comma of the assignments; covered by a unit test.
 - **Consequences:** a changed screen of Sprint 12 or 13 now fails `make visual` until its baseline is re-recorded on
   purpose. The browser flow of an infected submission is recorded below once it has run.
+
+## D-110 · 2026-11-02 · Sprint 14 closeout: the infected-submission flow and what the from-scratch runs found
+
+- **Context:** the closeout gate is `make lint test` and the whole E2E suite on a stack built from scratch
+  (`make reset`, `make up`, `make seed`, no retries). Four runs on that stack found five problems, four in tests
+  and one in the build; none was waved off as a flake.
+- **Infected assignment file (D-093), browser flow** (`coursework.spec.ts`): a teacher creates an assignment in a
+  throwaway offering, the student submits a ZIP holding the EICAR test file (built in memory), the worker rejects it,
+  the student sees "Virus aşkarlandı" and the hint, neither the student nor the teacher gets a download button, and a
+  clean PDF becomes version 2 and the only downloadable file. Throwaway accounts; the `records` fixture removes the
+  assignment and detaches its files for the worker's purge, so the seed-count check is unaffected.
+  Its first version waited for the file name, which the picker shows from the moment the file is chosen, and then
+  reloaded the page to poll for the scan: the reload aborted the upload in flight. It now waits for the status
+  "Göndərilib", which only the server produces.
+- **The Docker image did not build:** the shared rounding cases of D-106 lived in `infra/`, outside the web image's
+  build context, and `pnpm build` type-checks test files. They now live next to the calculator
+  (`apps/web/src/features/gpa/uomg-rounding.json`); the Python test reads them from there. Found only by building
+  the image, which the unit-test gate does not do.
+- **Announcement e-mail test:** on a fresh database the seed queues about 460 guide invitations, which go out 200 per
+  minute (D-055), so the first announcement e-mail waited behind them for up to three windows. The poll now allows
+  180 s. Left open: the throttle has no priority, so an announcement can wait minutes behind a mass mailing.
+- **Missing `<title>` in an axe run (`staff.spec.ts`):** seen once after applying an import; three reruns and the
+  next full run did not repeat it. A detail page gets its title from a request of its own, so the title can arrive
+  after the body; the helper now waits for a non-empty title before running axe. Mechanism not proven, the
+  hypothesis fits that the page has a title in every other run.
+- **Duplicate text during a streamed swap (`onboarding.spec.ts`):** an unscoped `getByText` matched the dashboard
+  sentence twice, the second copy outside `main` (the hidden copy of D-044). Scoped to `main`, as the staff spec
+  already did. D-103 is unchanged by this: the upload page itself was probed again on the production build (1 500
+  samples) and has one file input at every moment; the duplicate-text class is a separate cause.
+- **Process:** two older `arq` worker processes from earlier sessions were still running against the stack's Redis
+  and were left alone (they were not started in this session). They run code from before D-105, so they may fail on
+  the new notification kinds; no failure was traced to them, but they should be stopped before any release check.
+- **Final result:** see the report of the closeout; the numbers are not repeated here so this entry cannot go stale.

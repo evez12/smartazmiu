@@ -27,6 +27,9 @@ const KINDS = [
 ] as const;
 
 async function expectNoSeriousViolations(page: Page) {
+  // A detail page takes its title from a request of its own, so it can arrive after the body (and after a
+  // refresh); axe run before it reports a missing title on a page that has one.
+  await expect(page).toHaveTitle(/\S/);
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 }
