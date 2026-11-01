@@ -14,7 +14,7 @@ export type Countdown =
   | { kind: "minutes"; minutes: number };
 
 /**
- * How long until an exam starts, rounded down to the unit shown; an exam that has started and not ended is
+ * How long until an exam starts, truncated to the unit shown; an exam that has started and not ended is
  * "running". The clock is the caller's, so a screen can tick it and a test can fix it.
  */
 export function countdown(startsAt: string, endsAt: string, now: number): Countdown {
