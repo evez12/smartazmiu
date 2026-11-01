@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import shared from "../../../../../infra/fixtures/uomg-rounding.json";
 import {
   earnedCredits,
   finalScore,
@@ -66,6 +67,34 @@ describe("ÜOMG", () => {
       uomg([result("x", 3, 71), result("y", 6, 72)], { ...GPA_DEFAULTS, roundDigits: 0 }),
     ).toBe(72);
     expect(uomg(thirds)).toBe(71);
+  });
+
+  it("rounds an exact tie up, in the cases shared with the Python reference (D-106)", () => {
+    const cases = shared.cases as {
+      name: string;
+      digits: number;
+      courses: [number, number][];
+      expected: number;
+    }[];
+    expect(cases.length).toBeGreaterThan(5);
+    for (const { name, digits, courses, expected } of cases) {
+      const results = courses.map(([credits, score], index) => result(`c${index}`, credits, score));
+      expect(uomg(results, { ...GPA_DEFAULTS, roundDigits: digits }), name).toBe(expected);
+    }
+  });
+
+  it("is exact on the ties a double gets wrong", () => {
+    // 2569 / 40 = 64.225 exactly; Math.round(64.225 * 100) / 100 gives 64.22.
+    expect(Math.round((2569 / 40) * 100) / 100).toBe(64.22);
+    expect(uomg([result("a", 1, 73), result("b", 39, 64)])).toBe(64.23);
+    expect(
+      uomg([result("a", 1, 72), result("b", 1, 73)], { ...GPA_DEFAULTS, roundDigits: 0 }),
+    ).toBe(73);
+    // Scores with decimals keep a tie a tie: (2 x 71.5 + 2 x 72) / 4 = 71.75.
+    expect(
+      uomg([result("a", 2, 71.5), result("b", 2, 72)], { ...GPA_DEFAULTS, roundDigits: 1 }),
+    ).toBe(71.8);
+    expect(uomg([])).toBe(0);
   });
 
   it("counts only passed, latest courses as earned credits", () => {

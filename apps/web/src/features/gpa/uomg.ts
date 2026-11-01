@@ -70,9 +70,18 @@ export function counted(results: CourseResult[], config: GpaConfig): CourseResul
   return config.includeFailed ? pool : pool.filter((r) => r.score >= config.passThreshold);
 }
 
-function round(value: number, digits: number): number {
+/** Scores are whole numbers or have at most two decimals; this keeps their sum exact in a double. */
+const SCORE_SCALE = 100;
+
+/**
+ * Rounds ``numerator / denominator`` to ``digits`` places, a tie going up (D-106). Integer arithmetic keeps an
+ * exact half exact: ``Math.round(x * 100) / 100`` turns 64.225 into 64.22 because the double is just below it.
+ */
+function roundHalfUp(numerator: number, denominator: number, digits: number): number {
   const factor = 10 ** digits;
-  return Math.round(value * factor) / factor;
+  const twice = 2 * numerator * factor + denominator;
+  const divisor = 2 * denominator;
+  return (twice - (twice % divisor)) / divisor / factor;
 }
 
 /** Credit-weighted average; an empty list is 0, not an error. */
@@ -80,8 +89,8 @@ export function uomg(results: CourseResult[], config: GpaConfig = GPA_DEFAULTS):
   const pool = counted(results, config);
   const credits = pool.reduce((sum, r) => sum + r.credits, 0);
   if (credits === 0) return 0;
-  const points = pool.reduce((sum, r) => sum + r.credits * r.score, 0);
-  return round(points / credits, config.roundDigits);
+  const points = pool.reduce((sum, r) => sum + r.credits * Math.round(r.score * SCORE_SCALE), 0);
+  return roundHalfUp(points, credits * SCORE_SCALE, config.roundDigits);
 }
 
 /** Credits of the courses that were passed under the rules in force (a replaced attempt earns none). */

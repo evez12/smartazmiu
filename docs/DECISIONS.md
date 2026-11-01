@@ -2336,3 +2336,25 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   teachers' own uploads and pending papers silent, the worker registry.
 - **Consequences:** a bulk exam import notifies every attendee of every future exam in it once; re-applying the file
   is silent. The seed (`make seed`) creates these notifications for the sample users, which is intended.
+
+## D-106 · 2026-11-02 · ÜOMG rounding: half-up, identical in TypeScript and the Python reference
+
+- **Context:** D-100 noted that the web function rounds half up on a double while the spec's Python reference
+  (`round()`) rounds half to even on a binary float, so a value exactly on a tie could differ in the last digit.
+  The university's rule for a tie is **not confirmed**.
+- **Decision:** default to **half-up** (a tie rounds up) and make both implementations compute it exactly.
+  - `uomg.ts` no longer uses `Math.round(x * 10^d) / 10^d`, which is wrong on exact ties because the double is
+    just below them (2569 / 40 = 64.225 gave 64.22). It rounds the integer ratio `points / credits` with integer
+    arithmetic; scores are scaled by 100, so whole scores and scores with up to two decimals stay exact.
+  - The reference code in `docs/uomg-gpa-spec.md` (section 6) uses `Fraction` and `floor(x * 10^d + 1/2)` through
+    `round_half_up`. The spec table marks the rule as unconfirmed.
+  - `infra/fixtures/uomg-rounding.json` holds the shared cases (ties at 0, 1 and 2 digits, a value just below a tie,
+    thirds, the transcript). `uomg.test.ts` and `apps/api/tests/test_uomg_reference.py` both run them; the Python test
+    executes the code block of the spec itself, so the document cannot drift from what is tested. Two cases fail
+    with the previous implementations (64.225 in TypeScript, 72.5 in Python).
+- **Open, needs the university:** the grading regulations (Order 1060 and Decision 348 are the sources listed in
+  the spec) must be checked for how a tie in the ÜOMG is rounded, and whether the displayed value is rounded at
+  all or truncated. Until then every displayed ÜOMG is half-up. Changing the rule means changing `roundHalfUp`,
+  `round_half_up` and the expected values in the fixture together.
+- **Consequences:** a displayed value can differ in the last digit from one produced by a half-even rule; the
+  loan thresholds (71, 91) compare the rounded value, as before.
