@@ -2441,7 +2441,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   after the body; the helper now waits for a non-empty title before running axe. Mechanism not proven, the
   hypothesis fits that the page has a title in every other run.
 - **Duplicate text during a streamed swap (`onboarding.spec.ts`):** an unscoped `getByText` matched the dashboard
-  sentence twice, the second copy outside `main` (the hidden copy of D-044). Scoped to `main`, as the staff spec
+  sentence twice, the second copy outside `main` (the hidden copy that `staff.spec.ts` already notes). Scoped to `main`, as the staff spec
   already did. D-103 is unchanged by this: the upload page itself was probed again on the production build (1 500
   samples) and has one file input at every moment; the duplicate-text class is a separate cause.
 - **Process:** two older `arq` worker processes from earlier sessions were still running against the stack's Redis
