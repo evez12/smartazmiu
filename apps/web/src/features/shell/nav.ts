@@ -3,9 +3,11 @@ import {
   Bell,
   BookOpen,
   CalendarCheck,
+  CalendarClock,
   CalendarDays,
   ClipboardCheck,
   FileUp,
+  GraduationCap,
   House,
   ListChecks,
   Megaphone,
@@ -41,6 +43,8 @@ export type NavItem = {
     | "assignments"
     | "quizzes"
     | "attendance"
+    | "exams"
+    | "examSlots"
     | "forum"
     | "map"
     | "announcements"
@@ -78,6 +82,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/assignments", labelKey: "assignments", icon: ClipboardCheck, inTabBar: false },
       { href: "/quizzes", labelKey: "quizzes", icon: ListChecks, inTabBar: false },
       { href: "/attendance", labelKey: "attendance", icon: QrCode, inTabBar: false },
+      { href: "/exams", labelKey: "exams", icon: GraduationCap, inTabBar: false },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },
@@ -115,6 +120,13 @@ export const NAVIGATION: NavSection[] = [
         icon: MessageSquareText,
         inTabBar: false,
         permission: "admin.feedback.read",
+      },
+      {
+        href: "/exams/slots",
+        labelKey: "examSlots",
+        icon: CalendarClock,
+        inTabBar: false,
+        permission: "exams.manage",
       },
       {
         href: "/admin/audit",

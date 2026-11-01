@@ -3,6 +3,10 @@ import { useTranslations } from "next-intl";
 import { Panel, PanelBody } from "@/components/ui/panel";
 import { CodeCard, Roster } from "@/features/attendance/session-screen";
 import { ReportTable, type ReportRow } from "@/features/attendance/report-pages";
+import { ExamCard } from "@/features/exams/exams-page";
+import type { ExamSlot } from "@/features/exams/model";
+import { PaperCard } from "@/features/exams/papers-page";
+import { Overlaps, SlotTable } from "@/features/exams/slots-admin";
 import { ApiProvider } from "@/lib/api/provider";
 
 import { Section } from "./section";
@@ -56,6 +60,65 @@ const REPORT_ROWS: ReportRow[] = ROSTER.map((entry, index) => ({
   marks: [],
 }));
 
+const OFFERING = {
+  id: "7a1e2c64-5b90-4d18-8f23-1c4d6e8a0b35",
+  subject_name: "Statistika",
+  subject_code: "IQT-2102",
+  groups: ["765a2"],
+  semester: "2026 Payız",
+};
+const OTHER = {
+  ...OFFERING,
+  id: "2f6b8d10-9c34-4e57-a1b8-6d0e2f4a8c71",
+  subject_name: "Mikroiqtisadiyyat",
+  subject_code: "IQT-2101",
+};
+/** A fixed clock, so the countdown never changes between runs. */
+const NOW = Date.parse("2027-01-10T08:00:00Z");
+const SLOTS: ExamSlot[] = [
+  {
+    id: "c3d4e5f6-1a2b-4c3d-8e4f-5a6b7c8d9e01",
+    offering: OFFERING,
+    starts_at: "2027-01-14T06:00:00Z",
+    ends_at: "2027-01-14T07:30:00Z",
+    room_code: "2-204",
+    overlaps: [
+      {
+        kind: "group",
+        slot_id: "d4e5f6a7-2b3c-4d4e-9f50-6b7c8d9e0f12",
+        offering: OTHER,
+        starts_at: "2027-01-14T06:30:00Z",
+        ends_at: "2027-01-14T08:00:00Z",
+      },
+    ],
+  },
+  {
+    id: "e5f6a7b8-3c4d-4e5f-a061-7c8d9e0f1a23",
+    offering: OTHER,
+    starts_at: "2027-01-14T06:30:00Z",
+    ends_at: "2027-01-14T08:00:00Z",
+    room_code: null,
+    overlaps: [],
+  },
+];
+
+const PAPER = {
+  id: "f6a7b8c9-4d5e-4f60-b172-8d9e0f1a2b34",
+  subject_id: OFFERING.id,
+  semester: "2025 Payız",
+  kind: "final" as const,
+  title: "Yekun imtahan, 2025 payız",
+  filename: "Yekun.pdf",
+  size_bytes: 1_572_864,
+  status: "pending" as const,
+  scan_status: "clean" as const,
+  uploaded_by_me: false,
+  can_review: true,
+  can_download: true,
+  review_note: null,
+  created_at: "2026-11-01T08:00:00Z",
+};
+
 function ListPanel({ children }: { children: React.ReactNode }) {
   return (
     <Panel>
@@ -83,6 +146,32 @@ export function Sprint14Specimens() {
       </Section>
       <Section title={t("attendanceReport")}>
         <ReportTable rows={REPORT_ROWS} />
+      </Section>
+      <Section title={t("examCards")}>
+        <div className="flex flex-col gap-3">
+          {SLOTS.map((slot) => (
+            <ExamCard key={slot.id} slot={slot} now={NOW} />
+          ))}
+        </div>
+      </Section>
+      <Section title={t("examSlots")}>
+        <Overlaps overlaps={SLOTS[0]!.overlaps} />
+        <SlotTable items={SLOTS} />
+      </Section>
+      <Section title={t("pastPapers")}>
+        <div className="flex flex-col gap-3">
+          <PaperCard paper={PAPER} subjectId={OFFERING.id} />
+          <PaperCard
+            paper={{
+              ...PAPER,
+              id: "a7b8c9d0-5e6f-4a71-8283-9e0f1a2b3c45",
+              status: "approved",
+              can_review: false,
+              review_note: "Uyğundur",
+            }}
+            subjectId={OFFERING.id}
+          />
+        </div>
       </Section>
     </ApiProvider>
   );

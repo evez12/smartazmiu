@@ -2098,3 +2098,87 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   test found missing). `tests/test_error_catalogue.py` reads the source of the four modules and fails when a raised
   code has no message in both languages.
 - **Consequences:** a bug of Sprints 12 and 13, fixed here; it is not a behaviour change of the API.
+
+## D-097 · 2026-11-01 · Exam center: exam slots follow offerings (Sprint 14, group B; closes a Sprint 10 gap)
+
+- **Context:** Sprint 10 ticked "Exam mode from `exam_slots`" but the feature never worked end to end, which the
+  Sprint 14 work uncovered: (1) the table was keyed by `channel_id`, while §5.7 says `exam_slots(course_offering_id,
+  starts_at, ends_at, room)`; (2) nothing could create, edit or delete a slot, through the product or an import, so
+  the table was always empty; (3) the provider read only a slot's own channel, so the subject community (D-003) never
+  followed; (4) no `channel.updated` was sent when a slot changed, so open screens kept the old state (§13.4); (5) the
+  only exam-mode test used a fake provider, so none of this was ever exercised against the table; (6) the 15-minute
+  lead did not work (D-098). The product owner decided on 2026-11-01 to fix it inside Sprint 14, not as a separate
+  sprint, and to re-run the Sprint 10 acceptance ("an exam slot flips the channel to read-only on time").
+- **Decision:**
+  - **Migration `0032`** (reversible) moves `exam_slots` to the §5.7 shape: `course_offering_id` (cascade),
+    `starts_at`, `ends_at`, `room_code` (as printed) and `room_id` (the campus room when the code is known, cleared if
+    the room is deleted), `updated_at`, and a unique `(course_offering_id, starts_at)`, the natural key of the import.
+    Existing rows were kept when their channel was a course channel; any other row was dropped, since it named no
+    single offering. No such row can exist: the product had no way to create one. The downgrade restores the
+    channel link from the offering's course channel.
+  - **The provider** (`exams/windows.py::DatabaseExamWindows`, moved out of `chat/policy.py`) derives the windows of a
+    course channel from the exams of its offering and of a subject community from the exams of every offering of its
+    subject, so overlapping windows merge in the caller (D-003, §13.4).
+  - **Staff manage slots** with `exams.manage` (new permission, staff and admin): `GET/POST /exams/slots`,
+    `PUT/DELETE /exams/slots/<id>`, audited (`exam_slot.created|edited|deleted`, ids only). Every change, and every
+    applied import that touched slots, sends `channel.updated` for the course channel and the subject community
+    after the commit, so open screens re-evaluate at once. A slot is at most 12 hours; a room code must exist on the
+    campus map; the same offering cannot have two slots starting together.
+  - **Overlap warnings.** A slot collides with another that overlaps in time and belongs to the same offering, to an
+    offering that shares an academic group (the students would sit both) or uses the same room. Staff see the list on
+    every slot and a banner when they add or edit one; the import wizard shows the same findings as **warnings** in
+    the preview. Warnings do not block applying (a split sitting may be planned); errors still do. The wizard stores
+    them in `academic_imports.warnings` and `ImportDetail.warnings` returns them.
+  - **Import kind `exam_slots`** (after `schedule_changes`): `subject_code, year, term, offering_code, group_codes,
+    date, starts_at, ends_at, room_code`; one row is one exam, upserted by offering and start. A file re-applies as a
+    no-op. Seeded with the January 2027 exam session of 765a1 and 765a2 (`infra/seed/academics/exam_slots.csv`).
+  - **For students and teachers:** `GET /exams/mine` (exams of offerings they attend or teach that have not ended),
+    `/exams/mine.ics` (Asia/Baku, a stable UID per exam so a calendar updates it), and the `/exams` screen with a
+    countdown in Baku time, the room linked to the campus map, and the calendar link.
+  - **Re-run of the Sprint 10 acceptance:** `test_exam_mode_follows_the_real_slots_in_the_course_channel_and_the_subject_community`
+    drives the real table through the API: a slot an hour away leaves both channels open; moved to ten minutes away
+    it makes both read-only until its end; another subject's channels are untouched; deleting it reopens both, and
+    every step announces the affected channels. The browser E2E (`exam-center.spec.ts`) does the same with a student's
+    chat open: the composer is disabled when the dean's office adds the exam and enabled again, without a reload,
+    when it is moved.
+- **Consequences:** `chat/models.ExamSlot` moved to `exams/models.py`; `NoExamWindows` stays for tests. Students are
+  not notified of a new or changed exam (the spec lists no such notification); they see it on `/exams` and in
+  their calendar. Open: a per-subject switch to turn exam mode off ("configurable per subject by staff", §5.2) has no
+  screen; the sample timetable can be edited through the import.
+
+## D-098 · 2026-11-01 · The exam-mode lead of 15 minutes never applied (Sprint 10 bug)
+
+- **Context:** `ExamWindow.starts_at` is the moment exam mode begins: `ChannelAccess.states` ignores windows that have
+  not started. The Sprint 10 provider filtered slots by `starts_at − 15 min <= now` in SQL but returned the exam's own
+  start, so the caller then dropped the window until the exam really began.
+- **Decision:** the provider returns `starts_at − 15 min` as the window start; the caller is unchanged. The new
+  acceptance test starts an exam ten minutes ahead and expects read-only at once.
+- **Consequences:** a student can no longer post and attach files in the quarter hour before an exam, as §5.2 says.
+
+## D-099 · 2026-11-01 · Past papers archive (Sprint 14, group B)
+
+- **Context:** §6 lists "past papers archive (teacher-approved)" and the product owner answered that the course
+  teacher approves, otherwise the dean's office. The integrity rule of §5.2 forbids sharing exam questions of the
+  current semester. Materials (Sprint 7) are uploaded only by teachers, which does not fit student uploads.
+- **Options:** a new material type with an approval flag; a small module of its own on the shared upload pipeline.
+- **Decision:** its own table `past_papers` (migration `0032`) and `exams/papers.py`, using the presign, check and
+  purge parts of the assignment and material pipelines (`core/uploads.py`, `core/file_scan.py`; the worker scans and
+  purges them with the other files).
+  - **Who:** anyone with an enrollment or a teaching assignment in the subject, or `exams.manage`, may read and
+    upload; outsiders get 404 (§14). A **reviewer** is a teacher of any offering of the subject or someone with
+    `exams.manage`; there is no separate queue: both may decide, and the subject list shows each reviewer how many
+    papers wait. A reviewer's own upload is approved at once (the upload is the decision); everyone else's waits.
+  - **Integrity rules**, checked on the server: the paper must belong to a **semester that has ended** with an
+    offering of the subject (the form offers only those; a hand-made request for the running semester gets
+    `exams.semester_not_finished`, and approval checks it again); the uploader **confirms** it may be shared
+    (`consented_at` is stored; the box is required); nobody but the uploader and reviewers sees a paper before
+    approval; a paper cannot be approved or downloaded until the scan is clean; a rejected or infected paper is
+    visible only to its uploader and reviewers, and an infected one has its object purged.
+  - **Records:** the decision is audited (`past_paper.reviewed` with ids and the outcome, not the note). The
+    reviewer's note is shown to the uploader.
+  - Files: 25 MB, the types of materials, 20 uploads per hour per person; unsaved uploads are removed after a day.
+  - **Screens:** `/exams/papers` (subject picker with waiting counts, papers with status and scan tags, download,
+    review dialog, upload form with the rule and consent), `/exams/slots` (staff), `/exams`.
+- **Consequences:** no notification to the uploader (the status is on the screen); a student's paper of a subject
+  with no teacher and no staff action waits. Reporting a paper (like materials) is not built: staff can reject an
+  approved paper at any time.

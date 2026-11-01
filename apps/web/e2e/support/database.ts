@@ -78,6 +78,10 @@ const SEED_TABLES: Record<string, string> = {
   quizzes: "SELECT count(*) FROM quizzes",
   quiz_questions: "SELECT count(*) FROM quiz_questions",
   quiz_attempts: "SELECT count(*) FROM quiz_attempts",
+  // Seeded by the sample data (infra/seed/academics/exam_slots.csv); tests add slots to offerings of their own,
+  // which are removed with the offering. Past papers are test data in every run (D-097).
+  exam_slots: "SELECT count(*) FROM exam_slots",
+  past_papers: "SELECT count(*) FROM past_papers WHERE submitted_at IS NOT NULL",
   // Attendance is test data in every run (D-094).
   attendance_sessions: "SELECT count(*) FROM attendance_sessions",
   attendance_records: "SELECT count(*) FROM attendance_records",
@@ -122,6 +126,7 @@ export class TestRecords {
   private readonly feedbackMarkers: string[] = [];
   private readonly communityMarkers: string[] = [];
   private readonly courseworkMarkers: string[] = [];
+  private readonly paperMarkers: string[] = [];
   private readonly mailboxes: string[] = [];
   private readonly limited: { emails: string[]; rule: string }[] = [];
 
@@ -192,6 +197,13 @@ export class TestRecords {
   coursework(marker: string): string {
     if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
     this.courseworkMarkers.push(marker);
+    return marker;
+  }
+
+  /** Past papers whose title contains `marker`; their files are purged by the worker like other abandoned uploads (D-097). */
+  pastPapers(marker: string): string {
+    if (marker.length < 8) throw new Error(`Marker too short to be unique: ${marker}`);
+    this.paperMarkers.push(marker);
     return marker;
   }
 
@@ -275,6 +287,11 @@ export class TestRecords {
       );
       await client.query(`DELETE FROM assignments WHERE id IN (${assignments})`, [work]);
       await client.query("DELETE FROM quizzes WHERE title LIKE ANY($1)", [work]);
+      await client.query(
+        `UPDATE past_papers SET submitted_at = NULL, created_at = now() - interval '2 days'
+         WHERE title LIKE ANY($1)`,
+        [this.paperMarkers.map((marker) => `%${marker}%`)],
+      );
       const materials = "SELECT id FROM materials WHERE title LIKE ANY($1)";
       const titles = this.materialMarkers.map((marker) => `%${marker}%`);
       await client.query(`DELETE FROM material_reports WHERE material_id IN (${materials})`, [
@@ -369,6 +386,7 @@ export class TestRecords {
         this.feedbackMarkers,
         this.communityMarkers,
         this.courseworkMarkers,
+        this.paperMarkers,
       ]) {
         list.length = 0;
       }

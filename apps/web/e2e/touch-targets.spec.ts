@@ -142,6 +142,23 @@ test("the attendance screen of a staff member", async ({ page, accounts }) => {
   expect(await undersizedTargets(page), "/attendance (staff)").toEqual([]);
 });
 
+test("the exam screens of a student", async ({ page }) => {
+  await signIn(page, "aysel.mammadova", "/exams");
+  await expect(page.getByRole("link", { name: "Keçmiş imtahan kağızları" })).toBeVisible();
+  expect(await undersizedTargets(page), "/exams").toEqual([]);
+  await expectTargets(page, "/exams/papers");
+});
+
+test("the exam timetable management of staff", async ({ page, accounts }) => {
+  await signInWithSecondFactor(
+    page,
+    await accounts.create("staff", { givenName: "Günel", familyName: "Səfərova" }),
+    "/exams/slots",
+  );
+  await expect(page.getByRole("heading", { level: 2, name: "Yeni imtahan" })).toBeVisible();
+  expect(await undersizedTargets(page), "/exams/slots").toEqual([]);
+});
+
 test("a student's schedule, chat, events and materials", async ({ page }) => {
   await signIn(page, "aysel.mammadova", "/schedule");
   expect(await undersizedTargets(page), "/schedule").toEqual([]);
