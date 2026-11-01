@@ -155,7 +155,7 @@ function PostComposer() {
   );
 }
 
-function PostCard({ post, canModerate }: { post: FeedPost; canModerate: boolean }) {
+export function PostCard({ post, canModerate }: { post: FeedPost; canModerate: boolean }) {
   const t = useTranslations("community");
   const api = useApi();
   const queryClient = useQueryClient();
@@ -281,7 +281,13 @@ function Comments({ postId, canModerate }: { postId: string; canModerate: boolea
   );
 }
 
-function CommentRow({ comment, canModerate }: { comment: FeedComment; canModerate: boolean }) {
+export function CommentRow({
+  comment,
+  canModerate,
+}: {
+  comment: FeedComment;
+  canModerate: boolean;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <AuthorLine author={comment.author} createdAt={comment.created_at} hidden={comment.hidden} />

@@ -11,7 +11,7 @@ import { Checkbox, RadioGroup } from "@/components/ui/choice";
 import { Field, Textarea } from "@/components/ui/field";
 import { ConfirmDialog } from "@/components/ui/overlay";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
-import { ScreenState } from "@/features/coursework/coursework";
+import { formatPoints, ScreenState } from "@/features/coursework/coursework";
 import { ApiRequestError, unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
@@ -225,7 +225,7 @@ function useCountdown(expiresAt: number | null, offset: number): number | null {
   return expiresAt === null ? null : Math.ceil((expiresAt - (now + offset)) / 1000);
 }
 
-function QuestionBlock({
+export function QuestionBlock({
   question,
   number,
   total,
@@ -296,7 +296,7 @@ function QuestionBlock({
   );
 }
 
-function Result({ attempt, quizId }: { attempt: Attempt; quizId: string }) {
+export function Result({ attempt, quizId }: { attempt: Attempt; quizId: string }) {
   const t = useTranslations("quizzes.attempt");
   const status = attempt.status as "submitted" | "auto_submitted";
   const percent =
@@ -311,7 +311,10 @@ function Result({ attempt, quizId }: { attempt: Attempt; quizId: string }) {
           <p className="text-sm text-muted">{t(`resultStatus.${status}`)}</p>
           {attempt.score !== null && attempt.max_score !== null ? (
             <p className="text-2xl font-semibold tabular">
-              {t("resultScore", { score: attempt.score, max: attempt.max_score })}
+              {t("resultScore", {
+                score: formatPoints(attempt.score),
+                max: formatPoints(attempt.max_score),
+              })}
               {percent !== null ? ` · ${t("resultPercent", { percent })}` : ""}
             </p>
           ) : null}

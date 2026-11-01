@@ -37,6 +37,48 @@ export function QuizFacts({ quiz }: { quiz: QuizSummary }) {
   );
 }
 
+/** One quiz in the list: its facts, and the manager's or the student's own progress. */
+export function QuizCard({ quiz }: { quiz: QuizSummary }) {
+  const t = useTranslations("quizzes");
+  return (
+    <Panel>
+      <PanelBody>
+        <article className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold break-words">
+            <Link className="text-primary hover:underline" href={`/quizzes/${quiz.id}`}>
+              {quiz.title}
+            </Link>
+          </h2>
+          <p className="text-sm text-muted">{offeringLabel(quiz.offering)}</p>
+          <QuizFacts quiz={quiz} />
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted tabular">
+            {quiz.can_manage ? (
+              <>
+                <Tag tone={quiz.published ? "success" : "neutral"}>
+                  {quiz.published ? t("published") : t("draft")}
+                </Tag>
+                <span>{t("studentsAttempted", { count: quiz.students_attempted ?? 0 })}</span>
+              </>
+            ) : (
+              <>
+                <span>
+                  {t("attemptsUsed", {
+                    used: quiz.attempts_used ?? 0,
+                    max: quiz.max_attempts,
+                  })}
+                </span>
+                {quiz.best_percent !== null ? (
+                  <span>{t("bestResult", { percent: quiz.best_percent })}</span>
+                ) : null}
+              </>
+            )}
+          </div>
+        </article>
+      </PanelBody>
+    </Panel>
+  );
+}
+
 export function QuizzesPage() {
   const t = useTranslations("quizzes");
   const api = useApi();
@@ -68,43 +110,7 @@ export function QuizzesPage() {
       <ul aria-label={t("listLabel")} className="flex flex-col gap-3">
         {items.map((quiz) => (
           <li key={quiz.id}>
-            <Panel>
-              <PanelBody>
-                <article className="flex flex-col gap-2">
-                  <h2 className="text-lg font-semibold break-words">
-                    <Link className="text-primary hover:underline" href={`/quizzes/${quiz.id}`}>
-                      {quiz.title}
-                    </Link>
-                  </h2>
-                  <p className="text-sm text-muted">{offeringLabel(quiz.offering)}</p>
-                  <QuizFacts quiz={quiz} />
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted tabular">
-                    {quiz.can_manage ? (
-                      <>
-                        <Tag tone={quiz.published ? "success" : "neutral"}>
-                          {quiz.published ? t("published") : t("draft")}
-                        </Tag>
-                        <span>
-                          {t("studentsAttempted", { count: quiz.students_attempted ?? 0 })}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span>
-                          {t("attemptsUsed", {
-                            used: quiz.attempts_used ?? 0,
-                            max: quiz.max_attempts,
-                          })}
-                        </span>
-                        {quiz.best_percent !== null ? (
-                          <span>{t("bestResult", { percent: quiz.best_percent })}</span>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                </article>
-              </PanelBody>
-            </Panel>
+            <QuizCard quiz={quiz} />
           </li>
         ))}
       </ul>

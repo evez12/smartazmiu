@@ -28,6 +28,7 @@ import { ChatSpecimen } from "@/features/chat/specimen";
 
 import { GroupTable } from "./group-table";
 import { Section } from "./section";
+import { Sprint1213Specimens } from "./sprint12-13-specimens";
 import { Sprint14Specimens } from "./sprint14-specimens";
 import { Sprint6Specimens } from "./sprint6-specimens";
 
@@ -402,6 +403,7 @@ export function StaticSpecimens() {
       </Section>
       <Sprint6Specimens />
       <Sprint14Specimens />
+      <Sprint1213Specimens />
     </div>
   );
 }

@@ -57,7 +57,14 @@
       "examSlots": "İmtahan cədvəli idarəsi",
       "pastPapers": "Keçmiş imtahan kağızları",
       "gpaSummary": "ÜOMG: nəticə və fənlər",
-      "gpaRules": "ÜOMG: qaydalar və simulyator"
+      "gpaRules": "ÜOMG: qaydalar və simulyator",
+      "feedPosts": "Lent: yazılar və şərh",
+      "forumQuestions": "Forum: suallar",
+      "forumAnswers": "Forum: cavablar",
+      "assignmentCards": "Tapşırıqlar: siyahı",
+      "assignmentSubmission": "Tapşırıq: təqdim və qiymət",
+      "quizCards": "Testlər: siyahı",
+      "quizAttempt": "Test: suallar və nəticə"
     },
     "colors": {
       "surfaces": "Fon və səthlər",

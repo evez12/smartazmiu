@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
-import { ScreenState } from "@/features/coursework/coursework";
+import { formatPoints, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import { formatDateTime } from "@/lib/format";
@@ -154,7 +154,7 @@ export function QuizResults({ quizId }: { quizId: string }) {
                     </TableCell>
                     <TableCell label={t("results.score")} numeric>
                       {row.score !== null && row.max_score !== null
-                        ? `${row.score} / ${row.max_score}`
+                        ? `${formatPoints(row.score)} / ${formatPoints(row.max_score)}`
                         : "—"}
                     </TableCell>
                     <TableCell label={t("results.status")}>

@@ -66,7 +66,7 @@ export function AssignmentsPage() {
   );
 }
 
-function AssignmentCard({ item }: { item: AssignmentSummary }) {
+export function AssignmentCard({ item }: { item: AssignmentSummary }) {
   const t = useTranslations("assignments");
   return (
     <Panel>

@@ -11,7 +11,7 @@ import { Field, Input } from "@/components/ui/field";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
-import { ScreenState } from "@/features/coursework/coursework";
+import { formatPoints, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 
@@ -100,7 +100,10 @@ export function QuizReview({ quizId, attemptId }: { quizId: string; attemptId: s
           action={
             review.score !== null && review.max_score !== null ? (
               <span className="font-semibold tabular">
-                {t("attempt.resultScore", { score: review.score, max: review.max_score })}
+                {t("attempt.resultScore", {
+                  score: formatPoints(review.score),
+                  max: formatPoints(review.max_score),
+                })}
               </span>
             ) : undefined
           }

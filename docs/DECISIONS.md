@@ -2394,3 +2394,24 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   decision and need their own.
 - **Consequences:** the future migration is reversible (the columns become nullable again only if no NULL exists),
   and §13 deletion cases get a test: after deletion the teacher's report still counts the session and shows no name.
+
+## D-109 · 2026-11-02 · Sprint 12 and 13 definition-of-done debt: specimens and baselines
+
+- **Context:** D-101 listed that the feed, forum, assignment and quiz screens had no `/design-system` specimens
+  (D-075) and that the browser flow of an infected submission (D-093) was missing.
+- **Decision:**
+  - **Specimens:** `sprint12-13-specimens.tsx` renders the real components with fixed data and no network, in seven
+    sections appended after the Sprint 14 ones (so no existing baseline was renumbered): feed posts and a comment,
+    forum questions, forum answers (accepted, teacher-verified), assignment cards, an assignment with a late, partly
+    infected, graded submission, quiz cards, and quiz questions of the three types with a result. To render them
+    without a page-level query, `PostCard`, `CommentRow`, `QuestionCard`, `AnswerCard`, `AssignmentCard`,
+    `AssignmentInfo`, `MySubmission`, `QuestionBlock` and `Result` are exported, and the quiz card, which was inline
+    in the list, became `QuizCard`. No behaviour change.
+  - **Baselines:** 28 new images (7 sections x light and dark x 1440 px and 320 px). Reviewed as contact sheets in
+    both themes and at both widths: spacing on the 4 px scale, 4/6 px radii, no shadows, tags carry text, long Azerbaijani
+    titles wrap at 320 px, dark contrast holds. `make visual` passes with no retries and no existing baseline moved.
+  - **Defect found by the review:** the quiz result printed `7.5 / 10 bal` while an assignment grade printed `6,4 / 10
+    bal`. The four quiz screens that show a score (attempt result, quiz page, results table, review) now use
+    `formatPoints`, the decimal comma of the assignments; covered by a unit test.
+- **Consequences:** a changed screen of Sprint 12 or 13 now fails `make visual` until its baseline is re-recorded on
+  purpose. The browser flow of an infected submission is recorded below once it has run.
