@@ -12,6 +12,7 @@ import { ApplyImportButton } from "@/features/imports/import-actions";
 import {
   EncodingBanner,
   ImportIssues,
+  ImportWarnings,
   ImportStatusBanner,
   ImportSummary,
 } from "@/features/imports/import-detail";
@@ -84,6 +85,7 @@ export default async function ImportPage({ params }: ImportPageProps) {
         <ImportStatusBanner record={record} status={status} />
         <EncodingBanner record={record} />
         <ImportSummary record={record} />
+        <ImportWarnings record={record} />
         <ImportIssues record={record} />
       </div>
     </>

@@ -191,6 +191,7 @@ class ImportKind(StrEnum):
     WEEK_PARITY = "week_parity"
     SCHEDULE = "schedule"
     SCHEDULE_CHANGES = "schedule_changes"
+    EXAM_SLOTS = "exam_slots"
 
 
 class ImportStatus(StrEnum):
@@ -222,6 +223,8 @@ class AcademicImport(Base):
     summary: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict)
     errors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     error_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Findings that do not stop an import from being applied, such as exams that overlap (D-097).
+    warnings: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     # The file's cells, kept only until the import is applied or expires: they contain personal data.
     # SQL NULL, never JSON null, so `payload IS NULL` finds every cleared file (D-038).
     payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))

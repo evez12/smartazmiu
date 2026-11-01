@@ -163,3 +163,42 @@ export function ImportIssues({ record }: { record: ImportDetail }) {
     </Panel>
   );
 }
+
+/** Findings that do not stop the import, such as exams that overlap (D-097). */
+export function ImportWarnings({ record }: { record: ImportDetail }) {
+  const t = useTranslations("imports");
+  const describe = useIssueText();
+  if (record.warnings.length === 0) return null;
+  return (
+    <Panel>
+      <PanelHeader title={t("detail.warningsTitle")} description={t("detail.warningsHelp")} />
+      <div className="px-4 pb-2">
+        <Table>
+          <TableCaption>{t("detail.warningsTitle")}</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead numeric className="w-20">
+                {t("detail.row")}
+              </TableHead>
+              <TableHead className="w-48">{t("detail.column")}</TableHead>
+              <TableHead>{t("detail.problem")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {record.warnings.map((issue, index) => (
+              <TableRow key={`${issue.row}-${issue.column}-${issue.code}-${index}`}>
+                <TableCell label={t("detail.row")} numeric>
+                  {issue.row === null ? t("detail.wholeFile") : issue.row}
+                </TableCell>
+                <TableCell label={t("detail.column")} className="font-mono text-sm">
+                  {issue.column ?? "—"}
+                </TableCell>
+                <TableCell label={t("detail.problem")}>{describe(issue.code)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </Panel>
+  );
+}

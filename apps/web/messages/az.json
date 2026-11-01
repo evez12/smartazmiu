@@ -381,7 +381,8 @@
       "rooms": "Otaqlar",
       "week_parity": "Həftə növbəsi (üst və alt həftə)",
       "schedule": "Dərs cədvəli",
-      "schedule_changes": "Cədvəl dəyişiklikləri"
+      "schedule_changes": "Cədvəl dəyişiklikləri",
+      "exam_slots": "İmtahan cədvəli"
     },
     "statuses": {
       "ready": "Tətbiqə hazırdır",
@@ -446,7 +447,9 @@
       "wholeFile": "Bütün fayl",
       "downloadReport": "Xəta hesabatını yükləyin",
       "removed": "Cədvəldən çıxarılan dərslər",
-      "confirmConsequenceSchedule": "{created} dərs əlavə ediləcək, {updated} dərs dəyişəcək, faylda olmayan {removed} dərs cədvəldən çıxarılacaq. Dəyişikliklər bu gündən qüvvəyə minir, keçmiş həftələr dəyişmir."
+      "confirmConsequenceSchedule": "{created} dərs əlavə ediləcək, {updated} dərs dəyişəcək, faylda olmayan {removed} dərs cədvəldən çıxarılacaq. Dəyişikliklər bu gündən qüvvəyə minir, keçmiş həftələr dəyişmir.",
+      "warningsTitle": "Xəbərdarlıqlar",
+      "warningsHelp": "Bu xəbərdarlıqlar faylın tətbiq olunmasına mane olmur. Üst-üstə düşmə planlaşdırılıbsa, davam edin."
     },
     "issues": {
       "required": "Xana boşdur. Dəyər daxil edin.",
@@ -487,7 +490,11 @@
       "ambiguous_class": "Bu vaxtda bir neçə dərs var. group_codes sütununu doldurun.",
       "not_allowed_when_cancelled": "Ləğv olunan dərs üçün yeni tarix, vaxt, otaq və ya müəllim göstərilmir.",
       "change_without_details": "Dəyişiklik üçün yeni tarix, vaxt, otaq və ya müəllim göstərin.",
-      "unknown": "Sətirdə xəta var."
+      "unknown": "Sətirdə xəta var.",
+      "window_too_long": "İmtahan 12 saatdan uzun ola bilməz.",
+      "overlaps_group": "Eyni qrupun başqa imtahanı ilə üst-üstə düşür: tələbələr iki imtahana eyni vaxtda düşür.",
+      "overlaps_room": "Eyni otaqda başqa imtahanla üst-üstə düşür.",
+      "overlaps_offering": "Bu fənnin başqa imtahanı ilə üst-üstə düşür."
     }
   },
   "profile": {
@@ -684,7 +691,11 @@
         "quiz_graded": "Testin açıq sualları qiymətləndirildi",
         "community_auto_hidden": "Lent və ya forum məzmunu şikayətlərə görə avtomatik gizlədildi",
         "attendance_marked": "Tələbə dərsdə əl ilə iştirak edən kimi qeyd olundu",
-        "attendance_unmarked": "Tələbənin dərs iştirakı əl ilə ləğv edildi"
+        "attendance_unmarked": "Tələbənin dərs iştirakı əl ilə ləğv edildi",
+        "exam_slot_created": "İmtahan vaxtı əlavə olundu",
+        "exam_slot_edited": "İmtahan vaxtı dəyişdirildi",
+        "exam_slot_deleted": "İmtahan vaxtı silindi",
+        "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",

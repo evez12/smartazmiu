@@ -44,6 +44,7 @@ describe("IMPORT_KINDS", () => {
       week_parity: true,
       schedule: true,
       schedule_changes: true,
+      exam_slots: true,
     };
     expect([...IMPORT_KINDS].sort()).toEqual(Object.keys(complete).sort());
   });

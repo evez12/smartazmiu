@@ -14,6 +14,7 @@ from app.modules.academics.importers import (
 )
 from app.modules.academics.models import ImportKind
 from app.modules.campus.imports import BuildingsImport, FloorsImport, RoomsImport
+from app.modules.exams.imports import ExamSlotsImport
 from app.modules.schedule.imports import ScheduleChangesImport, ScheduleImport, WeekParityImport
 
 SPECS: dict[ImportKind, ImportSpec] = {
@@ -34,5 +35,6 @@ SPECS: dict[ImportKind, ImportSpec] = {
         WeekParityImport(),
         ScheduleImport(),
         ScheduleChangesImport(),
+        ExamSlotsImport(),
     )
 }

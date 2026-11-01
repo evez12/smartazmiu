@@ -2281,7 +2281,11 @@
           "quiz.published",
           "quiz.graded",
           "attendance.marked",
-          "attendance.unmarked"
+          "attendance.unmarked",
+          "exam_slot.created",
+          "exam_slot.edited",
+          "exam_slot.deleted",
+          "past_paper.reviewed"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -3829,6 +3833,181 @@
         "title": "EventUpdateIn",
         "type": "object"
       },
+      "ExamOverlapOut": {
+        "description": "Another exam that runs at the same time for the same students, the same offering or in the same room.",
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "offering",
+              "group",
+              "room"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "slot_id": {
+            "title": "Slot Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "slot_id",
+          "offering",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "ExamOverlapOut",
+        "type": "object"
+      },
+      "ExamSlotIn": {
+        "properties": {
+          "course_offering_id": {
+            "format": "uuid",
+            "title": "Course Offering Id",
+            "type": "string"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "room_code": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Code"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "course_offering_id",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "ExamSlotIn",
+        "type": "object"
+      },
+      "ExamSlotListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExamSlotOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ExamSlotListOut",
+        "type": "object"
+      },
+      "ExamSlotOut": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "offering": {
+            "$ref": "#/components/schemas/CourseOfferingOut"
+          },
+          "overlaps": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ExamOverlapOut"
+            },
+            "title": "Overlaps",
+            "type": "array"
+          },
+          "room_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Code"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offering",
+          "starts_at",
+          "ends_at",
+          "room_code"
+        ],
+        "title": "ExamSlotOut",
+        "type": "object"
+      },
+      "ExamSlotUpdateIn": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "room_code": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Code"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "ExamSlotUpdateIn",
+        "type": "object"
+      },
       "FeedbackCategory": {
         "enum": [
           "problem",
@@ -4141,6 +4320,24 @@
           "label"
         ],
         "title": "FilterOptionOut",
+        "type": "object"
+      },
+      "FinishedSemesterOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "FinishedSemesterOut",
         "type": "object"
       },
       "FloorPlanOut": {
@@ -4731,6 +4928,13 @@
           },
           "summary": {
             "$ref": "#/components/schemas/ImportCounts"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ImportIssueOut"
+            },
+            "title": "Warnings",
+            "type": "array"
           }
         },
         "required": [
@@ -4748,6 +4952,7 @@
           "applied_by",
           "expires_at",
           "errors",
+          "warnings",
           "previously_applied_at"
         ],
         "title": "ImportDetail",
@@ -4807,7 +5012,8 @@
           "rooms",
           "week_parity",
           "schedule",
-          "schedule_changes"
+          "schedule_changes",
+          "exam_slots"
         ],
         "title": "ImportKind",
         "type": "string"
@@ -7102,6 +7308,351 @@
         ],
         "title": "OptionOut",
         "type": "object"
+      },
+      "PaperDownloadOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "filename",
+          "expires_at"
+        ],
+        "title": "PaperDownloadOut",
+        "type": "object"
+      },
+      "PaperFormOut": {
+        "description": "The finished semesters a paper can belong to: the integrity rule keeps the current one out (D-097).",
+        "properties": {
+          "semesters": {
+            "items": {
+              "$ref": "#/components/schemas/FinishedSemesterOut"
+            },
+            "title": "Semesters",
+            "type": "array"
+          }
+        },
+        "required": [
+          "semesters"
+        ],
+        "title": "PaperFormOut",
+        "type": "object"
+      },
+      "PaperIn": {
+        "properties": {
+          "consent": {
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PastPaperKind"
+          },
+          "semester_id": {
+            "format": "uuid",
+            "title": "Semester Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "semester_id",
+          "kind",
+          "title",
+          "consent"
+        ],
+        "title": "PaperIn",
+        "type": "object"
+      },
+      "PaperListOut": {
+        "properties": {
+          "can_upload": {
+            "title": "Can Upload",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PaperOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_id",
+          "subject_name",
+          "can_upload",
+          "items"
+        ],
+        "title": "PaperListOut",
+        "type": "object"
+      },
+      "PaperOut": {
+        "properties": {
+          "can_download": {
+            "title": "Can Download",
+            "type": "boolean"
+          },
+          "can_review": {
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PastPaperKind"
+          },
+          "review_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Note"
+          },
+          "scan_status": {
+            "enum": [
+              "pending",
+              "clean",
+              "infected",
+              "failed"
+            ],
+            "title": "Scan Status",
+            "type": "string"
+          },
+          "semester": {
+            "title": "Semester",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PastPaperStatus"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "uploaded_by_me": {
+            "title": "Uploaded By Me",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "subject_id",
+          "semester",
+          "kind",
+          "title",
+          "filename",
+          "size_bytes",
+          "status",
+          "scan_status",
+          "uploaded_by_me",
+          "can_review",
+          "can_download",
+          "review_note",
+          "created_at"
+        ],
+        "title": "PaperOut",
+        "type": "object"
+      },
+      "PaperReviewIn": {
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve"
+        ],
+        "title": "PaperReviewIn",
+        "type": "object"
+      },
+      "PaperSubjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PaperSubjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "PaperSubjectListOut",
+        "type": "object"
+      },
+      "PaperSubjectOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "pending"
+        ],
+        "title": "PaperSubjectOut",
+        "type": "object"
+      },
+      "PaperUploadIn": {
+        "properties": {
+          "filename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "mime": {
+            "maxLength": 127,
+            "minLength": 1,
+            "title": "Mime",
+            "type": "string"
+          },
+          "size": {
+            "exclusiveMinimum": 0.0,
+            "title": "Size",
+            "type": "integer"
+          },
+          "subject_id": {
+            "format": "uuid",
+            "title": "Subject Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_id",
+          "filename",
+          "mime",
+          "size"
+        ],
+        "title": "PaperUploadIn",
+        "type": "object"
+      },
+      "PaperUploadOut": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "required_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Required Headers",
+            "type": "object"
+          },
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "url",
+          "expires_at",
+          "required_headers"
+        ],
+        "title": "PaperUploadOut",
+        "type": "object"
+      },
+      "PastPaperKind": {
+        "enum": [
+          "midterm",
+          "final",
+          "retake"
+        ],
+        "title": "PastPaperKind",
+        "type": "string"
+      },
+      "PastPaperStatus": {
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "title": "PastPaperStatus",
+        "type": "string"
       },
       "Period": {
         "enum": [
@@ -18663,6 +19214,1111 @@
         "summary": "RSVP: register and receive a ticket (idempotent)",
         "tags": [
           "events"
+        ]
+      }
+    },
+    "/api/v1/exams/mine": {
+      "get": {
+        "operationId": "listMyExams",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamSlotListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upcoming exams of the courses I attend or teach",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/mine.ics": {
+      "get": {
+        "operationId": "exportMyExams",
+        "responses": {
+          "200": {
+            "content": {
+              "text/calendar": {}
+            },
+            "description": "iCalendar"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My upcoming exams as an iCalendar file",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers": {
+      "get": {
+        "operationId": "listPastPapers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Past papers of one subject",
+        "tags": [
+          "exams"
+        ]
+      },
+      "post": {
+        "operationId": "submitPastPaper",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save an uploaded paper with its details and the consent",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers/form": {
+      "get": {
+        "operationId": "getPastPaperForm",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperFormOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The finished semesters a paper of this subject can belong to",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers/subjects": {
+      "get": {
+        "operationId": "listPastPaperSubjects",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperSubjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subjects whose past papers I may open",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers/uploads/presign": {
+      "post": {
+        "operationId": "presignPastPaperUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperUploadIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperUploadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a short-lived address to upload a paper to",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers/{paper_id}/download": {
+      "get": {
+        "operationId": "downloadPastPaper",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "paper_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Paper Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperDownloadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "A short-lived address to download a paper from",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/papers/{paper_id}/review": {
+      "post": {
+        "operationId": "reviewPastPaper",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "paper_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Paper Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaperReviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaperOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Approve or reject a paper",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/slots": {
+      "get": {
+        "operationId": "listExamSlots",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_past",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Past",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamSlotListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Every exam slot, with the exams it collides with",
+        "tags": [
+          "exams"
+        ]
+      },
+      "post": {
+        "operationId": "createExamSlot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamSlotIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamSlotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add an exam slot",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/slots/{slot_id}": {
+      "delete": {
+        "operationId": "deleteExamSlot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slot_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Slot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove an exam slot",
+        "tags": [
+          "exams"
+        ]
+      },
+      "put": {
+        "operationId": "updateExamSlot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slot_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Slot Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamSlotUpdateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamSlotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change the time or room of an exam slot",
+        "tags": [
+          "exams"
         ]
       }
     },

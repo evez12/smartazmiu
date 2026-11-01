@@ -30,6 +30,7 @@ from app.modules.chat.models import ScanStatus
 from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
+from app.modules.exams.papers import PaperScanner
 from app.modules.knowledge.service import TipService
 from app.modules.materials.service import MaterialScanner
 from app.modules.mentorship import service as mentorship
@@ -190,6 +191,8 @@ async def scan_attachments(ctx: dict[str, Any]) -> int:
             session, ctx["storage"], ctx["scanner"]
         ).scan_pending()
     async with database.sessionmaker() as session:
+        papers = await PaperScanner(session, ctx["storage"], ctx["scanner"]).scan_pending()
+    async with database.sessionmaker() as session:
         report, changed = await AttachmentScanner(
             session, ctx["storage"], ctx["scanner"]
         ).scan_pending()
@@ -215,6 +218,8 @@ async def scan_attachments(ctx: dict[str, Any]) -> int:
         + materials.rejected
         + submissions.clean
         + submissions.rejected
+        + papers.clean
+        + papers.rejected
     )
 
 
@@ -233,7 +238,9 @@ async def purge_attachments(ctx: dict[str, Any]) -> int:
     async with database.sessionmaker() as session:
         purged += await MaterialScanner(session, ctx["storage"], ctx["scanner"]).purge()
     async with database.sessionmaker() as session:
-        return purged + await SubmissionScanner(session, ctx["storage"], ctx["scanner"]).purge()
+        purged += await SubmissionScanner(session, ctx["storage"], ctx["scanner"]).purge()
+    async with database.sessionmaker() as session:
+        return purged + await PaperScanner(session, ctx["storage"], ctx["scanner"]).purge()
 
 
 async def remove_chat_orphans(ctx: dict[str, Any]) -> int:

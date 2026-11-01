@@ -52,6 +52,10 @@ class AuditAction(StrEnum):
     QUIZ_GRADED = "quiz.graded"
     ATTENDANCE_MARKED = "attendance.marked"
     ATTENDANCE_UNMARKED = "attendance.unmarked"
+    EXAM_SLOT_CREATED = "exam_slot.created"
+    EXAM_SLOT_EDITED = "exam_slot.edited"
+    EXAM_SLOT_DELETED = "exam_slot.deleted"
+    PAST_PAPER_REVIEWED = "past_paper.reviewed"
 
 
 class AuditLog(Base):

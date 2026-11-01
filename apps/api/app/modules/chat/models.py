@@ -47,16 +47,6 @@ class ChannelType(StrEnum):
     """The one platform-wide support channel of the pilot (D-074)."""
 
 
-class ExamSlot(Base):
-    __tablename__ = "exam_slots"
-
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    channel_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("channels.id", ondelete="CASCADE"))
-    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-
 # Channels whose membership the provisioning job derives from the registry (§5.1).
 PROVISIONED_TYPES = frozenset(
     {

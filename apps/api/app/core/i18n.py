@@ -783,6 +783,74 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         "az": "Siz bu fənnə yazılmamısınız.",
         "en": "You are not enrolled in this course.",
     },
+    "exams.not_found": {
+        "az": "İmtahan tapılmadı.",
+        "en": "The exam was not found.",
+    },
+    "exams.offering_not_found": {
+        "az": "Bu fənn təyinatı tapılmadı.",
+        "en": "This course offering was not found.",
+    },
+    "exams.unknown_room": {
+        "az": "Belə otaq kampus xəritəsində yoxdur. Otaq kodunu yoxlayın.",
+        "en": "This room is not on the campus map. Check the room code.",
+    },
+    "exams.window_too_long": {
+        "az": "İmtahan 12 saatdan uzun ola bilməz.",
+        "en": "An exam cannot be longer than 12 hours.",
+    },
+    "exams.duplicate": {
+        "az": "Bu fənn üçün həmin başlama vaxtında imtahan artıq var.",
+        "en": "This course already has an exam starting at that time.",
+    },
+    "exams.subject_not_found": {
+        "az": "Fənn tapılmadı.",
+        "en": "The subject was not found.",
+    },
+    "exams.type_not_allowed": {
+        "az": "Bu fayl növü qəbul olunmur. İcazə verilən növlərdən birini seçin.",
+        "en": "This file type is not accepted. Choose one of the allowed types.",
+    },
+    "exams.too_large": {
+        "az": "Fayl çox böyükdür.",
+        "en": "The file is too large.",
+    },
+    "exams.storage_unavailable": {
+        "az": "Fayl saxlama xidməti müvəqqəti əlçatan deyil. Bir az sonra cəhd edin.",
+        "en": "File storage is temporarily unavailable. Try again shortly.",
+    },
+    "exams.upload_not_found": {
+        "az": "Yüklənmiş fayl tapılmadı. Faylı yenidən seçin.",
+        "en": "The uploaded file was not found. Choose the file again.",
+    },
+    "exams.upload_missing": {
+        "az": "Fayl hələ yüklənməyib. Yükləmənin bitməsini gözləyin.",
+        "en": "The file has not finished uploading. Wait for the upload to end.",
+    },
+    "exams.upload_size_mismatch": {
+        "az": "Yüklənən faylın ölçüsü uyğun gəlmir. Faylı yenidən yükləyin.",
+        "en": "The uploaded file size does not match. Upload the file again.",
+    },
+    "exams.consent_required": {
+        "az": "Kağızı paylaşmaq üçün təsdiq qutusunu işarələyin.",
+        "en": "Tick the confirmation box to share the paper.",
+    },
+    "exams.semester_not_finished": {
+        "az": "Yalnız bitmiş semestrlərin imtahan kağızları paylaşıla bilər.",
+        "en": "Only papers of semesters that have ended can be shared.",
+    },
+    "exams.paper_not_found": {
+        "az": "İmtahan kağızı tapılmadı.",
+        "en": "The paper was not found.",
+    },
+    "exams.paper_not_scanned": {
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib. Təsdiq etmək mümkün deyil.",
+        "en": "The file is still being checked or did not pass the check. It cannot be approved.",
+    },
+    "exams.paper_not_available": {
+        "az": "Fayl hələ yoxlanılır və ya yoxlamadan keçməyib.",
+        "en": "The file is still being checked or did not pass the check.",
+    },
     "server.internal_error": {
         "az": "Gözlənilməz xəta baş verdi. Bir az sonra yenidən cəhd edin.",
         "en": "An unexpected error occurred. Please try again shortly.",

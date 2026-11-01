@@ -29,6 +29,7 @@ from app.modules.academics.schemas import (
     TeachingCourseOut,
 )
 from app.modules.academics.service import AcademicsService, Course
+from app.modules.chat.bus import ChatBus
 from app.modules.users.models import User
 from app.modules.users.service import CurrentUser
 
@@ -167,9 +168,9 @@ async def read_import(_: Importer, session: SessionDep, import_id: uuid.UUID) ->
     summary="Apply a validated import in one transaction",
 )
 async def apply_import(
-    user: Importer, session: SessionDep, jobs: JobsDep, import_id: uuid.UUID
+    user: Importer, session: SessionDep, jobs: JobsDep, cache: RedisDep, import_id: uuid.UUID
 ) -> ImportDetail:
-    record = await ImportService(session).apply(import_id, user.id)
+    record = await ImportService(session, ChatBus(cache)).apply(import_id, user.id)
     if record.status is ImportStatus.APPLIED and record.kind in AUDIENCE_KINDS:
         # Registry changes can move people into an audience; they receive its active announcements (§6.1).
         await jobs.sync_audiences()
@@ -189,6 +190,7 @@ async def _detail(session: SessionDep, record: AcademicImport) -> ImportDetail:
     return ImportDetail(
         **_import_fields(record, people),
         errors=[ImportIssueOut(**issue) for issue in record.errors],
+        warnings=[ImportIssueOut(**issue) for issue in record.warnings],
         previously_applied_at=await ImportService(session).previously_applied_at(record),
     )
 

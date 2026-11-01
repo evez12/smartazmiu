@@ -84,6 +84,9 @@ class ImportRun:
         self.session = session
         self.write = write
         self.issues: list[RowIssue] = []
+        self.warnings: list[RowIssue] = []
+        # Offerings whose exam windows changed: their channels are told once the import is committed (D-097).
+        self.exam_offerings: set[uuid.UUID] = set()
         self.counts: Counter[str] = Counter(created=0, updated=0, unchanged=0)
 
     def error(self, row: ParsedRow, code: str, column: str | None = None) -> None:
