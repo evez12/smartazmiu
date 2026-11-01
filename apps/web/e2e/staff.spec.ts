@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 import { password, signIn, signInWithSecondFactor, test } from "./support/auth";
-import { importFile, SEED_DIR } from "./support/imports";
+import { chooseImportFile, importFile, SEED_DIR } from "./support/imports";
 
 /*
  * Staff and admin flows. Each test signs in with throwaway staff/admin accounts that it creates and deletes, so the
@@ -96,14 +96,12 @@ test.describe.serial("765a2 roster", () => {
       await accounts.create("staff", STAFF_NAME),
       "/admin/imports/new?kind=students",
     );
-    await page.locator("input[type=file]").setInputFiles({
+    await chooseImportFile(page, {
       name: "telebeler.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from(
+      content:
         "university_id,family_name,given_name,email,group_code\n" +
-          "25765299,Məmmədova,Aysel,aysel.mammadova@smartazmiu.test,765a2\n" +
-          "25765298,Orucov,Elçin,elchin.orujov@smartazmiu.test,765a9\n",
-      ),
+        "25765299,Məmmədova,Aysel,aysel.mammadova@smartazmiu.test,765a2\n" +
+        "25765298,Orucov,Elçin,elchin.orujov@smartazmiu.test,765a9\n",
     });
     await page.getByRole("button", { name: "Faylı yoxlayın" }).click();
 

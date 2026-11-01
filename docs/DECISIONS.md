@@ -2252,3 +2252,31 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     submission (D-093) is still missing; the ÜOMG settings are not remembered between visits; account deletion
     (§5.4) must decide what happens to attendance records and past papers of the deleted person.
 - **Consequences:** none for behaviour.
+
+## D-102 · 2026-11-02 · Sprint 11 (video lessons) deferred, not dropped
+
+- **Context:** the product owner deferred Sprint 11 and does not want it raised again.
+- **Options:** build it before M4; drop it from the roadmap; keep it on the roadmap, unstarted.
+- **Decision:** keep it on the roadmap, unstarted. No video feature exists, and no other module may depend on video
+  (no schema, route, permission, notification category or screen reserved for it). Its boxes stay unticked. The M4
+  gate excludes video lessons while the sprint is deferred; the notes under Sprint 11 and the milestone table say so.
+- **Consequences:** Sprint 15 (integrations, PWA, i18n) and M4 proceed without video. If the sprint returns, it gets a
+  fresh decision with its own acceptance run.
+
+## D-103 · 2026-11-02 · The roster-import specs: root cause and the shared upload step
+
+- **Context:** `staff.spec.ts` (the invalid roster file, in the serial 765a2 group) failed in a full run and was
+  suspected to match two file inputs after the `exam_slots` import kind arrived.
+- **Findings:** the upload page never has two file inputs. Probing the DOM from the first committed byte for twelve
+  navigations (480 samples) saw exactly one, inside the form, before and after hydration; the kind selector and
+  the form are unchanged by the new kind. The failure was therefore not an ambiguous locator. What the spec did
+  differ in from the other import specs: its locator was the only one that was neither tied to the "Fayl" label nor
+  scoped to `main`, and hydration was awaited only inside the sign-in helper, not when the file was chosen. A file
+  chosen on server-rendered markup is lost silently (D-044) and shows as the "Faylda 2 xəta tapıldı" assertion never
+  appearing. The failing run left no artifacts and I could not reproduce it, so this is the most plausible
+  mechanism, not a proven one; the two-inputs theory is ruled out.
+- **Decision:** one helper, `chooseImportFile` in `e2e/support/imports.ts`, waits for hydration and matches the
+  labelled picker inside `main`; `importFile`, the exam preview and the invalid-file test all use it.
+- **Verification:** `staff.spec.ts` and `exam-center.spec.ts` five times in a row, 7 of 7 each time, no retries.
+- **Consequences:** a new import kind or a second picker on the page cannot make a spec ambiguous without the label
+  changing. If the failure returns, the cause is outside this page; capture the trace before re-running.
