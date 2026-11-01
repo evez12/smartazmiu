@@ -2252,3 +2252,199 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     submission (D-093) is still missing; the ÜOMG settings are not remembered between visits; account deletion
     (§5.4) must decide what happens to attendance records and past papers of the deleted person.
 - **Consequences:** none for behaviour.
+
+## D-102 · 2026-11-02 · Sprint 11 (video lessons) deferred, not dropped
+
+- **Context:** the product owner deferred Sprint 11 and does not want it raised again.
+- **Options:** build it before M4; drop it from the roadmap; keep it on the roadmap, unstarted.
+- **Decision:** keep it on the roadmap, unstarted. No video feature exists, and no other module may depend on video
+  (no schema, route, permission, notification category or screen reserved for it). Its boxes stay unticked. The M4
+  gate excludes video lessons while the sprint is deferred; the notes under Sprint 11 and the milestone table say so.
+- **Consequences:** Sprint 15 (integrations, PWA, i18n) and M4 proceed without video. If the sprint returns, it gets a
+  fresh decision with its own acceptance run.
+
+## D-103 · 2026-11-02 · The roster-import specs: root cause and the shared upload step
+
+- **Context:** `staff.spec.ts` (the invalid roster file, in the serial 765a2 group) failed in a full run and was
+  suspected to match two file inputs after the `exam_slots` import kind arrived.
+- **Findings:** the upload page never has two file inputs. Probing the DOM from the first committed byte for twelve
+  navigations (480 samples) saw exactly one, inside the form, before and after hydration; the kind selector and
+  the form are unchanged by the new kind. The failure was therefore not an ambiguous locator. What the spec did
+  differ in from the other import specs: its locator was the only one that was neither tied to the "Fayl" label nor
+  scoped to `main`, and hydration was awaited only inside the sign-in helper, not when the file was chosen. A file
+  chosen on server-rendered markup is lost silently (D-044) and shows as the "Faylda 2 xəta tapıldı" assertion never
+  appearing. The failing run left no artifacts and I could not reproduce it, so this is the most plausible
+  mechanism, not a proven one; the two-inputs theory is ruled out.
+- **Decision:** one helper, `chooseImportFile` in `e2e/support/imports.ts`, waits for hydration and matches the
+  labelled picker inside `main`; `importFile`, the exam preview and the invalid-file test all use it.
+- **Verification:** `staff.spec.ts` and `exam-center.spec.ts` five times in a row, 7 of 7 each time, no retries.
+- **Consequences:** a new import kind or a second picker on the page cannot make a spec ambiguous without the label
+  changing. If the failure returns, the cause is outside this page; capture the trace before re-running.
+
+## D-104 · 2026-11-02 · Per-subject exam-mode switch (§5.2)
+
+- **Context:** §5.2 says exam mode is "configurable per subject by staff"; D-003 deferred the screen. Exam mode is
+  derived from `exam_slots` at read time (D-059, D-097).
+- **Options:** a column on `subjects`; a table of overrides; a per-channel flag.
+- **Decision:** table `subject_exam_modes (subject_id PK, enabled, updated_by, updated_at)`, migration 0033. No row
+  means on, so every subject keeps the old behaviour until staff switch it. `DatabaseExamWindows` drops the windows of
+  a subject whose row says off; that covers its course channels and its community in one condition, because both
+  resolve to the subject of the slot's offering. `PUT /exams/subjects/{id}/exam-mode` (permission `exams.manage`)
+  upserts the row, writes an `exam_mode.changed` audit entry only when the effective state changes, and announces all
+  course channels and the community of the subject (`channel.updated`), so open composers react at once.
+  `GET /exams/subjects` lists subjects with an exam ahead or with the mode off. The switch sits on the exam
+  management screen. The exams themselves (student lists, countdown, calendar) are not affected: the switch only
+  lifts the chat restriction.
+- **Tests:** permission and unknown subject; off and on inside an active window in both channel types, the
+  announcement, audit entries, another subject untouched; a subject switched off before its exam stays off, then
+  turning it on starts the open window (provider and access objects are rebuilt per call, the state lives in the
+  table, so a restart reads the same answer); the screen (`exams.test.tsx`).
+- **Consequences:** a switched-off subject has no exam-mode protection at all, including the attachment block; the
+  screen says so. The mode is a per-subject, not per-semester, setting and stays until staff switch it back.
+
+## D-105 · 2026-11-02 · Notifications for exams and past-paper decisions (D-049 pattern)
+
+- **Context:** D-101 listed "no notification for a new or moved exam or for a paper decision" as open. The category
+  system of D-049 can carry them.
+- **Decision:**
+  - Kinds `exam.scheduled`, `exam.moved`, `past_paper.approved`, `past_paper.rejected` (migration 0034, enum values
+    added; the downgrade deletes notifications of these kinds and rebuilds the type, like 0020).
+  - **Category `schedule`** for all four, so push is on and e-mail off by default and one existing switch controls
+    them. A separate `exams` category is not justified: it would add a fourth toggle to the settings screen for events
+    that happen a few times per semester, and exam times are timetable information in every student's mind. If paper
+    decisions ever need their own switch, a category can be added then without changing the kinds.
+  - **Who:** a new or moved exam goes to the active students (enrollment `active`, the rule of "my exams") and the
+    teachers of the offering; a decision goes to the uploader only. Created by the exam screen, the exam import
+    (new rows, and rows whose end or room changed; the import key includes the start, so a changed start is a new
+    exam), and the paper review. Notifications are written in the same transaction as the change.
+  - **Not for the past:** nothing when the exam has already ended (the new times for a move), and the delivery-time
+    check drops a push for an exam that ended meanwhile. A save that changes nothing says nothing.
+  - **Dedupe key** `exam_slot:<id>:<fingerprint>` where the fingerprint is a hash of the previous and the new
+    (start, end, room) in UTC ISO form, plus the edit time on the screen path: the same change notifies once, and
+    moving an exam back to an earlier time is a change again. Past papers: `past_paper:<id>:<fingerprint>` of the
+    decision and its time, so a reversed decision notifies again. UTC ISO strings are used because the `repr` of an
+    aware datetime depends on the tzinfo object that created it, which made the first version of the key differ for
+    the same change (found by a test).
+  - **Delivery time (§5.6):** `still_scheduled` (exam exists, not over, recipient still attends or teaches, account
+    active via the dispatcher) and `still_decided` (paper exists, still decided, still the recipient's) are
+    registered in the worker's relevance table. Quiet hours (push suppressed, not postponed), the category
+    preference and device checks are the dispatcher's, unchanged. Nothing extra is audited.
+  - In-app text under `notifications.kinds` in `az.json`; push and e-mail labels in `messages.py`.
+- **Tests:** recipients (students, teachers, nobody else), no notification for a past exam, one notification per
+  change and none for an unchanged save, the same change twice, the delivery-time check against a dropped enrollment,
+  an ended and a deleted exam, the import (new, repeated, changed), paper approval and rejection, the uploader only,
+  teachers' own uploads and pending papers silent, the worker registry.
+- **Consequences:** a bulk exam import notifies every attendee of every future exam in it once; re-applying the file
+  is silent. The seed (`make seed`) creates these notifications for the sample users, which is intended.
+
+## D-106 · 2026-11-02 · ÜOMG rounding: half-up, identical in TypeScript and the Python reference
+
+- **Context:** D-100 noted that the web function rounds half up on a double while the spec's Python reference
+  (`round()`) rounds half to even on a binary float, so a value exactly on a tie could differ in the last digit.
+  The university's rule for a tie is **not confirmed**.
+- **Decision:** default to **half-up** (a tie rounds up) and make both implementations compute it exactly.
+  - `uomg.ts` no longer uses `Math.round(x * 10^d) / 10^d`, which is wrong on exact ties because the double is
+    just below them (2569 / 40 = 64.225 gave 64.22). It rounds the integer ratio `points / credits` with integer
+    arithmetic; scores are scaled by 100, so whole scores and scores with up to two decimals stay exact.
+  - The reference code in `docs/uomg-gpa-spec.md` (section 6) uses `Fraction` and `floor(x * 10^d + 1/2)` through
+    `round_half_up`. The spec table marks the rule as unconfirmed.
+  - `apps/web/src/features/gpa/uomg-rounding.json` holds the shared cases (ties at 0, 1 and 2 digits, a value just below a tie,
+    thirds, the transcript). `uomg.test.ts` and `apps/api/tests/test_uomg_reference.py` both run them; the Python test
+    executes the code block of the spec itself, so the document cannot drift from what is tested. Two cases fail
+    with the previous implementations (64.225 in TypeScript, 72.5 in Python).
+- **Open, needs the university:** the grading regulations (Order 1060 and Decision 348 are the sources listed in
+  the spec) must be checked for how a tie in the ÜOMG is rounded, and whether the displayed value is rounded at
+  all or truncated. Until then every displayed ÜOMG is half-up. Changing the rule means changing `roundHalfUp`,
+  `round_half_up` and the expected values in the fixture together.
+- **Consequences:** a displayed value can differ in the last digit from one produced by a half-even rule; the
+  loan thresholds (71, 91) compare the rounded value, as before.
+
+## D-107 · 2026-11-02 · ÜOMG rules are remembered in the browser only
+
+- **Context:** D-101 listed that the calculator's rules (include failed, retake policy, digits, thresholds) reset on
+  every visit.
+- **Decision:** the rules are kept in `localStorage` under `smartazmiu:gpa-rules:v1`, per browser, as a light
+  convenience. No server storage, no new endpoint, no migration. Reads and writes are wrapped in try/catch, so a
+  private window, blocked or full storage just means the defaults apply for the visit. They are read after mount
+  (the server render and the first client render both use the defaults, so hydration cannot mismatch). A stored value
+  is used only when it is complete and in range (`parseRules`); an old shape or a hand edit is ignored. Defaults are
+  stored as nothing: "reset" removes the key, so a later change of the defaults reaches people who never changed
+  them.
+- **Consequences:** nothing depends on the stored value; another browser or device starts from the defaults. The
+  rules are not personal data and contain no grades. Tests: remembered and forgotten on reset, malformed and
+  out-of-range values ignored, a browser that throws on every storage call.
+
+## D-108 · 2026-11-02 · Account deletion (§5.4): attendance records and past papers are anonymized
+
+- **Context:** the product owner was asked what happens to a deleted person's attendance records (marked by or for
+  them) and to the past papers they uploaded or approved: delete, anonymize, or keep with a "Silinmiş istifadəçi"
+  actor.
+- **Decision (product owner, 2026-11-02): anonymize.** When an account is deleted, the rows stay and the link to the
+  person is removed (the user reference becomes NULL); the interface shows the actor as "Silinmiş istifadəçi". A
+  student's own attendance rows therefore stay countable in a teacher's totals without identifying anyone; past
+  papers stay in the archive without an uploader or reviewer, and nothing about the person remains on them (file
+  names and titles are the person's own content: the deletion routine must also clear the uploader's title/note
+  fields if they name the person, which is decided when deletion is built).
+- **Not built:** account deletion itself, and the anonymizing code. This decision only fixes the rule it must
+  follow. What the schema does today, for the deletion task to change: `attendance_records.user_id` (the student) and
+  `past_papers.uploader_id` are `ON DELETE CASCADE`, so deleting an account would delete those rows; both must become
+  nullable with `SET NULL`. `attendance_sessions.opened_by` has no `ON DELETE` rule, so it would block deletion of a
+  teacher; it needs the same treatment. `marked_by` and `reviewed_by` already use `SET NULL`. The screens that show
+  an actor need the "Silinmiş istifadəçi" placeholder. Grades and anything touching authentication stay outside this
+  decision and need their own.
+- **Consequences:** the future migration is reversible (the columns become nullable again only if no NULL exists),
+  and §13 deletion cases get a test: after deletion the teacher's report still counts the session and shows no name.
+
+## D-109 · 2026-11-02 · Sprint 12 and 13 definition-of-done debt: specimens and baselines
+
+- **Context:** D-101 listed that the feed, forum, assignment and quiz screens had no `/design-system` specimens
+  (D-075) and that the browser flow of an infected submission (D-093) was missing.
+- **Decision:**
+  - **Specimens:** `sprint12-13-specimens.tsx` renders the real components with fixed data and no network, in seven
+    sections appended after the Sprint 14 ones (so no existing baseline was renumbered): feed posts and a comment,
+    forum questions, forum answers (accepted, teacher-verified), assignment cards, an assignment with a late, partly
+    infected, graded submission, quiz cards, and quiz questions of the three types with a result. To render them
+    without a page-level query, `PostCard`, `CommentRow`, `QuestionCard`, `AnswerCard`, `AssignmentCard`,
+    `AssignmentInfo`, `MySubmission`, `QuestionBlock` and `Result` are exported, and the quiz card, which was inline
+    in the list, became `QuizCard`. No behaviour change.
+  - **Baselines:** 28 new images (7 sections x light and dark x 1440 px and 320 px). Reviewed as contact sheets in
+    both themes and at both widths: spacing on the 4 px scale, 4/6 px radii, no shadows, tags carry text, long Azerbaijani
+    titles wrap at 320 px, dark contrast holds. `make visual` passes with no retries and no existing baseline moved.
+  - **Defect found by the review:** the quiz result printed `7.5 / 10 bal` while an assignment grade printed `6,4 / 10
+    bal`. The four quiz screens that show a score (attempt result, quiz page, results table, review) now use
+    `formatPoints`, the decimal comma of the assignments; covered by a unit test.
+- **Consequences:** a changed screen of Sprint 12 or 13 now fails `make visual` until its baseline is re-recorded on
+  purpose. The browser flow of an infected submission is recorded below once it has run.
+
+## D-110 · 2026-11-02 · Sprint 14 closeout: the infected-submission flow and what the from-scratch runs found
+
+- **Context:** the closeout gate is `make lint test` and the whole E2E suite on a stack built from scratch
+  (`make reset`, `make up`, `make seed`, no retries). Four runs on that stack found five problems, four in tests
+  and one in the build; none was waved off as a flake.
+- **Infected assignment file (D-093), browser flow** (`coursework.spec.ts`): a teacher creates an assignment in a
+  throwaway offering, the student submits a ZIP holding the EICAR test file (built in memory), the worker rejects it,
+  the student sees "Virus aşkarlandı" and the hint, neither the student nor the teacher gets a download button, and a
+  clean PDF becomes version 2 and the only downloadable file. Throwaway accounts; the `records` fixture removes the
+  assignment and detaches its files for the worker's purge, so the seed-count check is unaffected.
+  Its first version waited for the file name, which the picker shows from the moment the file is chosen, and then
+  reloaded the page to poll for the scan: the reload aborted the upload in flight. It now waits for the status
+  "Göndərilib", which only the server produces.
+- **The Docker image did not build:** the shared rounding cases of D-106 lived in `infra/`, outside the web image's
+  build context, and `pnpm build` type-checks test files. They now live next to the calculator
+  (`apps/web/src/features/gpa/uomg-rounding.json`); the Python test reads them from there. Found only by building
+  the image, which the unit-test gate does not do.
+- **Announcement e-mail test:** on a fresh database the seed queues about 460 guide invitations, which go out 200 per
+  minute (D-055), so the first announcement e-mail waited behind them for up to three windows. The poll now allows
+  180 s. Left open: the throttle has no priority, so an announcement can wait minutes behind a mass mailing.
+- **Missing `<title>` in an axe run (`staff.spec.ts`):** seen once after applying an import; three reruns and the
+  next full run did not repeat it. A detail page gets its title from a request of its own, so the title can arrive
+  after the body; the helper now waits for a non-empty title before running axe. Mechanism not proven, the
+  hypothesis fits that the page has a title in every other run.
+- **Duplicate text during a streamed swap (`onboarding.spec.ts`):** an unscoped `getByText` matched the dashboard
+  sentence twice, the second copy outside `main` (the hidden copy that `staff.spec.ts` already notes). Scoped to `main`, as the staff spec
+  already did. D-103 is unchanged by this: the upload page itself was probed again on the production build (1 500
+  samples) and has one file input at every moment; the duplicate-text class is a separate cause.
+- **Process:** two older `arq` worker processes from earlier sessions were still running against the stack's Redis
+  and were left alone (they were not started in this session). They run code from before D-105, so they may fail on
+  the new notification kinds; no failure was traced to them, but they should be stopped before any release check.
+- **Final result:** see the report of the closeout; the numbers are not repeated here so this entry cannot go stale.

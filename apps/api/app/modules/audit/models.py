@@ -55,6 +55,7 @@ class AuditAction(StrEnum):
     EXAM_SLOT_CREATED = "exam_slot.created"
     EXAM_SLOT_EDITED = "exam_slot.edited"
     EXAM_SLOT_DELETED = "exam_slot.deleted"
+    EXAM_MODE_CHANGED = "exam_mode.changed"
     PAST_PAPER_REVIEWED = "past_paper.reviewed"
 
 

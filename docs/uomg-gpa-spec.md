@@ -62,7 +62,7 @@ These are not confirmed for AzMİU specifically; expose them as settings with th
 |-----------------------|---------|---------|
 | `include_failed`      | `true`  | Whether F-graded courses count in the denominator |
 | `retake_policy`       | `"replace"` | `"replace"` = latest attempt replaces old score; `"average"` = all attempts count |
-| `round_digits`        | `2`     | Decimal places for displayed ÜOMG |
+| `round_digits`        | `2`     | Decimal places for displayed ÜOMG; a tie rounds up (half-up, **unconfirmed**: check the university's grading regulations) |
 | `min_exam_score`      | `17`    | Exam threshold |
 | `pass_threshold`      | `51`    | Minimum score to earn credits |
 
@@ -70,6 +70,8 @@ These are not confirmed for AzMİU specifically; expose them as settings with th
 
 ```python
 from dataclasses import dataclass
+from fractions import Fraction
+from math import floor
 from typing import Literal
 
 
@@ -97,6 +99,13 @@ LETTER_SCALE: list[tuple[int, str]] = [
     (61, "D"),
     (51, "E"),
 ]
+
+
+def round_half_up(value: Fraction, digits: int) -> float:
+    """A tie rounds up. Python's round() rounds half to even on a binary float, so 64.225 would give 64.22 and
+    72.5 would give 72. Scores are whole numbers or have at most two decimals."""
+    scale = 10**digits
+    return floor(value * scale + Fraction(1, 2)) / scale
 
 
 def letter_grade(score: float) -> str:
@@ -127,13 +136,14 @@ def uomg(results: list[CourseResult], cfg: GpaConfig = GpaConfig()) -> float:
     total_credits = sum(r.credits for r in pool)
     if total_credits == 0:
         return 0.0
-    return round(
-        sum(r.credits * r.score for r in pool) / total_credits, cfg.round_digits
-    )
+    points = sum(r.credits * Fraction(str(r.score)) for r in pool)
+    return round_half_up(points / total_credits, cfg.round_digits)
 ```
 
 ## 7. Required tests
 - Transcript case above → `78.1` (with `round_digits=1`).
+- Exact ties (`x.5`, `x.x5`, `x.xx5`) round up; the cases in `apps/web/src/features/gpa/uomg-rounding.json` are shared by the
+  Python reference test and the TypeScript test, so the two cannot drift (D-106).
 - Exam = 16 → exam points ignored.
 - Letter boundaries: 50→F, 51→E, 60→E, 61→D, 90→B, 91→A, 100→A.
 - Empty course list → `0.0`.

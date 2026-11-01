@@ -4,6 +4,7 @@ from enum import StrEnum
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Enum,
@@ -47,6 +48,23 @@ class ExamSlot(Base):
     room_code: Mapped[str | None] = mapped_column(String(20))
     room_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("rooms.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SubjectExamMode(Base):
+    """Staff's per-subject switch for exam mode (§5.2, D-104). A subject without a row follows its exam slots."""
+
+    __tablename__ = "subject_exam_modes"
+
+    subject_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("subjects.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

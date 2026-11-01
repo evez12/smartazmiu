@@ -7,7 +7,7 @@ import { ApiProvider } from "@/lib/api/provider";
 import { fetchMock, json, serve } from "@/test/api";
 import { renderWithIntl } from "@/test/render";
 
-import { QuizAttemptPage } from "./quiz-attempt";
+import { QuizAttemptPage, Result } from "./quiz-attempt";
 import { QuizPage } from "./quiz-detail";
 import { QuizResults } from "./quiz-results";
 import { QuizReview } from "./quiz-review";
@@ -432,5 +432,31 @@ describe("results and review", () => {
     await userEvent.click(screen.getByRole("button", { name: "Balları yadda saxlayın" }));
     await waitFor(() => expect(scored).not.toBeNull());
     expect(await (scored as unknown as Request).json()).toEqual({ scores: { "k-3": 4 } });
+  });
+});
+
+describe("scores", () => {
+  it("are written with a decimal comma, like assignment grades", () => {
+    wrap(
+      <Result
+        quizId="q-1"
+        attempt={{
+          id: "a-1",
+          quiz_id: "q-1",
+          attempt_number: 1,
+          status: "submitted",
+          started_at: "2027-01-10T08:00:00Z",
+          submitted_at: "2027-01-10T08:20:00Z",
+          expires_at: null,
+          server_time: "2027-01-10T08:20:00Z",
+          score: 7.5,
+          max_score: 10,
+          pending_review: false,
+          answers: {},
+          questions: null,
+        }}
+      />,
+    );
+    expect(screen.getByText(/7,5 \/ 10 bal/)).toBeVisible();
   });
 });

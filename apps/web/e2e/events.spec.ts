@@ -105,7 +105,7 @@ test("an announcement for a group reaches its student on the dashboard and by e-
   accounts,
   records,
 }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
   const student = await accounts.create("student", STUDENT_NAME);
   await signInWithSecondFactor(page, await accounts.create("staff", STAFF_NAME), "/admin/imports");
   const structure = await importStructure(page, records, student);
@@ -130,9 +130,11 @@ test("an announcement for a group reaches its student on the dashboard and by e-
   await expect(widget.getByRole("link", { name: title })).toBeVisible();
   await expect(home.getByRole("button", { name: "Bildirişlər, 1 oxunmamış" })).toBeVisible();
 
-  // Announcements are e-mailed by default; the worker sends it through SMTP (Mailpit locally).
+  // Announcements are e-mailed by default; the worker sends it through SMTP (Mailpit locally). On a freshly seeded
+  // database the guide invitations (about 460) queue ahead of it and go out 200 per minute (D-055), so the wait
+  // covers three such windows.
   await expect
-    .poll(async () => (await mailFor(student.email)).map((m) => m.Subject), { timeout: 30_000 })
+    .poll(async () => (await mailFor(student.email)).map((m) => m.Subject), { timeout: 180_000 })
     .toContain(`Yeni elan: ${title}`);
   const [message] = await mailFor(student.email);
   const text = await mailText(message!.ID);

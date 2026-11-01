@@ -14,7 +14,7 @@ import {
 } from "./support/auth";
 import type { TestRecords } from "./support/database";
 import { SMALL_PDF } from "./support/files";
-import { importFile } from "./support/imports";
+import { chooseImportFile, importFile } from "./support/imports";
 import { bakuInput } from "./support/structure";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
@@ -64,10 +64,7 @@ async function importOffering(
 async function previewExams(page: Page, name: string, content: string): Promise<void> {
   await openPage(page, "/admin/imports/new");
   await page.getByRole("combobox", { name: /Məlumat növü/ }).selectOption({ value: "exam_slots" });
-  await page
-    .getByLabel(/^Fayl/, { exact: false })
-    .and(page.locator("input[type=file]"))
-    .setInputFiles({ name, mimeType: "text/csv", buffer: Buffer.from(content) });
+  await chooseImportFile(page, { name, content });
   await page.getByRole("button", { name: "Faylı yoxlayın" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await expect(page.getByText("Fayl yoxlanıldı, xəta tapılmadı")).toBeVisible();

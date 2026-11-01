@@ -16,7 +16,7 @@ import { ConfirmDialog } from "@/components/ui/overlay";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
-import { offeringLabel, ScreenState } from "@/features/coursework/coursework";
+import { formatPoints, offeringLabel, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
@@ -117,7 +117,10 @@ function StudentQuiz({ quiz }: { quiz: Detail }) {
                 </span>
                 <span className="flex flex-wrap items-center gap-3 text-sm tabular">
                   {attempt.score !== null && attempt.max_score !== null
-                    ? t("score", { score: attempt.score, max: attempt.max_score })
+                    ? t("score", {
+                        score: formatPoints(attempt.score),
+                        max: formatPoints(attempt.max_score),
+                      })
                     : null}
                   {attempt.pending_review ? <Tag tone="warning">{t("pending")}</Tag> : null}
                   <Link

@@ -32,6 +32,23 @@ class ExamSlotListOut(BaseModel):
     items: list[ExamSlotOut]
 
 
+class ExamModeSubjectOut(BaseModel):
+    id: str
+    code: str
+    name: str
+    exam_mode: bool
+    """False when staff switched exam mode off for the subject (D-104)."""
+    upcoming_exams: int
+
+
+class ExamModeSubjectListOut(BaseModel):
+    items: list[ExamModeSubjectOut]
+
+
+class ExamModeIn(BaseModel):
+    enabled: bool
+
+
 class ExamSlotIn(BaseModel):
     course_offering_id: uuid.UUID
     starts_at: AwareDatetime

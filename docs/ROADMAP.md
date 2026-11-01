@@ -487,6 +487,8 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 | M6 | University-wide launch | 2027-09-15 | — |
 | M7 | Ecosystem release | 2027-12-17 | Phase 5 scope done |
 
+*The M4 gate excludes video lessons while Sprint 11 is deferred (D-102).*
+
 ---
 
 ### Phase 0 — Discovery & Design (Weeks 1–4 · 2026-11-02 → 2026-11-27)
@@ -606,6 +608,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 ### Phase 3 — Academic & Social Expansion (Sprints 11–15 · 2027-04-19 → 2027-06-25)
 
 #### Sprint 11 (04-19 → 04-30) — Video Lessons
+*Deferred by the product owner (D-102): not dropped, not started. No video features exist and nothing may depend on video.*
 - [ ] Teacher upload (resumable, presigned multipart), ARQ FFmpeg → HLS 360p/720p, thumbnails.
 - [ ] Player (hls.js): speed, chapters, `.vtt` subtitles, progress tracking, "continue watching".
 - [ ] Link video to subject; "discuss in channel" button (opens thread in course channel).

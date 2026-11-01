@@ -72,7 +72,7 @@ export function AssignmentPage({ id }: { id: string }) {
   );
 }
 
-function AssignmentInfo({ assignment }: { assignment: Detail }) {
+export function AssignmentInfo({ assignment }: { assignment: Detail }) {
   const t = useTranslations("assignments");
   return (
     <Panel>
@@ -118,7 +118,7 @@ function AssignmentInfo({ assignment }: { assignment: Detail }) {
   );
 }
 
-function MySubmission({ assignment }: { assignment: Detail }) {
+export function MySubmission({ assignment }: { assignment: Detail }) {
   const t = useTranslations("assignments");
   const mine = assignment.my_submission;
   return (

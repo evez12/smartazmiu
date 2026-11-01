@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,9 +8,12 @@ import { fetchMock, json, serve } from "@/test/api";
 import { renderWithIntl } from "@/test/render";
 
 import { GpaPage } from "./gpa-page";
+import { parseRules } from "./rules-storage";
+import { GPA_DEFAULTS } from "./uomg";
 
 beforeEach(() => vi.stubGlobal("fetch", fetchMock));
 afterEach(() => {
+  window.localStorage.clear();
   vi.unstubAllGlobals();
   fetchMock.mockReset();
 });
@@ -132,5 +135,63 @@ describe("GPA calculator", () => {
 
     expect(await screen.findByText(/Hələ qiymətləndirilmiş fənniniz yoxdur/)).toBeVisible();
     expect(screen.getByRole("button", { name: "Fənn əlavə et" })).toBeVisible();
+  });
+});
+
+describe("remembered rules", () => {
+  const MIXED = {
+    items: [course("e1", "a", 5, 80, 2025, "fall"), course("e2", "b", 5, 40, 2025, "fall")],
+  };
+  const KEY = "smartazmiu:gpa-rules:v1";
+
+  it("keeps a changed rule for the next visit and forgets it on reset", async () => {
+    serve({ "GET /api/v1/me/grades": () => json(MIXED) });
+    const first = wrap(<GpaPage />);
+    expect(await screen.findByTestId("gpa-total")).toHaveTextContent("60.00");
+    await userEvent.click(screen.getByRole("switch", { name: "Keçməyən fənləri say" }));
+    expect(JSON.parse(window.localStorage.getItem(KEY)!)).toEqual({
+      ...GPA_DEFAULTS,
+      includeFailed: false,
+    });
+    first.unmount();
+
+    wrap(<GpaPage />);
+    await waitFor(() => expect(screen.getByTestId("gpa-total")).toHaveTextContent("80.00"));
+    expect(screen.getByRole("switch", { name: "Keçməyən fənləri say" })).not.toBeChecked();
+
+    await userEvent.click(screen.getByRole("button", { name: "Qaydaları sıfırla" }));
+    expect(screen.getByTestId("gpa-total")).toHaveTextContent("60.00");
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("ignores stored rules that are malformed or out of range", async () => {
+    serve({ "GET /api/v1/me/grades": () => json(MIXED) });
+    window.localStorage.setItem(KEY, JSON.stringify({ ...GPA_DEFAULTS, includeFailed: "no" }));
+    wrap(<GpaPage />);
+    expect(await screen.findByTestId("gpa-total")).toHaveTextContent("60.00");
+
+    expect(parseRules({ ...GPA_DEFAULTS, roundDigits: 9 })).toBeNull();
+    expect(parseRules({ ...GPA_DEFAULTS, passThreshold: 51.5 })).toBeNull();
+    expect(parseRules({ ...GPA_DEFAULTS, retakePolicy: "newest" })).toBeNull();
+    expect(parseRules(null)).toBeNull();
+    expect(parseRules({ ...GPA_DEFAULTS })).toEqual(GPA_DEFAULTS);
+  });
+
+  it("works when the browser refuses to store anything", async () => {
+    serve({ "GET /api/v1/me/grades": () => json(MIXED) });
+    const refuse = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(refuse);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(refuse);
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(refuse);
+    try {
+      wrap(<GpaPage />);
+      expect(await screen.findByTestId("gpa-total")).toHaveTextContent("60.00");
+      await userEvent.click(screen.getByRole("switch", { name: "Keçməyən fənləri say" }));
+      expect(screen.getByTestId("gpa-total")).toHaveTextContent("80.00");
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 });

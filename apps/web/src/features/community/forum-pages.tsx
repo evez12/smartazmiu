@@ -180,7 +180,7 @@ function AskQuestion() {
   );
 }
 
-function QuestionCard({ question }: { question: ForumQuestion }) {
+export function QuestionCard({ question }: { question: ForumQuestion }) {
   const t = useTranslations("community");
   return (
     <Panel>
@@ -299,7 +299,7 @@ function QuestionDetailView({
   );
 }
 
-function AnswerCard({
+export function AnswerCard({
   answer,
   question,
   canModerate,

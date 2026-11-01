@@ -57,7 +57,14 @@
       "examSlots": "İmtahan cədvəli idarəsi",
       "pastPapers": "Keçmiş imtahan kağızları",
       "gpaSummary": "ÜOMG: nəticə və fənlər",
-      "gpaRules": "ÜOMG: qaydalar və simulyator"
+      "gpaRules": "ÜOMG: qaydalar və simulyator",
+      "feedPosts": "Lent: yazılar və şərh",
+      "forumQuestions": "Forum: suallar",
+      "forumAnswers": "Forum: cavablar",
+      "assignmentCards": "Tapşırıqlar: siyahı",
+      "assignmentSubmission": "Tapşırıq: təqdim və qiymət",
+      "quizCards": "Testlər: siyahı",
+      "quizAttempt": "Test: suallar və nəticə"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -703,6 +710,7 @@
         "exam_slot_created": "İmtahan vaxtı əlavə olundu",
         "exam_slot_edited": "İmtahan vaxtı dəyişdirildi",
         "exam_slot_deleted": "İmtahan vaxtı silindi",
+        "exam_mode_changed": "Fənnin imtahan rejimi dəyişdirildi",
         "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi"
       },
       "rolesAdded": "Əlavə: {roles}",
@@ -858,7 +866,11 @@
       "mentorshipRequestExpired": "Məsləhət sorğunuzun vaxtı bitdi",
       "mentorshipAdvicePost": "#məsləhət bölməsində yeni sual",
       "mentorshipTipPrompt": "Fənn kartını doldurun",
-      "chatAnswerVerified": "Sualınıza təsdiqlənmiş cavab verildi"
+      "chatAnswerVerified": "Sualınıza təsdiqlənmiş cavab verildi",
+      "examScheduled": "Yeni imtahan vaxtı",
+      "examMoved": "İmtahan vaxtı dəyişdi",
+      "pastPaperApproved": "İmtahan kağızınız təsdiqləndi",
+      "pastPaperRejected": "İmtahan kağızınız qəbul olunmadı"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",
@@ -2436,7 +2448,18 @@
       "cancel": "Ləğv et",
       "editTitle": "İmtahanı dəyiş",
       "removeTitle": "İmtahanı sil",
-      "removeBody": "{course}, {when} imtahanı silinəcək. Bu fənnin çat kanalları yenidən açılacaq."
+      "removeBody": "{course}, {when} imtahanı silinəcək. Bu fənnin çat kanalları yenidən açılacaq.",
+      "mode": {
+        "title": "Fənn üzrə imtahan rejimi",
+        "description": "Rejim açıq olanda imtahandan 15 dəqiqə əvvəldən sonunadək fənnin çat kanalları yalnız oxunur. Söndürəndə bu fənn üçün məhdudiyyət qoyulmur.",
+        "empty": "Yaxın imtahanı olan fənn yoxdur.",
+        "error": "Fənn siyahısı yüklənmədi. Bir az sonra yenidən cəhd edin.",
+        "retry": "Yenidən cəhd et",
+        "failed": "Rejim dəyişmədi",
+        "meta": "{code} · Qarşıdakı imtahan: {count}",
+        "switchedOn": "{name} üçün imtahan rejimi açıldı.",
+        "switchedOff": "{name} üçün imtahan rejimi söndürüldü."
+      }
     },
     "papers": {
       "title": "Keçmiş imtahan kağızları",

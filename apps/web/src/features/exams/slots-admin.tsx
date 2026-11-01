@@ -8,6 +8,7 @@ import { useState, type FormEvent } from "react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { Switch } from "@/components/ui/choice";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/overlay";
 import { Panel, PanelBody } from "@/components/ui/panel";
 import {
@@ -63,7 +64,78 @@ export function SlotsAdmin() {
         retry={() => void query.refetch()}
       />
       {items.length > 0 ? <SlotTable items={items} /> : null}
+      <ExamModeSwitches />
     </div>
+  );
+}
+
+/** Staff's per-subject switch (§5.2, D-104): off lifts the read-only chat rule for the subject's channels. */
+function ExamModeSwitches() {
+  const t = useTranslations("exams.admin.mode");
+  const api = useApi();
+  const client = useQueryClient();
+  const toast = useToast();
+  const errorMessage = useErrorMessage();
+  const query = useQuery({
+    queryKey: ["exams", "mode-subjects"],
+    queryFn: async () => unwrap(await api.GET("/api/v1/exams/subjects")).items,
+  });
+  const change = useMutation({
+    mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) =>
+      unwrap(
+        await api.PUT("/api/v1/exams/subjects/{subject_id}/exam-mode", {
+          params: { path: { subject_id: id } },
+          body: { enabled },
+        }),
+      ),
+    onSuccess: (subject) => {
+      toast({ title: t(subject.exam_mode ? "switchedOn" : "switchedOff", { name: subject.name }) });
+      void client.invalidateQueries({ queryKey: ["exams", "mode-subjects"] });
+    },
+  });
+  const items = query.data ?? [];
+  return (
+    <Panel>
+      <PanelBody>
+        <section aria-labelledby="exam-mode-title" className="flex max-w-2xl flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 id="exam-mode-title" className="text-lg font-semibold">
+              {t("title")}
+            </h2>
+            <p className="text-muted">{t("description")}</p>
+          </div>
+          {change.isError ? (
+            <Banner tone="danger" title={t("failed")}>
+              {errorMessage(change.error)}
+            </Banner>
+          ) : null}
+          <ScreenState
+            loading={query.isLoading}
+            error={query.error}
+            empty={!query.isLoading && !query.isError && items.length === 0}
+            emptyMessage={t("empty")}
+            errorMessage={t("error")}
+            retryLabel={t("retry")}
+            retry={() => void query.refetch()}
+          />
+          {items.length > 0 ? (
+            <ul className="flex flex-col divide-y divide-border">
+              {items.map((subject) => (
+                <li key={subject.id} className="py-3">
+                  <Switch
+                    label={subject.name}
+                    description={t("meta", { code: subject.code, count: subject.upcoming_exams })}
+                    checked={subject.exam_mode}
+                    disabled={change.isPending && change.variables?.id === subject.id}
+                    onCheckedChange={(enabled) => change.mutate({ id: subject.id, enabled })}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      </PanelBody>
+    </Panel>
   );
 }
 

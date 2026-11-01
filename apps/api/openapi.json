@@ -2285,6 +2285,7 @@
           "exam_slot.created",
           "exam_slot.edited",
           "exam_slot.deleted",
+          "exam_mode.changed",
           "past_paper.reviewed"
         ],
         "title": "AuditAction",
@@ -3831,6 +3832,68 @@
           "version"
         ],
         "title": "EventUpdateIn",
+        "type": "object"
+      },
+      "ExamModeIn": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "ExamModeIn",
+        "type": "object"
+      },
+      "ExamModeSubjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExamModeSubjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ExamModeSubjectListOut",
+        "type": "object"
+      },
+      "ExamModeSubjectOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "exam_mode": {
+            "title": "Exam Mode",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "upcoming_exams": {
+            "title": "Upcoming Exams",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "exam_mode",
+          "upcoming_exams"
+        ],
+        "title": "ExamModeSubjectOut",
         "type": "object"
       },
       "ExamOverlapOut": {
@@ -7149,7 +7212,11 @@
           "mentorship.request_expired",
           "mentorship.advice_post",
           "mentorship.tip_prompt",
-          "chat.answer_verified"
+          "chat.answer_verified",
+          "exam.scheduled",
+          "exam.moved",
+          "past_paper.approved",
+          "past_paper.rejected"
         ],
         "title": "NotificationKind",
         "type": "string"
@@ -20386,6 +20453,180 @@
           }
         ],
         "summary": "Change the time or room of an exam slot",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/subjects": {
+      "get": {
+        "operationId": "listExamModeSubjects",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamModeSubjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Subjects with an exam ahead or exam mode switched off",
+        "tags": [
+          "exams"
+        ]
+      }
+    },
+    "/api/v1/exams/subjects/{subject_id}/exam-mode": {
+      "put": {
+        "operationId": "setSubjectExamMode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "subject_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Subject Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExamModeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExamModeSubjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Switch exam mode on or off for a subject",
         "tags": [
           "exams"
         ]

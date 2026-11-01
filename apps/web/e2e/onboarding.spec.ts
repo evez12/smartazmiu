@@ -21,9 +21,12 @@ test("a new student steps through the tour, closes it and brings it back", async
   const tour = page.getByRole("region", { name: "SmartAzMİU ilə tanışlıq" });
   await expect(tour).toContainText("Addım 1 / 5");
   await expect(tour.getByRole("heading", { name: "Dərs cədvəli" })).toBeVisible();
-  // Without imported data the dashboard explains instead of failing (§13.1).
+  // Without imported data the dashboard explains instead of failing (§13.1). Scoped to the main landmark: while a
+  // streamed segment is swapped in, a hidden copy of its text exists outside it.
   await expect(
-    page.getByText("Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb."),
+    page
+      .getByRole("main")
+      .getByText("Qrupunuz, fənləriniz və dərs cədvəliniz hələ idxal olunmayıb."),
   ).toBeVisible();
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations.filter((v) => v.impact === "serious" || v.impact === "critical")).toEqual([]);

@@ -26,5 +26,7 @@ async def test_worker_starts_dispatches_and_stops(db: AsyncSession) -> None:
         "mentor_invitation",
         "mentor_request",
         "advice_post",
+        "exam_slot",
+        "past_paper",
     }
     assert main.WorkerSettings.keep_result == 0

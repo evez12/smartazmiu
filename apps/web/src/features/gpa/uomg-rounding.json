@@ -1,0 +1,95 @@
+{
+  "note": "Shared by uomg.test.ts and test_uomg_reference.py; expected values are exact half-up (D-106).",
+  "cases": [
+    {
+      "name": "half rounds up at two digits (64.225)",
+      "digits": 2,
+      "courses": [
+        [1, 73],
+        [39, 64]
+      ],
+      "expected": 64.23
+    },
+    {
+      "name": "half rounds up at two digits (71.675)",
+      "digits": 2,
+      "courses": [
+        [1, 59],
+        [39, 72]
+      ],
+      "expected": 71.68
+    },
+    {
+      "name": "half rounds up at one digit (71.65)",
+      "digits": 1,
+      "courses": [
+        [1, 65],
+        [19, 72]
+      ],
+      "expected": 71.7
+    },
+    {
+      "name": "half rounds up at one digit (78.05)",
+      "digits": 1,
+      "courses": [
+        [1, 60],
+        [19, 79]
+      ],
+      "expected": 78.1
+    },
+    {
+      "name": "half rounds up at zero digits (71.5)",
+      "digits": 0,
+      "courses": [
+        [1, 51],
+        [1, 92]
+      ],
+      "expected": 72
+    },
+    {
+      "name": "half rounds up at zero digits (72.5)",
+      "digits": 0,
+      "courses": [
+        [1, 64],
+        [17, 73]
+      ],
+      "expected": 73
+    },
+    {
+      "name": "transcript exact, no rounding needed (78.1)",
+      "digits": 1,
+      "courses": [
+        [1, 52],
+        [29, 79]
+      ],
+      "expected": 78.1
+    },
+    {
+      "name": "below a half stays down (71.649)",
+      "digits": 2,
+      "courses": [
+        [27, 59],
+        [973, 72]
+      ],
+      "expected": 71.65
+    },
+    {
+      "name": "a third rounds to the nearest (71.67)",
+      "digits": 2,
+      "courses": [
+        [1, 51],
+        [2, 82]
+      ],
+      "expected": 71.67
+    },
+    {
+      "name": "two thirds rounds up (66.67)",
+      "digits": 2,
+      "courses": [
+        [1, 52],
+        [2, 74]
+      ],
+      "expected": 66.67
+    }
+  ]
+}

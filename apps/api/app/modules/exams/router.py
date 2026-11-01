@@ -11,6 +11,9 @@ from app.modules.chat.bus import ChatBus
 from app.modules.exams import ics
 from app.modules.exams.papers import PastPaperService
 from app.modules.exams.schemas import (
+    ExamModeIn,
+    ExamModeSubjectListOut,
+    ExamModeSubjectOut,
     ExamSlotIn,
     ExamSlotListOut,
     ExamSlotOut,
@@ -116,6 +119,28 @@ async def update_slot(
 async def delete_slot(user: Manager, service: ExamsDep, slot_id: uuid.UUID) -> Response:
     await service.remove(user, slot_id)
     return Response(status_code=204)
+
+
+@router.get(
+    "/subjects",
+    response_model=ExamModeSubjectListOut,
+    operation_id="listExamModeSubjects",
+    summary="Subjects with an exam ahead or exam mode switched off",
+)
+async def exam_mode_subjects(_: Manager, service: ExamsDep) -> ExamModeSubjectListOut:
+    return ExamModeSubjectListOut(items=await service.subjects())
+
+
+@router.put(
+    "/subjects/{subject_id}/exam-mode",
+    response_model=ExamModeSubjectOut,
+    operation_id="setSubjectExamMode",
+    summary="Switch exam mode on or off for a subject",
+)
+async def set_exam_mode(
+    user: Manager, service: ExamsDep, subject_id: uuid.UUID, body: ExamModeIn
+) -> ExamModeSubjectOut:
+    return await service.set_mode(user, subject_id, body.enabled)
 
 
 @router.get(

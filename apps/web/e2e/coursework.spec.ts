@@ -13,7 +13,7 @@ import {
   type TestAccount,
 } from "./support/auth";
 import type { TestRecords } from "./support/database";
-import { SMALL_PDF } from "./support/files";
+import { EICAR, SMALL_PDF, storedZip } from "./support/files";
 import { importFile } from "./support/imports";
 import { bakuInput } from "./support/structure";
 
@@ -225,6 +225,89 @@ test("an assignment goes from creation to a grade, and a quiz from building to a
   await expect(studentPage.getByText("6 / 7 bal")).toBeVisible();
   await expect(studentPage.getByText("Cəhd sayınız bitib.")).toBeVisible();
   await expect(studentPage.getByRole("button", { name: "Testə başlayın" })).toHaveCount(0);
+
+  await Promise.all([teacherContext.close(), studentContext.close()]);
+});
+
+/*
+ * D-093: a file the scanner reports as infected never reaches a teacher. The student sees why, nobody can open the
+ * file, and a clean replacement becomes the current version. The EICAR test file is built in memory.
+ */
+test("an infected assignment file is rejected, cannot be opened, and a clean one replaces it", async ({
+  browser,
+  page,
+  records,
+  accounts,
+}) => {
+  test.setTimeout(360_000);
+  const marker = records.coursework(randomBytes(6).toString("hex"));
+  const teacher = await accounts.create("teacher", { givenName: "Leyla", familyName: "Quliyeva" });
+  const student = await accounts.create("student", { givenName: "Nərmin", familyName: "Şükürova" });
+
+  await signInWithSecondFactor(
+    page,
+    await accounts.create("staff", { givenName: "Günel", familyName: "Səfərova" }),
+    "/admin/imports",
+  );
+  await importOffering(page, records, teacher, student);
+
+  const teacherContext = await browser.newContext();
+  const teacherPage = await teacherContext.newPage();
+  await signIn(teacherPage, teacher, "/assignments/new");
+  const title = `Virus yoxlaması ${marker}`;
+  await teacherPage.getByLabel(/Fənn və qrup/).selectOption({ label: OFFERING_LABEL });
+  await teacherPage.getByLabel(/^Başlıq/).fill(title);
+  await teacherPage.getByLabel(/^Təlimat/).fill("Hesabatı bir fayl kimi göndərin.");
+  await teacherPage.getByLabel(/^Son tarix/).fill(bakuInput(72));
+  await teacherPage.getByLabel(/^Maksimum bal/).fill("20");
+  await teacherPage.getByRole("button", { name: "Tapşırığı yaradın" }).click();
+  await expect(teacherPage.getByRole("heading", { level: 2, name: title })).toBeVisible();
+  const assignmentPath = new URL(teacherPage.url()).pathname;
+
+  const studentContext = await browser.newContext();
+  const studentPage = await studentContext.newPage();
+  await signIn(studentPage, student, "/assignments");
+  await studentPage.getByRole("link", { name: title }).click();
+  await hydrated(studentPage);
+  await studentPage.locator('input[type="file"]').setInputFiles({
+    name: "Hesabat.zip",
+    mimeType: "application/zip",
+    buffer: storedZip("eicar.com", EICAR),
+  });
+  await studentPage.getByRole("button", { name: "Göndərin" }).click();
+  // The file name is on the picker from the moment it is chosen: only the status shows the work was submitted,
+  // and reloading before that would abort the upload.
+  await expect(studentPage.getByText("Göndərilib").first()).toBeVisible({ timeout: 30_000 });
+  await waitForText(studentPage, () => studentPage.getByText("Virus aşkarlandı"));
+  await expect(studentPage.getByText("Bu fayl qəbul olunmadı. Başqa fayl göndərin.")).toBeVisible();
+  await expect(studentPage.getByRole("button", { name: /faylını endirin/ })).toHaveCount(0);
+  await expectNoSeriousViolations(studentPage);
+
+  // The teacher is told the file was rejected and has nothing to open.
+  await openPage(teacherPage, assignmentPath);
+  const row = teacherPage.getByRole("row").filter({ hasText: "Nərmin Şükürova" });
+  await row.getByRole("link", { name: "Qiymətləndirin" }).click();
+  await hydrated(teacherPage);
+  await expect(teacherPage.getByText("Virus aşkarlandı")).toBeVisible();
+  await expect(teacherPage.getByRole("button", { name: /faylını endirin/ })).toHaveCount(0);
+
+  // A clean file replaces it as version 2; the rejected one stays in the history, still not downloadable.
+  await studentPage.reload();
+  await hydrated(studentPage);
+  await studentPage.locator('input[type="file"]').setInputFiles({
+    name: "Hesabat.pdf",
+    mimeType: "application/pdf",
+    buffer: SMALL_PDF,
+  });
+  await studentPage.getByRole("button", { name: "Yenidən göndərin" }).click();
+  await expect(studentPage.getByText("Versiya 2")).toBeVisible({ timeout: 30_000 });
+  await waitForText(studentPage, () => studentPage.getByText("Yoxlanılıb"));
+  await expect(
+    studentPage.getByRole("button", { name: "Hesabat.pdf faylını endirin" }),
+  ).toBeVisible();
+  await expect(
+    studentPage.getByRole("button", { name: "Hesabat.zip faylını endirin" }),
+  ).toHaveCount(0);
 
   await Promise.all([teacherContext.close(), studentContext.close()]);
 });
