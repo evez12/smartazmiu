@@ -859,7 +859,11 @@
       "mentorshipRequestExpired": "Məsləhət sorğunuzun vaxtı bitdi",
       "mentorshipAdvicePost": "#məsləhət bölməsində yeni sual",
       "mentorshipTipPrompt": "Fənn kartını doldurun",
-      "chatAnswerVerified": "Sualınıza təsdiqlənmiş cavab verildi"
+      "chatAnswerVerified": "Sualınıza təsdiqlənmiş cavab verildi",
+      "examScheduled": "Yeni imtahan vaxtı",
+      "examMoved": "İmtahan vaxtı dəyişdi",
+      "pastPaperApproved": "İmtahan kağızınız təsdiqləndi",
+      "pastPaperRejected": "İmtahan kağızınız qəbul olunmadı"
     },
     "unread": "Oxunmayıb",
     "empty": "Hələ bildirişiniz yoxdur. Sizə aid elan, tədbir və ya dərs cədvəli dəyişikliyi olduqda burada görünəcək.",

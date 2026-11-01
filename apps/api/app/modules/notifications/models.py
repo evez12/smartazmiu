@@ -55,6 +55,10 @@ class NotificationKind(StrEnum):
     MENTORSHIP_ADVICE_POST = "mentorship.advice_post"
     MENTORSHIP_TIP_PROMPT = "mentorship.tip_prompt"
     CHAT_ANSWER_VERIFIED = "chat.answer_verified"
+    EXAM_SCHEDULED = "exam.scheduled"
+    EXAM_MOVED = "exam.moved"
+    PAST_PAPER_APPROVED = "past_paper.approved"
+    PAST_PAPER_REJECTED = "past_paper.rejected"
 
 
 class DeliveryChannel(StrEnum):

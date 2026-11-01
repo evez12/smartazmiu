@@ -30,6 +30,7 @@ from app.modules.chat.models import ScanStatus
 from app.modules.chat.payloads import message_payload
 from app.modules.chat.provisioning import ChannelProvisioner
 from app.modules.events import service as events
+from app.modules.exams import notifications as exam_notifications
 from app.modules.exams.papers import PaperScanner
 from app.modules.knowledge.service import TipService
 from app.modules.materials.service import MaterialScanner
@@ -46,6 +47,8 @@ RELEVANCE: dict[str, RelevanceCheck] = {
     announcements.SUBJECT_TYPE: announcements.still_addressed,
     events.SUBJECT_TYPE: events.still_relevant,
     schedule_changes.SUBJECT_TYPE: schedule_changes.still_affected,
+    exam_notifications.SLOT_SUBJECT_TYPE: exam_notifications.still_scheduled,
+    exam_notifications.PAPER_SUBJECT_TYPE: exam_notifications.still_decided,
     mentions.SUBJECT_TYPE: mentions.still_relevant,
     mentorship.SUBJECT_TYPE_INVITATION: mentorship.still_relevant,
     mentorship.SUBJECT_TYPE_REQUEST: mentorship.still_relevant,

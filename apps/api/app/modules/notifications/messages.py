@@ -22,6 +22,10 @@ KIND_LABELS: dict[NotificationKind, str] = {
     NotificationKind.MENTORSHIP_ADVICE_POST: "#məsləhət bölməsində yeni sual",
     NotificationKind.MENTORSHIP_TIP_PROMPT: "Fənn kartını doldurun",
     NotificationKind.CHAT_ANSWER_VERIFIED: "Sualınıza təsdiqlənmiş cavab verildi",
+    NotificationKind.EXAM_SCHEDULED: "Yeni imtahan vaxtı",
+    NotificationKind.EXAM_MOVED: "İmtahan vaxtı dəyişdi",
+    NotificationKind.PAST_PAPER_APPROVED: "İmtahan kağızınız təsdiqləndi",
+    NotificationKind.PAST_PAPER_REJECTED: "İmtahan kağızınız qəbul olunmadı",
 }
 
 

@@ -18,6 +18,7 @@ from app.modules.academics.importers import ImportRun, ImportSpec, ParsedRow, Ro
 from app.modules.academics.models import CourseOfferingGroup, ImportKind
 from app.modules.academics.parsing import Column
 from app.modules.exams.models import ExamSlot
+from app.modules.exams.notifications import SlotState, notify_slot, state_of
 from app.modules.exams.service import MAX_DURATION
 from app.modules.schedule.imports import _OFFERING_COLUMNS, Catalogue
 
@@ -77,21 +78,31 @@ class ExamSlotsImport(ImportSpec):
                 select(ExamSlot).where(ExamSlot.course_offering_id.in_(offering_ids))
             )
         }
+        touched: list[tuple[ExamSlot, SlotState | None]] = []
         for row, offering_id, room_id, starts_at, ends_at in resolved:
             fields = {
                 "ends_at": ends_at,
                 "room_code": row.values["room_code"],
                 "room_id": room_id,
             }
-            run.upsert(
-                existing.get((offering_id, starts_at)),
+            found = existing.get((offering_id, starts_at))
+            previous = state_of(found) if found is not None else None
+            slot = run.upsert(
+                found,
                 ExamSlot,
                 fields,
                 course_offering_id=offering_id,
                 starts_at=starts_at,
             )
+            if found is None or state_of(slot) != previous:
+                touched.append((slot, previous))
             run.exam_offerings.add(offering_id)
         await self._warn(run, resolved)
+        if run.write and not run.issues and touched:
+            # In the import's transaction: a failed apply rolls the notifications back with the data.
+            await run.session.flush()
+            for slot, previous in touched:
+                await notify_slot(run.session, slot, previous)
 
     async def _warn(
         self,

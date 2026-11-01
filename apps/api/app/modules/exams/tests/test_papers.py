@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import utc_now
@@ -17,8 +17,14 @@ from app.modules.chat.models import ScanStatus
 from app.modules.chat.tests.conftest import MakePerson, Person
 from app.modules.chat.tests.test_attachments import EICAR, PDF, FakeScanner
 from app.modules.exams.models import PastPaper, PastPaperStatus
+from app.modules.exams.notifications import still_decided
 from app.modules.exams.papers import PaperScanner
 from app.modules.materials.tests.test_materials import sign_in
+from app.modules.notifications.models import (
+    Notification,
+    NotificationCategory,
+    NotificationKind,
+)
 from tests.support import MemoryStorage, TokenFactory
 
 API = "/api/v1/exams"
@@ -371,3 +377,88 @@ async def test_reviewers_see_how_many_papers_wait_for_them(
     assert (
         await client.get(f"{API}/papers/subjects", headers=people["outsider"].headers)
     ).json() == {"items": []}
+
+
+async def test_the_uploader_hears_about_an_approval_or_a_rejection_once_per_decision(
+    client: AsyncClient, db: AsyncSession, storage: MemoryStorage, people: dict[str, Person]
+) -> None:
+    subject = await statistika(db)
+    semester = await finished_semester(client, people["aysel"], subject)
+    first = await save(
+        client,
+        people["aysel"],
+        await upload(client, db, storage, people["aysel"], subject),
+        semester,
+    )
+    await scan(db, storage)
+    review = f"{API}/papers/{first.json()['id']}/review"
+
+    async def heard(who: str) -> list[Notification]:
+        found = await db.scalars(
+            select(Notification)
+            .where(
+                Notification.user_id == people[who].id, Notification.subject_type == "past_paper"
+            )
+            .order_by(Notification.id)
+            .execution_options(populate_existing=True)
+        )
+        return list(found)
+
+    assert await heard("aysel") == []
+    approved = await client.post(review, headers=people["leyla"].headers, json={"approve": True})
+    assert approved.status_code == 200
+    [note] = await heard("aysel")
+    assert note.kind is NotificationKind.PAST_PAPER_APPROVED
+    assert note.category is NotificationCategory.SCHEDULE
+    assert note.title == "Yekun imtahan, 2025 payız"
+    assert note.link == "/exams/papers"
+    # Only the uploader is told: not the reviewer, and not the rest of the subject.
+    for other in ("leyla", "rauf", "staff", "outsider"):
+        assert await heard(other) == [], other
+
+    # A changed decision is a new event; the same decision repeated later is one too (it has its own time).
+    rejected = await client.post(
+        review, headers=people["staff"].headers, json={"approve": False, "note": "Sual yoxdur"}
+    )
+    assert rejected.status_code == 200
+    assert [n.kind for n in await heard("aysel")] == [
+        NotificationKind.PAST_PAPER_APPROVED,
+        NotificationKind.PAST_PAPER_REJECTED,
+    ]
+
+    # Delivery time: still decided and still theirs, until the paper is gone.
+    paper_id = uuid.UUID(first.json()["id"])
+    assert await still_decided(db, paper_id, people["aysel"].id)
+    assert not await still_decided(db, paper_id, people["leyla"].id)
+    paper = await db.get(PastPaper, paper_id)
+    assert paper is not None
+    paper.status = PastPaperStatus.PENDING
+    await db.commit()
+    assert not await still_decided(db, paper_id, people["aysel"].id)
+
+
+async def test_a_teachers_own_upload_and_an_unreviewed_paper_notify_nobody(
+    client: AsyncClient, db: AsyncSession, storage: MemoryStorage, people: dict[str, Person]
+) -> None:
+    subject = await statistika(db)
+    semester = await finished_semester(client, people["leyla"], subject)
+    own = await save(
+        client,
+        people["leyla"],
+        await upload(client, db, storage, people["leyla"], subject),
+        semester,
+    )
+    assert own.json()["status"] == "approved"
+    pending = await save(
+        client,
+        people["aysel"],
+        await upload(client, db, storage, people["aysel"], subject, filename="Aralıq.pdf"),
+        semester,
+    )
+    assert pending.json()["status"] == "pending"
+    count = await db.scalar(
+        select(func.count())
+        .select_from(Notification)
+        .where(Notification.subject_type == "past_paper")
+    )
+    assert count == 0

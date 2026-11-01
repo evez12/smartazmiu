@@ -5336,7 +5336,11 @@ export interface components {
       | "mentorship.request_expired"
       | "mentorship.advice_post"
       | "mentorship.tip_prompt"
-      | "chat.answer_verified";
+      | "chat.answer_verified"
+      | "exam.scheduled"
+      | "exam.moved"
+      | "past_paper.approved"
+      | "past_paper.rejected";
     /** NotificationOut */
     NotificationOut: {
       category: components["schemas"]["NotificationCategory"];

@@ -23,6 +23,7 @@ from app.modules.campus.models import Room
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.models import Channel, ChannelType
 from app.modules.exams.models import ExamSlot, SubjectExamMode
+from app.modules.exams.notifications import notify_slot, state_of
 from app.modules.exams.schemas import (
     ExamModeSubjectOut,
     ExamOverlapOut,
@@ -208,6 +209,7 @@ class ExamService:
             target_id=slot.id,
             details={"course_offering_id": str(slot.course_offering_id)},
         )
+        await notify_slot(self.session, slot, None)
         await self.session.commit()
         await self._announce([slot.course_offering_id])
         return (await self._out([slot], with_overlaps=True))[0]
@@ -218,8 +220,10 @@ class ExamService:
         slot = await self._slot(slot_id)
         self._check_window(body.starts_at, body.ends_at)
         room_code, room_id = await self._room(body.room_code)
+        previous = state_of(slot)
         slot.starts_at, slot.ends_at = body.starts_at, body.ends_at
         slot.room_code, slot.room_id = room_code, room_id
+        slot.updated_at = utc_now()
         try:
             await self.session.flush()
         except IntegrityError as exc:
@@ -233,6 +237,7 @@ class ExamService:
             target_id=slot.id,
             details={"course_offering_id": str(slot.course_offering_id)},
         )
+        await notify_slot(self.session, slot, previous, slot.updated_at)
         await self.session.commit()
         # Exam mode is re-evaluated at once: a window that moved, or that already started, shows on open screens.
         await self._announce([slot.course_offering_id])

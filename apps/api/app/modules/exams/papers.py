@@ -39,6 +39,7 @@ from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.chat.models import ScanStatus
 from app.modules.exams.models import PastPaper, PastPaperStatus
+from app.modules.exams.notifications import notify_paper_decision
 from app.modules.exams.schemas import (
     FinishedSemesterOut,
     PaperDownloadOut,
@@ -348,6 +349,7 @@ class PastPaperService:
             target_id=paper.id,
             details={"approved": body.approve, "subject_id": str(paper.subject_id)},
         )
+        await notify_paper_decision(self.session, paper)
         await self.session.commit()
         return self._out(user, access, paper, semester)
 

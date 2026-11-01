@@ -2301,3 +2301,38 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   table, so a restart reads the same answer); the screen (`exams.test.tsx`).
 - **Consequences:** a switched-off subject has no exam-mode protection at all, including the attachment block; the
   screen says so. The mode is a per-subject, not per-semester, setting and stays until staff switch it back.
+
+## D-105 · 2026-11-02 · Notifications for exams and past-paper decisions (D-049 pattern)
+
+- **Context:** D-101 listed "no notification for a new or moved exam or for a paper decision" as open. The category
+  system of D-049 can carry them.
+- **Decision:**
+  - Kinds `exam.scheduled`, `exam.moved`, `past_paper.approved`, `past_paper.rejected` (migration 0034, enum values
+    added; the downgrade deletes notifications of these kinds and rebuilds the type, like 0020).
+  - **Category `schedule`** for all four, so push is on and e-mail off by default and one existing switch controls
+    them. A separate `exams` category is not justified: it would add a fourth toggle to the settings screen for events
+    that happen a few times per semester, and exam times are timetable information in every student's mind. If paper
+    decisions ever need their own switch, a category can be added then without changing the kinds.
+  - **Who:** a new or moved exam goes to the active students (enrollment `active`, the rule of "my exams") and the
+    teachers of the offering; a decision goes to the uploader only. Created by the exam screen, the exam import
+    (new rows, and rows whose end or room changed; the import key includes the start, so a changed start is a new
+    exam), and the paper review. Notifications are written in the same transaction as the change.
+  - **Not for the past:** nothing when the exam has already ended (the new times for a move), and the delivery-time
+    check drops a push for an exam that ended meanwhile. A save that changes nothing says nothing.
+  - **Dedupe key** `exam_slot:<id>:<fingerprint>` where the fingerprint is a hash of the previous and the new
+    (start, end, room) in UTC ISO form, plus the edit time on the screen path: the same change notifies once, and
+    moving an exam back to an earlier time is a change again. Past papers: `past_paper:<id>:<fingerprint>` of the
+    decision and its time, so a reversed decision notifies again. UTC ISO strings are used because the `repr` of an
+    aware datetime depends on the tzinfo object that created it, which made the first version of the key differ for
+    the same change (found by a test).
+  - **Delivery time (§5.6):** `still_scheduled` (exam exists, not over, recipient still attends or teaches, account
+    active via the dispatcher) and `still_decided` (paper exists, still decided, still the recipient's) are
+    registered in the worker's relevance table. Quiet hours (push suppressed, not postponed), the category
+    preference and device checks are the dispatcher's, unchanged. Nothing extra is audited.
+  - In-app text under `notifications.kinds` in `az.json`; push and e-mail labels in `messages.py`.
+- **Tests:** recipients (students, teachers, nobody else), no notification for a past exam, one notification per
+  change and none for an unchanged save, the same change twice, the delivery-time check against a dropped enrollment,
+  an ended and a deleted exam, the import (new, repeated, changed), paper approval and rejection, the uploader only,
+  teachers' own uploads and pending papers silent, the worker registry.
+- **Consequences:** a bulk exam import notifies every attendee of every future exam in it once; re-applying the file
+  is silent. The seed (`make seed`) creates these notifications for the sample users, which is intended.

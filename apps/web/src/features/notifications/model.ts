@@ -24,6 +24,10 @@ export const KIND_KEYS = {
   "mentorship.advice_post": "mentorshipAdvicePost",
   "mentorship.tip_prompt": "mentorshipTipPrompt",
   "chat.answer_verified": "chatAnswerVerified",
+  "exam.scheduled": "examScheduled",
+  "exam.moved": "examMoved",
+  "past_paper.approved": "pastPaperApproved",
+  "past_paper.rejected": "pastPaperRejected",
 } as const satisfies Record<NotificationKind, string>;
 
 /** Query keys shared by the bell and the notifications page, so marking read updates both. */
