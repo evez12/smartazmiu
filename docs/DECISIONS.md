@@ -2358,3 +2358,39 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `round_half_up` and the expected values in the fixture together.
 - **Consequences:** a displayed value can differ in the last digit from one produced by a half-even rule; the
   loan thresholds (71, 91) compare the rounded value, as before.
+
+## D-107 · 2026-11-02 · ÜOMG rules are remembered in the browser only
+
+- **Context:** D-101 listed that the calculator's rules (include failed, retake policy, digits, thresholds) reset on
+  every visit.
+- **Decision:** the rules are kept in `localStorage` under `smartazmiu:gpa-rules:v1`, per browser, as a light
+  convenience. No server storage, no new endpoint, no migration. Reads and writes are wrapped in try/catch, so a
+  private window, blocked or full storage just means the defaults apply for the visit. They are read after mount
+  (the server render and the first client render both use the defaults, so hydration cannot mismatch). A stored value
+  is used only when it is complete and in range (`parseRules`); an old shape or a hand edit is ignored. Defaults are
+  stored as nothing: "reset" removes the key, so a later change of the defaults reaches people who never changed
+  them.
+- **Consequences:** nothing depends on the stored value; another browser or device starts from the defaults. The
+  rules are not personal data and contain no grades. Tests: remembered and forgotten on reset, malformed and
+  out-of-range values ignored, a browser that throws on every storage call.
+
+## D-108 · 2026-11-02 · Account deletion (§5.4): attendance records and past papers are anonymized
+
+- **Context:** the product owner was asked what happens to a deleted person's attendance records (marked by or for
+  them) and to the past papers they uploaded or approved: delete, anonymize, or keep with a "Silinmiş istifadəçi"
+  actor.
+- **Decision (product owner, 2026-11-02): anonymize.** When an account is deleted, the rows stay and the link to the
+  person is removed (the user reference becomes NULL); the interface shows the actor as "Silinmiş istifadəçi". A
+  student's own attendance rows therefore stay countable in a teacher's totals without identifying anyone; past
+  papers stay in the archive without an uploader or reviewer, and nothing about the person remains on them (file
+  names and titles are the person's own content: the deletion routine must also clear the uploader's title/note
+  fields if they name the person, which is decided when deletion is built).
+- **Not built:** account deletion itself, and the anonymizing code. This decision only fixes the rule it must
+  follow. What the schema does today, for the deletion task to change: `attendance_records.user_id` (the student) and
+  `past_papers.uploader_id` are `ON DELETE CASCADE`, so deleting an account would delete those rows; both must become
+  nullable with `SET NULL`. `attendance_sessions.opened_by` has no `ON DELETE` rule, so it would block deletion of a
+  teacher; it needs the same treatment. `marked_by` and `reviewed_by` already use `SET NULL`. The screens that show
+  an actor need the "Silinmiş istifadəçi" placeholder. Grades and anything touching authentication stay outside this
+  decision and need their own.
+- **Consequences:** the future migration is reversible (the columns become nullable again only if no NULL exists),
+  and §13 deletion cases get a test: after deletion the teacher's report still counts the session and shows no name.

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { RadioGroup, Switch } from "@/components/ui/choice";
@@ -25,6 +25,7 @@ import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
 
 import { semesterResults, simulate, type Draft, type SemesterResult } from "./model";
+import { loadRules, saveRules } from "./rules-storage";
 import {
   earnedCredits,
   GPA_DEFAULTS,
@@ -42,6 +43,16 @@ export function GpaPage() {
   const t = useTranslations("gpa");
   const api = useApi();
   const [config, setConfig] = useState<GpaConfig>(GPA_DEFAULTS);
+  // Read after mount, so the server render and the first client render agree (the rules are a per-viewer extra).
+  useEffect(() => {
+    const saved = loadRules();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- browser storage exists only on the client
+    if (saved) setConfig(saved);
+  }, []);
+  const changeRules = (next: GpaConfig) => {
+    setConfig(next);
+    saveRules(next);
+  };
   const query = useQuery({
     queryKey: ["grades", "mine"],
     queryFn: async () => unwrap(await api.GET("/api/v1/me/grades")).items,
@@ -62,7 +73,7 @@ export function GpaPage() {
         <>
           <Summary grades={grades} config={config} />
           {grades.length > 0 ? <Courses grades={grades} config={config} /> : null}
-          <Rules config={config} onChange={setConfig} />
+          <Rules config={config} onChange={changeRules} />
           <Simulator grades={grades} config={config} />
         </>
       ) : null}
