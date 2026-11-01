@@ -157,6 +157,7 @@ describe("the dean's office", () => {
   it("shows collisions in the list and warns after adding an exam that collides", async () => {
     serve({
       "GET /api/v1/exams/slots": () => json({ items: [slot] }),
+      "GET /api/v1/exams/subjects": () => json({ items: [] }),
       "GET /api/v1/coursework/offerings": () => json({ items: [OFFERING] }),
       "POST /api/v1/exams/slots": () => json(slot, 201),
     });
@@ -194,6 +195,7 @@ describe("the dean's office", () => {
   it("confirms before removing an exam", async () => {
     serve({
       "GET /api/v1/exams/slots": () => json({ items: [{ ...slot, overlaps: [] }] }),
+      "GET /api/v1/exams/subjects": () => json({ items: [] }),
       "GET /api/v1/coursework/offerings": () => json({ items: [OFFERING] }),
       "DELETE /api/v1/exams/slots/e-1": () => new Response(null, { status: 204 }),
     });
@@ -209,6 +211,55 @@ describe("the dean's office", () => {
     await waitFor(() =>
       expect(fetchMock.mock.calls.some(([r]) => r.method === "DELETE")).toBe(true),
     );
+  });
+});
+
+describe("the exam-mode switch", () => {
+  const subject = {
+    id: "s-1",
+    code: "IQT-2102",
+    name: "Statistika",
+    exam_mode: true,
+    upcoming_exams: 2,
+  };
+
+  it("turns exam mode off for a subject and says so", async () => {
+    let off = false;
+    serve({
+      "GET /api/v1/exams/slots": () => json({ items: [] }),
+      "GET /api/v1/exams/subjects": () => json({ items: [{ ...subject, exam_mode: !off }] }),
+      "GET /api/v1/coursework/offerings": () => json({ items: [OFFERING] }),
+      "PUT /api/v1/exams/subjects/s-1/exam-mode": () => {
+        off = true;
+        return json({ ...subject, exam_mode: false });
+      },
+    });
+    wrap(<SlotsAdmin />);
+    const toggle = await screen.findByRole("switch", { name: /Statistika/ });
+    expect(toggle).toBeChecked();
+    expect(screen.getByText("IQT-2102 · Qarşıdakı imtahan: 2")).toBeVisible();
+
+    await userEvent.click(toggle);
+    expect(await screen.findByText("Statistika üçün imtahan rejimi söndürüldü.")).toBeVisible();
+    const put = fetchMock.mock.calls.map(([r]) => r).find((r) => r.method === "PUT")!;
+    expect(await put.clone().json()).toEqual({ enabled: false });
+    await waitFor(() =>
+      expect(screen.getByRole("switch", { name: /Statistika/ })).not.toBeChecked(),
+    );
+  });
+
+  it("explains a failed change and keeps the switch where it was", async () => {
+    serve({
+      "GET /api/v1/exams/slots": () => json({ items: [] }),
+      "GET /api/v1/exams/subjects": () => json({ items: [subject] }),
+      "GET /api/v1/coursework/offerings": () => json({ items: [OFFERING] }),
+      "PUT /api/v1/exams/subjects/s-1/exam-mode": () =>
+        json({ error: { code: "exams.subject_not_found", message: "x", details: {} } }, 404),
+    });
+    wrap(<SlotsAdmin />);
+    await userEvent.click(await screen.findByRole("switch", { name: /Statistika/ }));
+    expect(await screen.findByText("Rejim dəyişmədi")).toBeVisible();
+    expect(screen.getByRole("switch", { name: /Statistika/ })).toBeChecked();
   });
 });
 

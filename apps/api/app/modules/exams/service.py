@@ -2,7 +2,8 @@ import uuid
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from sqlalchemy import ColumnElement, and_, delete, exists, or_, select
+from sqlalchemy import ColumnElement, and_, delete, exists, func, or_, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,14 +15,16 @@ from app.modules.academics.models import (
     CourseOfferingGroup,
     Enrollment,
     EnrollmentStatus,
+    Subject,
 )
 from app.modules.audit.models import AuditAction
 from app.modules.audit.service import record_audit
 from app.modules.campus.models import Room
 from app.modules.chat.bus import ChatBus
 from app.modules.chat.models import Channel, ChannelType
-from app.modules.exams.models import ExamSlot
+from app.modules.exams.models import ExamSlot, SubjectExamMode
 from app.modules.exams.schemas import (
+    ExamModeSubjectOut,
     ExamOverlapOut,
     ExamSlotIn,
     ExamSlotOut,
@@ -249,6 +252,77 @@ class ExamService:
         await self.session.execute(delete(ExamSlot).where(ExamSlot.id == slot_id))
         await self.session.commit()
         await self._announce([offering_id])
+
+    # --- the per-subject switch --------------------------------------------------------------
+
+    async def subjects(self) -> list[ExamModeSubjectOut]:
+        """Subjects that have an exam ahead or a switched-off mode, with the mode's state."""
+        upcoming = (
+            select(CourseOffering.subject_id, func.count(ExamSlot.id).label("n"))
+            .join(ExamSlot, ExamSlot.course_offering_id == CourseOffering.id)
+            .where(ExamSlot.ends_at > utc_now())
+            .group_by(CourseOffering.subject_id)
+            .subquery()
+        )
+        rows = await self.session.execute(
+            select(
+                Subject.id,
+                Subject.code,
+                Subject.name_az,
+                SubjectExamMode.enabled,
+                func.coalesce(upcoming.c.n, 0),
+            )
+            .outerjoin(upcoming, upcoming.c.subject_id == Subject.id)
+            .outerjoin(SubjectExamMode, SubjectExamMode.subject_id == Subject.id)
+            .where(or_(upcoming.c.n.is_not(None), SubjectExamMode.enabled.is_(False)))
+            .order_by(Subject.name_az, Subject.code)
+        )
+        return [
+            ExamModeSubjectOut(
+                id=str(subject_id),
+                code=code,
+                name=name,
+                exam_mode=enabled is not False,
+                upcoming_exams=count,
+            )
+            for subject_id, code, name, enabled, count in rows
+        ]
+
+    async def set_mode(
+        self, actor: CurrentUser, subject_id: uuid.UUID, enabled: bool
+    ) -> ExamModeSubjectOut:
+        """Switches exam mode of a subject. Both its course channels and its community re-evaluate at once."""
+        if not await self.session.scalar(select(exists().where(Subject.id == subject_id))):
+            raise AppError("exams.subject_not_found", 404)
+        current = await self.session.scalar(
+            select(SubjectExamMode.enabled).where(SubjectExamMode.subject_id == subject_id)
+        )
+        await self.session.execute(
+            insert(SubjectExamMode)
+            .values(subject_id=subject_id, enabled=enabled, updated_by=actor.id)
+            .on_conflict_do_update(
+                index_elements=[SubjectExamMode.subject_id],
+                set_={"enabled": enabled, "updated_by": actor.id, "updated_at": func.now()},
+            )
+        )
+        # No row means on, so the first "on" is no change and leaves no audit entry.
+        if (current is not False) != enabled:
+            record_audit(
+                self.session,
+                AuditAction.EXAM_MODE_CHANGED,
+                actor_id=actor.id,
+                target_type="subject",
+                target_id=subject_id,
+                details={"enabled": enabled},
+            )
+        await self.session.commit()
+        offerings = list(
+            await self.session.scalars(
+                select(CourseOffering.id).where(CourseOffering.subject_id == subject_id)
+            )
+        )
+        await self._announce(offerings)
+        return next(item for item in await self.subjects() if item.id == str(subject_id))
 
     async def _slot(self, slot_id: uuid.UUID) -> ExamSlot:
         slot = await self.session.get(ExamSlot, slot_id)

@@ -318,3 +318,120 @@ async def test_students_and_teachers_see_their_own_upcoming_exams_and_a_calendar
     assert text.rstrip().endswith("END:VCALENDAR")
     empty = await client.get(f"{API}/mine.ics", headers=people["outsider"].headers)
     assert "BEGIN:VEVENT" not in empty.text
+
+
+async def test_only_staff_use_the_exam_mode_switch(
+    client: AsyncClient, db: AsyncSession, people: dict[str, Person]
+) -> None:
+    found = await offering(db, "IQT-2102")
+    url = f"{API}/subjects/{found.subject_id}/exam-mode"
+    for denied in ("leyla", "aysel", "outsider"):
+        assert (
+            await client.get(f"{API}/subjects", headers=people[denied].headers)
+        ).status_code == 403
+        put = await client.put(url, headers=people[denied].headers, json={"enabled": False})
+        assert put.status_code == 403
+    assert (await client.put(url, json={"enabled": False})).status_code == 401
+    ghost = f"{API}/subjects/{uuid.uuid4()}/exam-mode"
+    missing = await client.put(ghost, headers=people["staff"].headers, json={"enabled": False})
+    assert (missing.status_code, missing.json()["error"]["code"]) == (
+        404,
+        "exams.subject_not_found",
+    )
+
+
+async def test_switching_exam_mode_off_and_on_during_a_window_applies_at_once(
+    client: AsyncClient,
+    app: FastAPI,
+    db: AsyncSession,
+    people: dict[str, Person],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """§5.2: configurable per subject. The course channel and the community both follow the switch (D-104)."""
+    found = await offering(db, "IQT-2102")
+    course, community = await channels(db, found)
+    other_course, other_community = await channels(db, await offering(db, "XDL-2103"))
+    aysel = await current(db, people["aysel"])
+    staff = people["staff"].headers
+    created = await client.post(
+        f"{API}/slots",
+        headers=staff,
+        json=body(found.id, timedelta(minutes=-10), timedelta(hours=2)),
+    )
+    assert created.status_code == 201, created.text
+    assert await exam_until(db, app, aysel, course) is not None
+    assert await exam_until(db, app, aysel, community) is not None
+
+    announced: list[list[uuid.UUID]] = []
+
+    async def record(self: ChatBus, channel_ids: list[uuid.UUID]) -> None:
+        announced.append(list(channel_ids))
+
+    monkeypatch.setattr(ChatBus, "channels_changed", record)
+    url = f"{API}/subjects/{found.subject_id}/exam-mode"
+
+    off = await client.put(url, headers=staff, json={"enabled": False})
+    assert off.status_code == 200, off.text
+    assert off.json()["exam_mode"] is False
+    assert off.json()["upcoming_exams"] == 1
+    assert {course, community} <= set(announced[-1])
+    assert await exam_until(db, app, aysel, course) is None
+    assert await exam_until(db, app, aysel, community) is None
+    # The exam itself is untouched: students still see it in their list.
+    mine = (await client.get(f"{API}/mine", headers=people["aysel"].headers)).json()["items"]
+    assert created.json()["id"] in [slot["id"] for slot in mine]
+
+    # Switching off twice is idempotent and leaves one audit entry.
+    assert (await client.put(url, headers=staff, json={"enabled": False})).status_code == 200
+    listed = (await client.get(f"{API}/subjects", headers=staff)).json()["items"]
+    assert [i["exam_mode"] for i in listed if i["id"] == str(found.subject_id)] == [False]
+
+    on = await client.put(url, headers=staff, json={"enabled": True})
+    assert on.json()["exam_mode"] is True
+    assert {course, community} <= set(announced[-1])
+    ends = await db.get(ExamSlot, uuid.UUID(created.json()["id"]))
+    assert ends is not None
+    await db.refresh(ends)
+    assert await exam_until(db, app, aysel, course) == ends.ends_at
+    assert await exam_until(db, app, aysel, community) == ends.ends_at
+
+    # Another subject never follows the switch.
+    assert await exam_until(db, app, aysel, other_course) is None
+    assert await exam_until(db, app, aysel, other_community) is None
+    entries = list(
+        await db.scalars(
+            select(AuditLog)
+            .where(AuditLog.action == "exam_mode.changed")
+            .order_by(AuditLog.occurred_at)
+        )
+    )
+    assert [e.details["enabled"] for e in entries] == [False, True]
+    assert {e.target_id for e in entries} == {str(found.subject_id)}
+
+
+async def test_a_switched_off_subject_stays_off_for_exams_added_later_and_after_a_restart(
+    client: AsyncClient, app: FastAPI, db: AsyncSession, people: dict[str, Person]
+) -> None:
+    """The switch lives in the table: a fresh provider and fresh access object (a restart) read the same answer."""
+    found = await offering(db, "IQT-2102")
+    course, community = await channels(db, found)
+    aysel = await current(db, people["aysel"])
+    staff = people["staff"].headers
+    url = f"{API}/subjects/{found.subject_id}/exam-mode"
+    assert (await client.put(url, headers=staff, json={"enabled": False})).status_code == 200
+    # Nothing is scheduled yet, so the subject is listed because it is switched off.
+    listed = (await client.get(f"{API}/subjects", headers=staff)).json()["items"]
+    assert [i["upcoming_exams"] for i in listed if i["id"] == str(found.subject_id)] == [0]
+
+    created = await client.post(
+        f"{API}/slots", headers=staff, json=body(found.id, timedelta(minutes=5), timedelta(hours=2))
+    )
+    assert created.status_code == 201, created.text
+    await db.commit()
+    assert await exam_until(db, app, aysel, course) is None
+    assert await exam_until(db, app, aysel, community) is None
+
+    # Moving the exam while the mode is off changes nothing; switching on starts the open window.
+    assert (await client.put(url, headers=staff, json={"enabled": True})).status_code == 200
+    assert await exam_until(db, app, aysel, course) is not None
+    assert await exam_until(db, app, aysel, community) is not None

@@ -703,6 +703,7 @@
         "exam_slot_created": "İmtahan vaxtı əlavə olundu",
         "exam_slot_edited": "İmtahan vaxtı dəyişdirildi",
         "exam_slot_deleted": "İmtahan vaxtı silindi",
+        "exam_mode_changed": "Fənnin imtahan rejimi dəyişdirildi",
         "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi"
       },
       "rolesAdded": "Əlavə: {roles}",
@@ -2436,7 +2437,18 @@
       "cancel": "Ləğv et",
       "editTitle": "İmtahanı dəyiş",
       "removeTitle": "İmtahanı sil",
-      "removeBody": "{course}, {when} imtahanı silinəcək. Bu fənnin çat kanalları yenidən açılacaq."
+      "removeBody": "{course}, {when} imtahanı silinəcək. Bu fənnin çat kanalları yenidən açılacaq.",
+      "mode": {
+        "title": "Fənn üzrə imtahan rejimi",
+        "description": "Rejim açıq olanda imtahandan 15 dəqiqə əvvəldən sonunadək fənnin çat kanalları yalnız oxunur. Söndürəndə bu fənn üçün məhdudiyyət qoyulmur.",
+        "empty": "Yaxın imtahanı olan fənn yoxdur.",
+        "error": "Fənn siyahısı yüklənmədi. Bir az sonra yenidən cəhd edin.",
+        "retry": "Yenidən cəhd et",
+        "failed": "Rejim dəyişmədi",
+        "meta": "{code} · Qarşıdakı imtahan: {count}",
+        "switchedOn": "{name} üçün imtahan rejimi açıldı.",
+        "switchedOff": "{name} üçün imtahan rejimi söndürüldü."
+      }
     },
     "papers": {
       "title": "Keçmiş imtahan kağızları",

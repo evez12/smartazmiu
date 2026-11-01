@@ -2280,3 +2280,24 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Verification:** `staff.spec.ts` and `exam-center.spec.ts` five times in a row, 7 of 7 each time, no retries.
 - **Consequences:** a new import kind or a second picker on the page cannot make a spec ambiguous without the label
   changing. If the failure returns, the cause is outside this page; capture the trace before re-running.
+
+## D-104 · 2026-11-02 · Per-subject exam-mode switch (§5.2)
+
+- **Context:** §5.2 says exam mode is "configurable per subject by staff"; D-003 deferred the screen. Exam mode is
+  derived from `exam_slots` at read time (D-059, D-097).
+- **Options:** a column on `subjects`; a table of overrides; a per-channel flag.
+- **Decision:** table `subject_exam_modes (subject_id PK, enabled, updated_by, updated_at)`, migration 0033. No row
+  means on, so every subject keeps the old behaviour until staff switch it. `DatabaseExamWindows` drops the windows of
+  a subject whose row says off; that covers its course channels and its community in one condition, because both
+  resolve to the subject of the slot's offering. `PUT /exams/subjects/{id}/exam-mode` (permission `exams.manage`)
+  upserts the row, writes an `exam_mode.changed` audit entry only when the effective state changes, and announces all
+  course channels and the community of the subject (`channel.updated`), so open composers react at once.
+  `GET /exams/subjects` lists subjects with an exam ahead or with the mode off. The switch sits on the exam
+  management screen. The exams themselves (student lists, countdown, calendar) are not affected: the switch only
+  lifts the chat restriction.
+- **Tests:** permission and unknown subject; off and on inside an active window in both channel types, the
+  announcement, audit entries, another subject untouched; a subject switched off before its exam stays off, then
+  turning it on starts the open window (provider and access objects are rebuilt per call, the state lives in the
+  table, so a restart reads the same answer); the screen (`exams.test.tsx`).
+- **Consequences:** a switched-off subject has no exam-mode protection at all, including the attachment block; the
+  screen says so. The mode is a per-subject, not per-semester, setting and stays until staff switch it back.

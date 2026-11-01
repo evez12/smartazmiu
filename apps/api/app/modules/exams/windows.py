@@ -3,13 +3,13 @@
 import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, or_, select, true
+from sqlalchemy import and_, exists, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.academics.models import CourseOffering
 from app.modules.chat.models import Channel, ChannelType
 from app.modules.chat.policy import ExamWindow
-from app.modules.exams.models import ExamSlot
+from app.modules.exams.models import ExamSlot, SubjectExamMode
 
 LEAD = timedelta(minutes=15)
 """Exam mode starts this long before the exam does (§5.2)."""
@@ -19,7 +19,8 @@ class DatabaseExamWindows:
     """Windows start at the lead, not at the exam: the caller treats a window as the time exam mode applies.
 
     A course channel follows the exams of its offering; a subject community follows the exams of every offering
-    of its subject, so overlapping windows merge in the caller (D-003)."""
+    of its subject, so overlapping windows merge in the caller (D-003). A subject staff switched off has no
+    windows at all (D-104)."""
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -46,6 +47,10 @@ class DatabaseExamWindows:
                 ),
                 ExamSlot.starts_at - LEAD <= at,
                 ExamSlot.ends_at > at,
+                ~exists().where(
+                    SubjectExamMode.subject_id == CourseOffering.subject_id,
+                    SubjectExamMode.enabled.is_(False),
+                ),
             )
         )
         return [
