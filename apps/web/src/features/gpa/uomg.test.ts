@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import shared from "../../../../../infra/fixtures/uomg-rounding.json";
+import shared from "./uomg-rounding.json";
 import {
   earnedCredits,
   finalScore,

@@ -12,9 +12,9 @@ from typing import Any
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-CASES = json.loads((ROOT / "infra/fixtures/uomg-rounding.json").read_text(encoding="utf-8"))[
-    "cases"
-]
+CASES = json.loads(
+    (ROOT / "apps/web/src/features/gpa/uomg-rounding.json").read_text(encoding="utf-8")
+)["cases"]
 
 
 @pytest.fixture(scope="module")

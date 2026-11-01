@@ -142,7 +142,7 @@ def uomg(results: list[CourseResult], cfg: GpaConfig = GpaConfig()) -> float:
 
 ## 7. Required tests
 - Transcript case above → `78.1` (with `round_digits=1`).
-- Exact ties (`x.5`, `x.x5`, `x.xx5`) round up; the cases in `infra/fixtures/uomg-rounding.json` are shared by the
+- Exact ties (`x.5`, `x.x5`, `x.xx5`) round up; the cases in `apps/web/src/features/gpa/uomg-rounding.json` are shared by the
   Python reference test and the TypeScript test, so the two cannot drift (D-106).
 - Exam = 16 → exam points ignored.
 - Letter boundaries: 50→F, 51→E, 60→E, 61→D, 90→B, 91→A, 100→A.

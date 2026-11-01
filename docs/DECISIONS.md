@@ -2348,7 +2348,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     arithmetic; scores are scaled by 100, so whole scores and scores with up to two decimals stay exact.
   - The reference code in `docs/uomg-gpa-spec.md` (section 6) uses `Fraction` and `floor(x * 10^d + 1/2)` through
     `round_half_up`. The spec table marks the rule as unconfirmed.
-  - `infra/fixtures/uomg-rounding.json` holds the shared cases (ties at 0, 1 and 2 digits, a value just below a tie,
+  - `apps/web/src/features/gpa/uomg-rounding.json` holds the shared cases (ties at 0, 1 and 2 digits, a value just below a tie,
     thirds, the transcript). `uomg.test.ts` and `apps/api/tests/test_uomg_reference.py` both run them; the Python test
     executes the code block of the spec itself, so the document cannot drift from what is tested. Two cases fail
     with the previous implementations (64.225 in TypeScript, 72.5 in Python).
