@@ -2182,3 +2182,73 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** no notification to the uploader (the status is on the screen); a student's paper of a subject
   with no teacher and no staff action waits. Reporting a paper (like materials) is not built: staff can reject an
   approved paper at any time.
+
+## D-100 · 2026-11-02 · ÜOMG calculator (Sprint 14, group C)
+
+- **Context:** §6 lists "GPA calculator" with a what-if simulator. `docs/uomg-gpa-spec.md` gives the national
+  rules (Cabinet decision 348, order 1060): a 100-point scale, credit-weighted average, five settings AzMİU has not
+  confirmed. The product owner chose on 2026-11-01 to ship the spec's defaults and make them configurable.
+  Grades are personal data (§5.4), so the endpoint is the narrowest one that serves the screen.
+- **Decision:**
+  - **Data:** `GET /me/grades` (module `grades`, no migration) returns the signed-in student's own completed
+    enrollments that have a score: subject code and name, credits, semester, score (0-100) and the pass flag. There
+    is no parameter that names another person, so nobody can ask for someone else's results; the endpoint is
+    read-only and writes no audit entry, and no grade reaches chat, notifications or logs. The enrollment's
+    `grade` is the final score the dean's office imports; the semester and exam parts are not stored, so the
+    exam threshold (below 17 the exam is not added) is applied only to the simulator, where a student types both.
+    The schema is named `FinishedCourseOut`, as `GradeOut` already belongs to assignments.
+  - **Calculation** is a pure module on the client (`features/gpa/uomg.ts`), as the roadmap says ("client-side +
+    grades API"): letter scale, `finalScore`, retake resolution, `uomg`, earned credits, and a numbering of
+    attempts by semester order. Rounding is `Math.round(x * 10^d) / 10^d`, which is half-up on the stored double;
+    the Python reference rounds half to even, so a value exactly on a half can differ in the last digit (the
+    spec's test, 78.1 with one digit, and every case in the suite agree).
+  - **Settings** (the spec's table, defaults in `GPA_DEFAULTS`): `include_failed` true, `retake_policy` replace,
+    `round_digits` 2, `min_exam_score` 17, `pass_threshold` 51. The student changes them on the page; they apply
+    to that visit only and nothing is stored, since the university has not confirmed any of them.
+  - **Retakes:** a retake is a second offering of the same subject in a later semester. The attempt number follows
+    the order of the semesters, so with "replace" the older result drops out of the cumulative figure *and* of its
+    own semester's figure, and its row says "Təkrarla əvəz olunub".
+  - **Screen** `/gpa` (student nav): cumulative ÜOMG with the letter, per-semester figures, the two loan
+    thresholds as text tags (71 and above: no interest on the social student loan; 91 and above: top tier; below 71
+    says so too, never colour alone), the course table, the rules, and the simulator. The simulator adds courses
+    with credits, semester points and exam points, shows the new ÜOMG and the change, and keeps nothing on the
+    server.
+  - **Tests:** the spec's required cases (transcript 2343 / 30 = 78.1, exam 16, letter boundaries, empty list,
+    replace, include_failed false) plus average, rounding and attempt numbering (`uomg.test.ts`); the screen
+    (`gpa.test.tsx`); the endpoint (`test_grades.py`: own results only, unscored courses left out, 401); the
+    browser flow with imported results of a failed-then-retaken subject (`gpa.spec.ts`), the 320 px layout and
+    the touch targets.
+- **Consequences:** a student with no scored course sees a sentence and the simulator. The thresholds 71 and 91
+  are the spec's reading of the loan rules and are labelled as such; they are constants in `uomg.ts`. Per-semester
+  figures use the same rules as the cumulative one. Not built: a transcript export, targets ("what do I need on the
+  exam"), and teachers or curators seeing a student's ÜOMG (anything exposing grades to others needs the product
+  owner first).
+
+## D-101 · 2026-11-02 · §13 review of QR attendance, the exam center and the calculator (Sprint 14)
+
+- **Decision (D-094 to D-100):**
+  - Tested: **attendance** - codes valid only for the current 30 s step and the grace window, a copied code from
+    another meeting, a closed or never-opened meeting, a student outside the offering (403 for the check, 404 for
+    the roster), the same student twice (idempotent), manual marking and unmarking by the teacher with the audit
+    entries, one open meeting per offering (the partial unique index), guessing codes being rate limited,
+    the CSV export being formula-safe, curators reading only their groups (`test_attendance.py`, §13.1 roles,
+    §13.2 duplicate send); the migration up and down; the screens and the camera-less fallbacks
+    (`attendance.test.tsx`); the teacher and student flow in the browser (`attendance.spec.ts`).
+    **Exam center** - overlap detection for the same offering, a shared group and a shared room, with warnings that
+    do not block (`test_import.py`, §13.4 two slots overlap); the exam mode flipping at the lead time in both the
+    course channel and the subject community, back on deletion, and `channel.updated` on every change (the
+    acceptance test of D-097, §13.4 slot edited after the mode started, restart: derived from the table at read
+    time); times rendered in Asia/Baku with a zone in the `.ics`; past papers: the unfinished semester, missing
+    consent, outsiders (404), an unscanned or infected file, the author's own approval, rejected papers hidden
+    (`test_papers.py`); the screens (`exams.test.tsx`) and the browser flows (`exam-center.spec.ts`).
+    **Calculator** - the cases in D-100; the endpoint returns only the signed-in student's rows.
+  - By design, not asserted: a dropped enrollment loses the attendance check and the exam list at once, since both
+    are computed per request from the registry; a joint offering is one offering, so its groups share a meeting and
+    an exam (§13.1); nothing in chat reads these tables, so no attendance, exam or grade data reaches chat.
+  - Open: no notification for a new or moved exam or for a paper decision (the spec lists none; D-049 categories
+    can carry them); the per-subject exam-mode switch (§5.2) has no screen; geofencing was not built, by decision;
+    the camera path of the scanner is covered by unit and API tests only, a headless browser has no camera; the
+    Sprint 12 and 13 screens still have no `/design-system` specimens (D-075); the browser E2E of an infected
+    submission (D-093) is still missing; the ÜOMG settings are not remembered between visits; account deletion
+    (§5.4) must decide what happens to attendance records and past papers of the deleted person.
+- **Consequences:** none for behaviour.

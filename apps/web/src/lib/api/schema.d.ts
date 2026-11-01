@@ -1863,6 +1863,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/grades": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My finished courses with their final scores, for the ÜOMG calculator */
+    get: operations["listMyGrades"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/notification-settings": {
     parameters: {
       query?: never;
@@ -4242,6 +4259,34 @@ export interface components {
       id: string;
       /** Label */
       label: string;
+    };
+    /** FinishedCourseListOut */
+    FinishedCourseListOut: {
+      /** Items */
+      items: components["schemas"]["FinishedCourseOut"][];
+    };
+    /**
+     * FinishedCourseOut
+     * @description One finished course of the signed-in student; the score is the final 0-100 result.
+     */
+    FinishedCourseOut: {
+      /** Credits */
+      credits: number;
+      /** Enrollment Id */
+      enrollment_id: string;
+      /** Passed */
+      passed: boolean;
+      /** Score */
+      score: number;
+      semester_term: components["schemas"]["SemesterTerm"];
+      /** Semester Year */
+      semester_year: number;
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Id */
+      subject_id: string;
+      /** Subject Name */
+      subject_name: string;
     };
     /** FinishedSemesterOut */
     FinishedSemesterOut: {
@@ -15620,6 +15665,71 @@ export interface operations {
         };
         content: {
           "application/json": unknown;
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMyGrades: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FinishedCourseListOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

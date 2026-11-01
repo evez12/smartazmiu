@@ -35,6 +35,7 @@ from app.modules.community.router import router as community_router
 from app.modules.events.router import router as events_router
 from app.modules.exams.router import router as exams_router
 from app.modules.feedback.router import router as feedback_router
+from app.modules.grades.router import router as grades_router
 from app.modules.health.metrics import mark_process_dead
 from app.modules.health.metrics import router as metrics_router
 from app.modules.health.router import router as health_router
@@ -146,6 +147,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(assignments_router, prefix=API_PREFIX)
     app.include_router(attendance_router, prefix=API_PREFIX)
     app.include_router(exams_router, prefix=API_PREFIX)
+    app.include_router(grades_router, prefix=API_PREFIX)
     app.include_router(chat_router, prefix=API_PREFIX)
     app.include_router(reports_router, prefix=API_PREFIX)
     app.include_router(materials_router, prefix=API_PREFIX)

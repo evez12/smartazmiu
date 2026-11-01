@@ -55,7 +55,9 @@
       "attendanceReport": "Davamiyyət hesabatı",
       "examCards": "İmtahan kartları",
       "examSlots": "İmtahan cədvəli idarəsi",
-      "pastPapers": "Keçmiş imtahan kağızları"
+      "pastPapers": "Keçmiş imtahan kağızları",
+      "gpaSummary": "ÜOMG: nəticə və fənlər",
+      "gpaRules": "ÜOMG: qaydalar və simulyator"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -273,6 +275,7 @@
       "forum": "Sual-cavab",
       "attendance": "Davamiyyət",
       "exams": "İmtahanlar",
+      "gpa": "ÜOMG",
       "examSlots": "İmtahan cədvəli idarəsi"
     },
     "saved": "Saxlanılanlar"
@@ -2503,5 +2506,64 @@
         "failed": "Kağız göndərilmədi"
       }
     }
+  },
+  "gpa": {
+    "title": "ÜOMG kalkulyatoru",
+    "description": "Nəticələrinizə görə ümumi orta müvəffəqiyyət göstəricisi və yeni fənlərin təsiri.",
+    "error": "Nəticələri yükləmək alınmadı. Bir az sonra yenidən cəhd edin.",
+    "retry": "Yenidən cəhd et",
+    "empty": "Hələ qiymətləndirilmiş fənniniz yoxdur. Nəticələr imtahan sessiyasından sonra burada görünəcək. Aşağıdakı simulyatorla yeni fənlərin təsirini yoxlaya bilərsiniz.",
+    "totalTitle": "Ümumi ÜOMG",
+    "totalDescription": "Bütün tamamlanmış fənlər üzrə kreditə görə çəkili orta bal (100 ballıq şkala).",
+    "letter": "Qiymət: {letter}",
+    "credits": "Qazanılmış kredit: {earned} · Fənn sayı: {count}",
+    "topTier": "{n} və yuxarı: ən yüksək göstərici",
+    "noLoanInterest": "{n} və yuxarı: tələbə kreditində faiz tətbiq olunmur",
+    "belowLoanLine": "{n}-dən aşağı: tələbə kreditində faiz tətbiq olunur",
+    "semestersTitle": "Semestrlər üzrə ÜOMG",
+    "semester": "Semestr",
+    "uomg": "ÜOMG",
+    "earned": "Qazanılmış kredit",
+    "standing": "Göstərici",
+    "semesterName": "{year} {term}",
+    "terms": {
+      "fall": "Payız",
+      "spring": "Yaz",
+      "summer": "Yay"
+    },
+    "coursesTitle": "Fənlər",
+    "subject": "Fənn",
+    "creditsColumn": "Kredit",
+    "score": "Bal",
+    "status": "Vəziyyət",
+    "passed": "Keçib",
+    "failed": "Keçməyib",
+    "replaced": "Təkrarla əvəz olunub",
+    "rulesTitle": "Hesablama qaydaları",
+    "rulesDescription": "AzMİU üçün təsdiqlənməmiş qaydalar dəyişdirilə bilər. Dəyişiklik yalnız bu səhifədə hesablamaya təsir edir.",
+    "includeFailed": "Keçməyən fənləri say",
+    "includeFailedHelp": "Söndürülsə, keçid balından aşağı nəticələr ortalamadan çıxarılır.",
+    "retakePolicy": "Təkrar verilən fənn",
+    "retakeReplace": "Son cəhd əvəz edir",
+    "retakeReplaceHelp": "Yalnız fənnin ən son nəticəsi sayılır.",
+    "retakeAverage": "Bütün cəhdlər sayılır",
+    "retakeAverageHelp": "Fənnin hər nəticəsi ayrıca hesaba daxil edilir.",
+    "roundDigits": "Onluq rəqəm sayı",
+    "passThreshold": "Keçid balı",
+    "passThresholdHelp": "Kredit qazanmaq üçün ən aşağı bal.",
+    "minExamScore": "İmtahanın minimum balı",
+    "minExamScoreHelp": "İmtahan bu baldan aşağıdırsa, simulyatorda imtahan balı əlavə olunmur.",
+    "resetRules": "Qaydaları sıfırla",
+    "simulatorTitle": "Simulyator",
+    "simulatorDescription": "Yeni fənlər əlavə edin və ÜOMG-nin necə dəyişəcəyinə baxın. Bu fənlər heç yerdə saxlanmır.",
+    "simulatorEmpty": "Fənn əlavə etdikdə yeni ÜOMG burada görünəcək.",
+    "addCourse": "Fənn əlavə et",
+    "removeCourse": "{n}-ci fənni sil",
+    "draftCredits": "{n}-ci fənn: kredit",
+    "draftSemester": "{n}-ci fənn: semestr balı (0–50)",
+    "draftExam": "{n}-ci fənn: imtahan balı (0–50)",
+    "draftExamHelp": "{n}-dən aşağı imtahan balı sayılmır.",
+    "simulatedTotal": "Yeni ÜOMG",
+    "delta": "Dəyişiklik: {value}"
   }
 }
