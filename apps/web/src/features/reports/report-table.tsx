@@ -282,7 +282,12 @@ function StatusActions({ item }: { item: ReportItem }) {
   });
   if (item.status !== "open") {
     return (
-      <Button size="dense" variant="tertiary" onClick={() => change.mutate("open")}>
+      <Button
+        network="required"
+        size="dense"
+        variant="tertiary"
+        onClick={() => change.mutate("open")}
+      >
         {t("reopen")}
       </Button>
     );
@@ -292,7 +297,12 @@ function StatusActions({ item }: { item: ReportItem }) {
       <Button size="dense" loading={change.isPending} onClick={() => change.mutate("actioned")}>
         {t("markActioned")}
       </Button>
-      <Button size="dense" variant="tertiary" onClick={() => change.mutate("dismissed")}>
+      <Button
+        network="required"
+        size="dense"
+        variant="tertiary"
+        onClick={() => change.mutate("dismissed")}
+      >
         {t("dismiss")}
       </Button>
     </span>

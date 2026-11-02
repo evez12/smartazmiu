@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { Avatar } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Select } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";

@@ -43,7 +43,7 @@ export function LocaleMenuGroup() {
         }}
       >
         {LOCALES.map((locale) => (
-          <MenuRadioItem key={locale} value={locale} lang={locale}>
+          <MenuRadioItem key={locale} network="required" value={locale} lang={locale}>
             {t(`names.${locale}`)}
           </MenuRadioItem>
         ))}

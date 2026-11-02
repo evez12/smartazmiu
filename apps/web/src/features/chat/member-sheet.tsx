@@ -53,7 +53,7 @@ export function MemberSheet({
         ) : members.isError ? (
           <div className="flex flex-col items-start gap-2 p-4">
             <p className="text-sm text-muted">{t("membersFailed")}</p>
-            <Button size="dense" onClick={() => members.refetch()}>
+            <Button network="required" size="dense" onClick={() => members.refetch()}>
               {t("retry")}
             </Button>
           </div>

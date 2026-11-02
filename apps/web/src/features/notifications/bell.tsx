@@ -103,7 +103,7 @@ export function NotificationBell() {
           ) : latest.isError ? (
             <div className="flex flex-col items-start gap-2 p-3">
               <p className="text-sm text-muted">{t("loadFailed")}</p>
-              <Button size="dense" onClick={() => latest.refetch()}>
+              <Button network="required" size="dense" onClick={() => latest.refetch()}>
                 {t("retry")}
               </Button>
             </div>

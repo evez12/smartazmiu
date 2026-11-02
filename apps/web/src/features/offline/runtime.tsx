@@ -22,7 +22,7 @@ import {
   type ChannelHistory,
 } from "./model";
 import { syncAll } from "./sync";
-import { useOnline } from "./use-online";
+import { useOnline } from "@/lib/use-online";
 
 /** Largest delay `setTimeout` accepts; a session end further away is checked again after this long. */
 const MAX_TIMER_MS = 2 ** 31 - 1;

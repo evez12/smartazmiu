@@ -2670,6 +2670,9 @@
         "blocked": "Bloklanmış istifadəçinin mesajı.",
         "moderated": "Mesaj gizlədilib."
       }
+    },
+    "network": {
+      "reason": "İnternet bağlantısı olmadan bu əməliyyat mümkün deyil."
     }
   }
 }

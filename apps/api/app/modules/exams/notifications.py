@@ -20,7 +20,6 @@ from app.modules.academics.models import (
 from app.modules.exams.models import ExamSlot, PastPaper, PastPaperStatus
 from app.modules.notifications.models import NotificationCategory, NotificationKind
 from app.modules.notifications.service import NotificationSpec, Notifier
-from app.modules.schedule.notifications import MONTHS
 from app.modules.users.models import User, UserStatus
 
 SLOT_SUBJECT_TYPE = "exam_slot"
@@ -70,7 +69,7 @@ def _fingerprint(previous: SlotState | None, current: SlotState, stamp: datetime
 
 def _when(moment: datetime) -> str:
     local = moment.astimezone(BAKU)
-    return f"{local.day} {MONTHS[local.month - 1]} {local:%H:%M}"
+    return f"{local:%d.%m %H:%M}"
 
 
 async def notify_slot(

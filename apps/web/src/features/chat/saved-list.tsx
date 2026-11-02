@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { Banner } from "@/components/ui/banner";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";

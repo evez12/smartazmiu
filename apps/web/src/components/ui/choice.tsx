@@ -11,6 +11,7 @@ import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 import { Icon } from "./icon";
+import { useOfflineLock, type NetworkNeed } from "./network";
 import { touchTarget } from "./touch-target";
 
 const boxClasses = [
@@ -53,16 +54,29 @@ function ChoiceRow({ label, description, htmlFor, disabled, children }: ChoiceLa
 type CheckboxProps = ComponentProps<typeof CheckboxPrimitive.Root> & {
   label: ReactNode;
   description?: ReactNode;
+  /** `required` for a box that saves at once; boxes inside a form are covered by the form's submit button. */
+  network?: NetworkNeed;
 };
 
-export function Checkbox({ label, description, id, className, disabled, ...rest }: CheckboxProps) {
+export function Checkbox({
+  label,
+  description,
+  id,
+  className,
+  disabled,
+  network = "local",
+  ...rest
+}: CheckboxProps) {
   const generatedId = useId();
   const controlId = id ?? generatedId;
+  const lock = useOfflineLock(network);
+  const off = disabled || lock.locked;
   return (
-    <ChoiceRow label={label} description={description} htmlFor={controlId} disabled={disabled}>
+    <ChoiceRow label={label} description={description} htmlFor={controlId} disabled={off}>
       <CheckboxPrimitive.Root
         id={controlId}
-        disabled={disabled}
+        disabled={off}
+        {...lock.props}
         aria-describedby={description ? descriptionId(controlId) : undefined}
         className={cn(
           boxClasses,
@@ -123,17 +137,30 @@ export function RadioGroup({ legend, options, className, ...rest }: RadioGroupPr
 type SwitchProps = ComponentProps<typeof SwitchPrimitive.Root> & {
   label: ReactNode;
   description?: ReactNode;
+  /** `required` for a switch that saves at once. */
+  network?: NetworkNeed;
 };
 
 /** Rectangular on/off switch: the 4 px control radius applies here too (§12.2). */
-export function Switch({ label, description, id, className, disabled, ...rest }: SwitchProps) {
+export function Switch({
+  label,
+  description,
+  id,
+  className,
+  disabled,
+  network = "local",
+  ...rest
+}: SwitchProps) {
   const generatedId = useId();
   const controlId = id ?? generatedId;
+  const lock = useOfflineLock(network);
+  const off = disabled || lock.locked;
   return (
-    <ChoiceRow label={label} description={description} htmlFor={controlId} disabled={disabled}>
+    <ChoiceRow label={label} description={description} htmlFor={controlId} disabled={off}>
       <SwitchPrimitive.Root
         id={controlId}
-        disabled={disabled}
+        disabled={off}
+        {...lock.props}
         aria-describedby={description ? descriptionId(controlId) : undefined}
         className={cn(
           "inline-flex h-5 w-9 shrink-0 items-center rounded-control border border-border-control bg-bg-subtle p-0.5",

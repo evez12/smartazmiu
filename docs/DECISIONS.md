@@ -2772,3 +2772,121 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Result:** API 519 tests, 94.93 % coverage; web 510 tests (110 new); browser suite 85 of 85 with no retries after a
   reset and seed, nine of them new (`pwa.spec.ts`); visual project 6 of 6; lint, formatting and types clean.
 - **Not run:** Firefox and Safari; a real second deploy for the update banner (a second script address stands in, D-118).
+
+## D-121 · 2026-11-03 · Stored notification titles carry no month name (closes the open item of D-114 and D-115)
+
+- **Context:** a notification's `title` is one row per recipient written by one `INSERT … SELECT` (D-049), so it is
+  stored once, in one language. Schedule changes and exam slots put a date into it ("Mikroiqtisadiyyat, 9 Noyabr"),
+  so an English or Russian reader saw an Azerbaijani month name.
+- **Options:** (a) store the instant and format it when the notification is read or delivered (a migration, a new
+  field, and every reader changes); (b) format per recipient at insert time (the fan-out stops being one statement,
+  and a later language change leaves old rows in the old language); (c) leave the month out of the title.
+- **Decision: (c).** The date is written in digits, `09.11` for a day and `09.11 10:00` for a moment (Baku time, day
+  first, the same in all three languages). The subject name is registry data and stays as the university writes it
+  (D-114). The month table in `schedule/notifications.py` is gone. Tests assert the digit format.
+- **Consequences:** rows written before this change keep their Azerbaijani month name until they age out of the bell.
+  Push and e-mail already use the recipient's language for the label (D-049, D-114); only the title carries the date.
+
+## D-122 · 2026-11-03 · Online-only controls are switched off while offline (§13.6; Group B follow-up)
+
+- **Context:** the Group B review asked that controls that need the network are disabled with a visible reason while
+  offline, or that a screen is exempted in DECISIONS. About 70 files call the server, so the rule lives in the shared
+  components, not on each screen.
+- **Decision:**
+  - **Mechanism.** `NetworkProvider` (root providers) tells every component whether the browser is online and gives
+    the reason text. `Button`, `Switch`, `Checkbox`, `MenuItem`, `MenuRadioItem` and `FilePickerButton` take
+    `network="required" | "local"`. A control that needs the server is `disabled` while offline, carries the reason
+    as its `title` and a `data-offline` attribute, and works again when the connection returns. Outside the
+    provider (isolated component tests, specimens) everything is online.
+  - **What a button is when it says nothing** (`networkDefault`): `required` for a submit button, a primary,
+    destructive or destructive-solid button, and any button that is passed `loading` (the convention for an action
+    that runs on the server, including "load more" and "retry"); `local` otherwise. Secondary and tertiary buttons that
+    call the server say `network="required"` (about 25 places, found by reading every uncovered handler).
+  - **Visible reason.** The running app shows the connection banner above every page while offline (Group B, D-118). A
+    dialog or sheet covers it, so `DialogContent` repeats the reason as text above its buttons (`OfflineNote`). The
+    disabled control also carries it as `title`. Fields stay editable, so text typed offline is not lost; the
+    submit button is what is switched off.
+  - **Guard.** `network-rules.test.ts` reads every `<Button>` in the source and fails when one that calls a mutation in
+    its own tag would stay enabled offline, when `network="local"` is put on a button that shows a running call, or on a
+    main action outside the decided places. `offline-controls.test.tsx` renders RSVP, profile, report, feedback,
+    notification settings, the composer and a file picker offline; `offline-controls.spec.ts` does the same in a browser
+    for the profile page and the chat.
+  - **Exempt on purpose (all recorded here):**
+    - **The chat composer's send button**, for channels and direct messages, and the resend button of a pending message
+      (product owner, 2026-11-03: keep the queue). A message written offline waits with "Bağlantı bərpa olunanda
+      göndəriləcək", is sent once at reconnect (§13.2, D-064, `pwa.spec.ts`), and its visible reason is that line. The
+      composer's attach button (uploads) and editing a sent message are switched off.
+    - **Buttons that open a dialog** (report, delete, withdraw, remove photo, edit a slot, mark attendance): they stay
+      enabled so the user can read the consequence; the dialog's confirm button is off and says why.
+    - **Calculators and page-local state**: the ÜOMG rules and simulator (D-107), the onboarding tour's previous and
+      next, theme choice, tabs, filters and every plain link or GET form (a failed navigation shows the offline page).
+      A tour dismissal saves to the server and is switched off.
+    - **Quiz answering**: the answer fields stay usable offline so that nothing typed is lost; the autosave says
+      "not saved" (D-092) and the submit button is switched off.
+    - **Downloads through an `<a download>`** (calendar file, exports, attachments): a link cannot be disabled; the
+      browser reports the failure. The same holds for the "reload" button of an edit conflict.
+    - **Sign-out** has its own offline behaviour (D-117).
+  - **Not done:** the reason is not linked with `aria-describedby`; the title is announced as the description by most
+    screen readers and the banner is a live region. Switching the whole running app to read-only is not attempted:
+    every screen that writes is covered by the controls above and nothing else changes.
+- **Found by the production build, not by the unit tests:** `Button` is rendered by server pages as well, and a server
+  component cannot call the hook it now needs (every page returned `500` until the image was rebuilt and its log read).
+  `Button` is a client component now and its classes live in `button-variants.ts`, which server pages put on links
+  (`<Link className={buttonVariants()}>`). `network-rules.test.ts` fails if a file that uses the connection hooks is
+  not a client component, or if `buttonVariants` returns to the client file.
+- **Consequences:** a primary button that is purely local must say `network="local"` (the guard allows it only for the
+  composer, so a new one needs a decision). A toast's close button is not a `Button` of this kind and stays enabled.
+
+## D-123 · 2026-11-03 · Status of the four Group A follow-ups, and the provisioning question of D-116
+
+- **Context:** four follow-ups from Group A were not recorded as done when Group B started. They are done now on
+  `fix/sprint15-followups`.
+- **Decisions:**
+  - **(a) Language cookie from the account** (approved by the product owner as an exact diff, auth path): the sign-in
+    callback asks `/api/v1/me` with the new access token and writes `NEXT_LOCALE` when the account has a language
+    (`lib/auth/account-locale.ts`). Any error or a 3 s wait leaves the cookie alone and sign-in goes on. The cookie is
+    about 25 bytes, so the Set-Cookie budget of D-037 holds (tested). A device with no cookie now opens its first page
+    in the account's language instead of switching after one refresh (D-114, D-115).
+  - **(b) Full text on truncated tags:** `Tag` keeps the whole text in the document (the accessible name is complete)
+    and in `title` for pointer users (`tag.test.tsx`).
+  - **(c) Month names in stored titles:** D-121.
+  - **(d) Does first-load provisioning use `INSERT … ON CONFLICT`?** Yes, and it did before D-116: the profile row is
+    one `INSERT … ON CONFLICT (idp_subject) DO UPDATE … RETURNING`, and the roles are replaced with a delete plus
+    `INSERT … ON CONFLICT DO NOTHING`. `ON CONFLICT` removes the unique-violation race between two first requests of one
+    account but not a deadlock between two such statements, because each takes locks on more than one index (subject,
+    e-mail, role rows) and two statements can take them in opposite order. That is the cause D-116 gives; the exact lock
+    order was **not captured**, so it is a reasoned explanation, not a proven one. The retry stays. With (a) a new
+    account is provisioned by the callback's single request, before the layout and the page make their two parallel
+    ones, so the race is gone in the normal path (not asserted by a test; the retry covers the case where the callback's
+    call failed).
+- **Consequences:** none beyond the above; no migration.
+
+## D-124 · 2026-11-03 · Process rules after the Group B review
+
+- **Header and cache policy:** the `/sw.js` change (`Cache-Control: no-cache`, served by a route handler) is accepted
+  retroactively. Any further header, CSP, Permissions-Policy, nginx or cache-policy change is shown as an exact diff
+  first (CLAUDE.md).
+- **Group C closeout gate:** besides the usual gate, `pwa.spec.ts` runs in Playwright's WebKit and Firefox projects.
+  The results are recorded in DECISIONS; a failure gets a root cause or an explicit decision. The iOS install steps stay
+  an open Phase 4 item.
+- **Open items for Phase 4:** reporting of service-worker errors (no endpoint yet, D-118); the update banner with a real
+  second deploy (D-118); deterministic time in the fixed-window rate-limit tests (D-120: the tests that assert a `429` at
+  an exact index depend on where a window boundary falls); native-speaker review of the English and Russian texts
+  (D-114).
+
+## D-125 · 2026-11-03 · Gate result of the follow-up branch, and one unexplained navigation stall
+
+- **Gate:** `make lint test` green (API 519 tests, web 554). Whole functional suite against the rebuilt Docker stack,
+  `--workers=2 --retries=0`, seed check on: 87 of 87. Visual project: 6 of 6, no baseline changed.
+- **Stall seen once in the first full run:** `touch-targets.spec.ts` timed out in its first `page.goto` (`load` never
+  fired). The Playwright trace shows two or three script chunks of the page registered in the browser and never sent;
+  nginx logged no request for them, and it answered every other request of that page with 200 in microseconds. The
+  same stall hit two tests of the same file in one of eight repeats of a follow-up run (2 of 96).
+- **What was ruled out:** the server (no request arrived), the proxy under parallel load (960 parallel `curl`
+  requests, no stall, connect time at most 18 ms), mobile emulation or a fresh browser context as such (600 loads of
+  `/login`, mobile and desktop, no stall), and tracing (120 runs with and without it, no stall).
+  Later runs: 240 repeats plus two full suites, no stall.
+- **Status: root cause not established.** It happens in Chromium before the request leaves the browser, about 1 in
+  100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
+  code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
+  record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.

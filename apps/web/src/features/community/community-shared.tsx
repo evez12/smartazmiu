@@ -62,7 +62,11 @@ export function ListState({
         <EmptyState
           icon={TriangleAlert}
           message={t("error")}
-          action={<Button onClick={retry}>{t("retry")}</Button>}
+          action={
+            <Button network="required" onClick={retry}>
+              {t("retry")}
+            </Button>
+          }
         />
       </Panel>
     );

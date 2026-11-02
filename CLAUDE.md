@@ -35,6 +35,7 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
 - Current scope: **Sprint 15, Group B (PWA)** (integrations, PWA, i18n; Sprints 1-14 and Group A accepted; Sprint 11 stays deferred, D-102).
   Stop and summarize for review after each task group the product owner hands over; never pull Sprint 16+ scope forward.
+- **Group C closeout gate** also runs `pwa.spec.ts` in Playwright's WebKit and Firefox projects; record the results (D-124).
 - Ask the product owner first for: auth changes, hard deletion of data, anything that could expose grades, and any
   CSP relaxation (e.g. for the Markdown sanitizer or KaTeX delivery).
 
@@ -51,6 +52,7 @@ Still ask first throughout: authentication or session changes, hard deletes, gra
    response with `Cache-Control: no-store`.
 3. **Headers (Group B):** any CSP / Permissions-Policy / nginx change needed by the service worker or manifest is
    ask-first, with the exact diff. No CSP relaxation by default.
+   Any further header or cache-policy change after Group B is also shown as an exact diff first (D-124).
 4. **Glossary (Group A):** no official EN/RU terminology list exists. Propose the glossary in a file for review before
    translating the whole app; formal register.
 5. **Locale (Group A, answered):** `users.locale` column (profile setting, in `/me/export`) plus a `NEXT_LOCALE` cookie for

@@ -81,7 +81,12 @@ test("the language of an account follows it to another device", async ({
   // A second browser without any cookie: it asks for Azerbaijani, and the account's language wins once it is known.
   const other = await browser.newContext({ locale: "az-AZ" });
   const second = await other.newPage();
+  // The sign-in callback itself writes the account's language, so the first page already comes in it (D-123).
+  const callback = second.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/auth/callback",
+  );
   await signIn(second, account);
+  expect((await (await callback).headerValues("set-cookie")).join(" ")).toContain("NEXT_LOCALE=ru");
   await expect(second.locator("html")).toHaveAttribute("lang", "ru");
   await expect(second.getByRole("heading", { level: 1, name: "Главная" })).toBeVisible();
 

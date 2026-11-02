@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { Banner } from "@/components/ui/banner";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel, PanelBody } from "@/components/ui/panel";
 import { FeedbackButton } from "@/features/feedback/feedback-dialog";

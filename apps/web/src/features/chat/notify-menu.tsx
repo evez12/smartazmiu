@@ -95,15 +95,22 @@ export function NotifyMenu({ channel }: { channel: Channel }) {
           value={channel.notify_level}
           onValueChange={(value) => save.mutate({ notify_level: value as NotifyLevel })}
         >
-          <MenuRadioItem value="all">{t("all")}</MenuRadioItem>
-          <MenuRadioItem value="mentions">{t("mentions")}</MenuRadioItem>
-          <MenuRadioItem value="none">{t("none")}</MenuRadioItem>
+          <MenuRadioItem network="required" value="all">
+            {t("all")}
+          </MenuRadioItem>
+          <MenuRadioItem network="required" value="mentions">
+            {t("mentions")}
+          </MenuRadioItem>
+          <MenuRadioItem network="required" value="none">
+            {t("none")}
+          </MenuRadioItem>
         </MenuRadioGroup>
         <MenuSeparator />
         <MenuLabel>{t("muteTitle")}</MenuLabel>
         {SNOOZES.map((snooze) => (
           <MenuItem
             key={snooze.key}
+            network="required"
             onSelect={() =>
               save.mutate({ muted_until: new Date(Date.now() + snooze.ms).toISOString() })
             }
@@ -112,7 +119,9 @@ export function NotifyMenu({ channel }: { channel: Channel }) {
           </MenuItem>
         ))}
         {snoozed ? (
-          <MenuItem onSelect={() => save.mutate({ muted_until: null })}>{t("unmute")}</MenuItem>
+          <MenuItem network="required" onSelect={() => save.mutate({ muted_until: null })}>
+            {t("unmute")}
+          </MenuItem>
         ) : null}
       </MenuContent>
     </Menu>

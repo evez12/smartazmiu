@@ -29,9 +29,13 @@ type TagProps = VariantProps<typeof tagVariants> & {
   className?: string;
 };
 
+/**
+ * A tag that does not fit is cut with an ellipsis (§13.6, long Azerbaijani and Russian compounds). The whole text
+ * stays in the document, so the accessible name is complete, and the title shows it to pointer users.
+ */
 export function Tag({ tone, icon, className, children }: TagProps) {
   return (
-    <span className={cn(tagVariants({ tone }), className)}>
+    <span className={cn(tagVariants({ tone }), className)} title={children}>
       {icon ? <Icon icon={icon} size={16} className="-ml-0.5 size-3.5" /> : null}
       <span className="truncate">{children}</span>
     </span>

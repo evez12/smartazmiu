@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { LOCALE_COOKIE } from "@/i18n/config";
+import { accountLocale } from "@/lib/auth/account-locale";
 import { completeSignIn } from "@/lib/auth/oidc";
 import {
   cookieOptions,
@@ -33,8 +35,18 @@ export async function GET(request: NextRequest) {
     const previous = await readSession(request.cookies).catch(() => null);
     if (previous) await destroySession(previous).catch(() => undefined);
     const cookie = await createSession(tokens);
+    const locale = tokens.access_token ? await accountLocale(tokens.access_token) : null;
     const response = NextResponse.redirect(new URL(flow.returnTo, env.appUrl), 302);
     response.cookies.set(cookie.name, cookie.value, cookieOptions(cookie.maxAge));
+    // The account's language wins on a new device from the first page (D-113); without one the cookie is left alone.
+    if (locale) {
+      response.cookies.set(LOCALE_COOKIE, locale, {
+        path: "/",
+        maxAge: 31_536_000,
+        sameSite: "lax",
+        secure: env.isHttps,
+      });
+    }
     response.cookies.delete(OIDC_COOKIE);
     return response;
   } catch (error) {

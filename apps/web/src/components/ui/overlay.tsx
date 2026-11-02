@@ -14,6 +14,7 @@ import { cn } from "@/lib/cn";
 
 import { Button } from "./button";
 import { Icon } from "./icon";
+import { OfflineNote, useOfflineLock, type NetworkNeed } from "./network";
 
 /** Overlays are the only elements with a shadow (§12.2) and fade in for 140 ms. */
 const overlaySurface =
@@ -96,11 +97,16 @@ const menuItemClasses =
 export function MenuItem({
   className,
   destructive,
+  network = "local",
+  disabled,
   ...rest
-}: ComponentProps<typeof MenuPrimitive.Item> & { destructive?: boolean }) {
+}: ComponentProps<typeof MenuPrimitive.Item> & { destructive?: boolean; network?: NetworkNeed }) {
+  const lock = useOfflineLock(network);
   return (
     <MenuPrimitive.Item
       className={cn(menuItemClasses, destructive && "text-danger", className)}
+      disabled={disabled || lock.locked}
+      {...lock.props}
       {...rest}
     />
   );
@@ -109,10 +115,18 @@ export function MenuItem({
 export function MenuRadioItem({
   className,
   children,
+  network = "local",
+  disabled,
   ...rest
-}: ComponentProps<typeof MenuPrimitive.RadioItem>) {
+}: ComponentProps<typeof MenuPrimitive.RadioItem> & { network?: NetworkNeed }) {
+  const lock = useOfflineLock(network);
   return (
-    <MenuPrimitive.RadioItem className={cn(menuItemClasses, "pl-8", className)} {...rest}>
+    <MenuPrimitive.RadioItem
+      className={cn(menuItemClasses, "pl-8", className)}
+      disabled={disabled || lock.locked}
+      {...lock.props}
+      {...rest}
+    >
       <MenuPrimitive.ItemIndicator className="absolute left-2 flex items-center">
         <Icon icon={Check} />
       </MenuPrimitive.ItemIndicator>
@@ -187,8 +201,10 @@ export function DialogContent({
         </header>
         {children ? <div className="overflow-y-auto px-6 py-4">{children}</div> : null}
         {footer ? (
-          <footer className="flex flex-wrap justify-end gap-2 border-t border-border px-6 py-4">
-            {footer}
+          <footer className="flex flex-col gap-3 border-t border-border px-6 py-4">
+            {/* The page's own banner is behind the backdrop: the reason is repeated where the buttons are. */}
+            <OfflineNote />
+            <div className="flex flex-wrap justify-end gap-2">{footer}</div>
           </footer>
         ) : null}
       </DialogPrimitive.Content>

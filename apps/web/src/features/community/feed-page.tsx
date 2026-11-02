@@ -251,7 +251,7 @@ function Comments({ postId, canModerate }: { postId: string; canModerate: boolea
       {comments.isLoading ? <Skeleton className="h-12 w-full" /> : null}
       {comments.isError ? (
         <Banner tone="danger" title={t("commentsFailed")}>
-          <Button size="dense" onClick={() => void comments.refetch()}>
+          <Button network="required" size="dense" onClick={() => void comments.refetch()}>
             {t("retry")}
           </Button>
         </Banner>

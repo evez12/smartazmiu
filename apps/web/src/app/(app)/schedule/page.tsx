@@ -2,7 +2,7 @@ import { CalendarArrowDown } from "lucide-react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Icon } from "@/components/ui/icon";
 import { PageHeader } from "@/components/ui/page-header";
 import { bakuToday, dayFromParam, mondayOf, type ScheduleView } from "@/features/schedule/model";
