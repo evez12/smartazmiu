@@ -2466,6 +2466,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Test:** 460 invitations and one announcement, batch 200, reserve 50: the invitations stop at 150, the
   announcement goes out immediately; in a later window with 310 invitations still pending a new announcement is sent
   before any of them.
+- **Found on the way:** seven tests in `test_delivery.py` failed on `main` from 06:00 UTC on 2 November 2026 on. They
+  pinned a fake clock to that moment, while deliveries get `not_before` from the database clock, so nothing counted as
+  due once real time passed it. The test clock is now relative to tomorrow. Separately, a full run overlapping a second
+  pytest process on the same `smartazmiu_test` database deadlocks on the teardown `TRUNCATE`; run one suite at a time.
 - **Consequences:** a university-wide announcement (D-055's case) is still throttled at 200 a minute among itself. The
   announcement mail of one window can use the reserve only; a long bulk mailing now takes 150 a minute instead of 200.
 
