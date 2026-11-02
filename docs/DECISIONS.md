@@ -2873,3 +2873,20 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   second deploy (D-118); deterministic time in the fixed-window rate-limit tests (D-120: the tests that assert a `429` at
   an exact index depend on where a window boundary falls); native-speaker review of the English and Russian texts
   (D-114).
+
+## D-125 · 2026-11-03 · Gate result of the follow-up branch, and one unexplained navigation stall
+
+- **Gate:** `make lint test` green (API 519 tests, web 554). Whole functional suite against the rebuilt Docker stack,
+  `--workers=2 --retries=0`, seed check on: 87 of 87. Visual project: 6 of 6, no baseline changed.
+- **Stall seen once in the first full run:** `touch-targets.spec.ts` timed out in its first `page.goto` (`load` never
+  fired). The Playwright trace shows two or three script chunks of the page registered in the browser and never sent;
+  nginx logged no request for them, and it answered every other request of that page with 200 in microseconds. The
+  same stall hit two tests of the same file in one of eight repeats of a follow-up run (2 of 96).
+- **What was ruled out:** the server (no request arrived), the proxy under parallel load (960 parallel `curl`
+  requests, no stall, connect time at most 18 ms), mobile emulation or a fresh browser context as such (600 loads of
+  `/login`, mobile and desktop, no stall), and tracing (120 runs with and without it, no stall).
+  Later runs: 240 repeats plus two full suites, no stall.
+- **Status: root cause not established.** It happens in Chromium before the request leaves the browser, about 1 in
+  100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
+  code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
+  record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.
