@@ -54,7 +54,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7.4.11-alpine
+    image: redis:7.4.12-alpine
     # Instance A (D-053): web sessions in database 1 (D-037) and the ARQ job queue in database 0. Neither may be
     # evicted or lost on a restart (D-039), so: no eviction, append-only file synced every second.
     command:
@@ -78,7 +78,7 @@ services:
   # Instance B (D-053): disposable data only. When full it evicts the least recently used keys, and nothing
   # is written to disk; sessions and the job queue live in instance A (`redis`), which never evicts.
   redis-cache:
-    image: redis:7.4.11-alpine
+    image: redis:7.4.12-alpine
     command:
       - redis-server
       - --maxmemory
