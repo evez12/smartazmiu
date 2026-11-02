@@ -47,7 +47,12 @@ export function OnboardingTour({ roles }: { roles: readonly string[] }) {
         title={t("title")}
         description={t("progress", { step: index + 1, total: steps.length })}
         action={
-          <Button size="dense" variant="tertiary" onClick={() => finish.mutate()}>
+          <Button
+            network="required"
+            size="dense"
+            variant="tertiary"
+            onClick={() => finish.mutate()}
+          >
             {t("dismiss")}
           </Button>
         }

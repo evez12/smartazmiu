@@ -193,6 +193,7 @@ export function MessageRow({
   const curationItems = api && (
     <>
       <MenuItem
+        network="required"
         onSelect={() =>
           void curate(async () =>
             message.saved
@@ -207,6 +208,7 @@ export function MessageRow({
       </MenuItem>
       {can?.canPin ? (
         <MenuItem
+          network="required"
           onSelect={() =>
             void curate(async () =>
               message.pinned
@@ -229,6 +231,7 @@ export function MessageRow({
       ) : null}
       {can?.canVerify && message.parent_id ? (
         <MenuItem
+          network="required"
           onSelect={() =>
             void curate(async () =>
               unwrap(
@@ -245,6 +248,7 @@ export function MessageRow({
       ) : null}
       {can?.canSeeAnonymous && message.is_anonymous ? (
         <MenuItem
+          network="required"
           onSelect={() =>
             void (async () => {
               try {
@@ -375,6 +379,7 @@ export function MessageRow({
         ) : null}
         {context.onOpenThread && message.reply_count > 0 ? (
           <Button
+            network="required"
             variant="tertiary"
             size="dense"
             className="-ml-3"

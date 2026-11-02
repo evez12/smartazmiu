@@ -9,7 +9,7 @@ import { lastSavedAt } from "@/lib/offline/device";
 
 import { InstallPrompt } from "./install-prompt";
 import { UpdateBanner } from "./update-banner";
-import { useOnline } from "./use-online";
+import { useOnline } from "@/lib/use-online";
 
 /**
  * "No connection" with the time of the stored data (§13.6). `cached` is the offline page, where only stored data is

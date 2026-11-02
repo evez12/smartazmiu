@@ -96,7 +96,7 @@ export function DownloadReportButton({
     URL.revokeObjectURL(url);
   };
   return (
-    <Button size="dense" onClick={download}>
+    <Button network="required" size="dense" onClick={download}>
       <Icon icon={Download} />
       {t("detail.downloadReport")}
     </Button>

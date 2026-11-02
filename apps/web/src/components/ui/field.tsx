@@ -6,8 +6,9 @@ import { createContext, useContext, useId, type ComponentProps, type ReactNode }
 
 import { cn } from "@/lib/cn";
 
-import { buttonVariants } from "./button";
+import { buttonVariants } from "./button-variants";
 import { Icon } from "./icon";
+import { useOfflineLock } from "./network";
 
 type FieldControl = {
   id: string;
@@ -151,9 +152,12 @@ export function FilePickerButton({
   ...rest
 }: FilePickerButtonProps) {
   const control = useControlProps(rest);
+  // Every file picker is an upload: it needs the server.
+  const lock = useOfflineLock("required");
   return (
     <label
       aria-busy={loading || undefined}
+      {...lock.props}
       className={cn(
         buttonVariants({ variant: "secondary", size: "dense" }),
         "cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
@@ -169,7 +173,7 @@ export function FilePickerButton({
       <input
         type="file"
         className="sr-only"
-        disabled={loading || rest.disabled}
+        disabled={loading || rest.disabled || lock.locked}
         onChange={(event) => {
           onFileChange(event.target.files?.[0] ?? null);
           // Choosing the same file again must fire another change event.

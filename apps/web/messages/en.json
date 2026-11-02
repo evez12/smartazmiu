@@ -2670,6 +2670,9 @@
         "blocked": "A message from a blocked user.",
         "moderated": "The message is hidden."
       }
+    },
+    "network": {
+      "reason": "This is not available without an internet connection."
     }
   }
 }

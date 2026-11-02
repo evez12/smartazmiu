@@ -85,7 +85,7 @@ export function AudiencePicker({ value, onChange, error }: AudiencePickerProps) 
           ) : options.isError ? (
             <div className="flex flex-col items-start gap-2">
               <p className="text-sm text-danger">{t("failed")}</p>
-              <Button size="dense" onClick={() => options.refetch()}>
+              <Button network="required" size="dense" onClick={() => options.refetch()}>
                 {t("retry")}
               </Button>
             </div>

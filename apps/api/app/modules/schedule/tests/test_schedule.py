@@ -556,18 +556,18 @@ async def test_changes_notify_the_people_who_have_the_class_once(
     autumn_2026(date(2026, 11, 1))
     await seed(ImportKind.SCHEDULE_CHANGES)
     assert await notified(db, "aysel.mammadova@smartazmiu.test") == [
-        "Mikroiqtisadiyyat, 9 Noyabr",
-        "Statistika, 9 Noyabr",
-        "Xarici dildə işgüzar və akademik kommunikasiya-3, 9 Noyabr",
+        "Mikroiqtisadiyyat, 09.11",
+        "Statistika, 09.11",
+        "Xarici dildə işgüzar və akademik kommunikasiya-3, 09.11",
     ]
     assert await notified(db, "nigar.ismayilova@smartazmiu.test") == [
-        "Mikroiqtisadiyyat, 9 Noyabr",
-        "Statistika, 9 Noyabr",
+        "Mikroiqtisadiyyat, 09.11",
+        "Statistika, 09.11",
     ]
     # Teachers of the class are told too; the group curator only as a teacher of her own subjects.
-    assert "Statistika, 9 Noyabr" in await notified(db, "leyla.hasanova@smartazmiu.test")
+    assert "Statistika, 09.11" in await notified(db, "leyla.hasanova@smartazmiu.test")
     notification = await db.scalar(
-        select(Notification).where(Notification.title == "Mikroiqtisadiyyat, 9 Noyabr").limit(1)
+        select(Notification).where(Notification.title == "Mikroiqtisadiyyat, 09.11").limit(1)
     )
     assert notification is not None
     assert notification.link == "/schedule?view=day&date=2026-11-09"
@@ -592,10 +592,10 @@ async def test_changes_notify_the_people_who_have_the_class_once(
     )
     await upload(ImportKind.SCHEDULE_CHANGES, f"{header}\n{edited}\n", apply=True)
     assert (await notified(db, "aysel.mammadova@smartazmiu.test")).count(
-        "Mikroiqtisadiyyat, 9 Noyabr"
+        "Mikroiqtisadiyyat, 09.11"
     ) == 2
     assert (await notified(db, "nigar.ismayilova@smartazmiu.test")).count(
-        "Mikroiqtisadiyyat, 9 Noyabr"
+        "Mikroiqtisadiyyat, 09.11"
     ) == 1
 
 

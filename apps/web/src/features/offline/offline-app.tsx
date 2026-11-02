@@ -25,7 +25,7 @@ import { useFormatters } from "@/lib/use-format";
 
 import { splitWeeks, type ChannelHistory, type ChannelList, type OfflineMessage } from "./model";
 import { OfflineBanner } from "./notices";
-import { useOnline } from "./use-online";
+import { useOnline } from "@/lib/use-online";
 
 export type Loaded = {
   schedule: Snapshot<Schedule> | null;

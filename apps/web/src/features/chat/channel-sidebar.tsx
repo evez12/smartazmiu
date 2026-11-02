@@ -43,7 +43,7 @@ export function ChannelSidebar({ activeId }: { activeId?: string }) {
         ) : channels.isError ? (
           <div className="flex flex-col items-start gap-2 p-2">
             <p className="text-sm text-muted">{t("channelsFailed")}</p>
-            <Button size="dense" onClick={() => channels.refetch()}>
+            <Button network="required" size="dense" onClick={() => channels.refetch()}>
               {t("retry")}
             </Button>
           </div>

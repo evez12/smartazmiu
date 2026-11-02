@@ -25,6 +25,11 @@ class MemoryStore implements SessionStore {
 const store = new MemoryStore();
 vi.mock("./session-store", () => ({ sessionStore: () => store }));
 
+const accountLocale = vi.fn<(accessToken: string) => Promise<string | null>>();
+vi.mock("./account-locale", () => ({
+  accountLocale: (accessToken: string) => accountLocale(accessToken),
+}));
+
 const completeSignIn = vi.fn();
 const endSession = vi.fn();
 vi.mock("./oidc", () => ({
@@ -76,11 +81,13 @@ beforeAll(() => {
 beforeEach(() => {
   store.entries.clear();
   store.calls = 0;
+  accountLocale.mockResolvedValue(null);
 });
 
 afterEach(() => {
   completeSignIn.mockReset();
   endSession.mockReset();
+  accountLocale.mockReset();
   vi.useRealTimers();
 });
 
@@ -223,6 +230,50 @@ describe("/auth/callback", () => {
     // The access token is ~2.5 KB here; none of it may travel to the browser.
     expect(setCookies.join("")).not.toContain(bulkyTokens.access_token.slice(0, 40));
     expect(setCookies.join("")).not.toContain("rt-rrrr");
+  });
+
+  it("writes the account's language as a cookie, within the budget, and only that", async () => {
+    const { oidcFlowCookie, OIDC_COOKIE, SET_COOKIE_BUDGET_BYTES } = await import("./session");
+    const { GET } = await import("@/app/auth/callback/route");
+    completeSignIn.mockResolvedValue(bulkyTokens);
+    accountLocale.mockResolvedValue("ru");
+    const flow = await oidcFlowCookie({ state: "s", nonce: "n", codeVerifier: "v", returnTo: "/" });
+
+    const response = await GET(
+      new NextRequest("http://localhost/auth/callback?code=c&state=s", {
+        headers: { cookie: `${OIDC_COOKIE}=${flow.value}` },
+      }),
+    );
+
+    expect(accountLocale).toHaveBeenCalledWith(bulkyTokens.access_token);
+    const setCookies = response.headers.getSetCookie();
+    expect(setCookies.map((header) => header.split("=")[0])).toEqual([
+      "sa_session",
+      "NEXT_LOCALE",
+      OIDC_COOKIE,
+    ]);
+    const locale = setCookies.find((header) => header.startsWith("NEXT_LOCALE="))!;
+    expect(locale).toMatch(/^NEXT_LOCALE=ru;/);
+    expect(locale.toLowerCase()).toContain("samesite=lax");
+    expect(locale.toLowerCase()).toContain("path=/");
+    expect(
+      setCookies.reduce((sum, header) => sum + Buffer.byteLength(header), 0),
+    ).toBeLessThanOrEqual(SET_COOKIE_BUDGET_BYTES);
+  });
+
+  it("leaves the language cookie alone when the account has none or the API does not answer", async () => {
+    const { oidcFlowCookie, OIDC_COOKIE } = await import("./session");
+    const { GET } = await import("@/app/auth/callback/route");
+    completeSignIn.mockResolvedValue(bulkyTokens);
+    accountLocale.mockResolvedValue(null);
+    const flow = await oidcFlowCookie({ state: "s", nonce: "n", codeVerifier: "v", returnTo: "/" });
+    const response = await GET(
+      new NextRequest("http://localhost/auth/callback?code=c&state=s", {
+        headers: { cookie: `${OIDC_COOKIE}=${flow.value}` },
+      }),
+    );
+    expect(response.status).toBe(302);
+    expect(response.headers.getSetCookie().some((h) => h.startsWith("NEXT_LOCALE="))).toBe(false);
   });
 
   it("issues a new session id on every sign-in and ends the previous session", async () => {

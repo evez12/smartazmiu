@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/cn";
 
-import { buttonVariants } from "./button";
+import { buttonVariants } from "./button-variants";
 import { Icon } from "./icon";
 import { useFormatters } from "@/lib/use-format";
 

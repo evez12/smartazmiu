@@ -7,7 +7,8 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Banner } from "@/components/ui/banner";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { RadioGroup } from "@/components/ui/choice";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Textarea } from "@/components/ui/field";
@@ -134,12 +135,12 @@ function RequestCard({ request, compact = false }: { request: MentorRequest; com
             </Button>
           ) : null}
           {request.can_decline ? (
-            <Button variant="secondary" onClick={() => act.mutate("decline")}>
+            <Button network="required" variant="secondary" onClick={() => act.mutate("decline")}>
               {t("decline")}
             </Button>
           ) : null}
           {request.can_resolve ? (
-            <Button variant="secondary" onClick={() => act.mutate("resolve")}>
+            <Button network="required" variant="secondary" onClick={() => act.mutate("resolve")}>
               {t("resolve")}
             </Button>
           ) : null}

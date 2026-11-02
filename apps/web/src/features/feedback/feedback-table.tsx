@@ -119,7 +119,12 @@ function StatusAction({ item }: { item: FeedbackItem }) {
       {t("close")}
     </Button>
   ) : (
-    <Button size="dense" variant="tertiary" onClick={() => change.mutate("open")}>
+    <Button
+      network="required"
+      size="dense"
+      variant="tertiary"
+      onClick={() => change.mutate("open")}
+    >
       {t("reopen")}
     </Button>
   );

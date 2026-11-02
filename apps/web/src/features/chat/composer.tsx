@@ -288,6 +288,7 @@ export function Composer({
               }}
             />
             <Button
+              network="required"
               type="button"
               variant="secondary"
               size="icon"
@@ -301,7 +302,8 @@ export function Composer({
           </>
         ) : null}
         {editing ? null : (
-          <Button type="submit" variant="primary" disabled={blocked}>
+          // Sending stays possible offline: the message waits in the queue and says so (§13.2, D-064).
+          <Button type="submit" variant="primary" network="local" disabled={blocked}>
             <Icon icon={SendHorizontal} />
             <span className="max-sm:sr-only">{submitLabel ?? t("send")}</span>
           </Button>

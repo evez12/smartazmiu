@@ -72,6 +72,8 @@ export function OfflineDeviceSwitch({
   return (
     <div className="flex flex-col gap-3">
       <Switch
+        // Turning it on downloads the first copy; turning it off only deletes what is on the device.
+        network={state === "on" ? "local" : "required"}
         label={t("label")}
         description={t("hint")}
         checked={state === "on"}

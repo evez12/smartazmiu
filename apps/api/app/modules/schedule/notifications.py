@@ -22,24 +22,12 @@ from app.modules.schedule.models import ScheduleChange, ScheduleEntry, ScheduleE
 from app.modules.users.models import User, UserStatus
 
 SUBJECT_TYPE = "schedule_change"
-MONTHS = (
-    "Yanvar",
-    "Fevral",
-    "Mart",
-    "Aprel",
-    "May",
-    "İyun",
-    "İyul",
-    "Avqust",
-    "Sentyabr",
-    "Oktyabr",
-    "Noyabr",
-    "Dekabr",
-)
 
 
 def _day(value: date) -> str:
-    return f"{value.day} {MONTHS[value.month - 1]}"
+    """Day and month in digits (``09.11``): the title is stored once for every recipient, so it carries no word of
+    any one language (D-121)."""
+    return f"{value:%d.%m}"
 
 
 def affected(entry: ScheduleEntry, substitute_id: uuid.UUID | None) -> Select[uuid.UUID]:

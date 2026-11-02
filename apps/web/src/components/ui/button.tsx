@@ -1,59 +1,55 @@
-import { cva, type VariantProps } from "class-variance-authority";
+"use client";
+
+import type { VariantProps } from "class-variance-authority";
 import { LoaderCircle } from "lucide-react";
 import { Slot } from "radix-ui";
 import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { buttonVariants } from "./button-variants";
 import { Icon } from "./icon";
-import { touchTarget } from "./touch-target";
-
-export const buttonVariants = cva(
-  [
-    "inline-flex shrink-0 items-center justify-center gap-2 rounded-control border font-medium whitespace-nowrap",
-    "transition-colors select-none disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-progress",
-    touchTarget,
-  ],
-  {
-    variants: {
-      variant: {
-        primary: "border-transparent bg-primary text-primary-contrast hover:bg-primary-hover",
-        secondary: "border-border-control bg-surface text-text hover:bg-bg-subtle",
-        tertiary: "border-transparent bg-transparent text-primary hover:bg-bg-subtle",
-        destructive: "border-danger bg-surface text-danger hover:bg-bg-subtle",
-        /** Only inside confirmation dialogs (§12.4). */
-        "destructive-solid": "border-transparent bg-danger text-primary-contrast hover:opacity-90",
-      },
-      size: {
-        default: "h-9 px-4 text-base",
-        dense: "h-8 px-3 text-sm",
-        icon: "size-9 p-0",
-        "icon-dense": "size-8 p-0",
-      },
-    },
-    defaultVariants: { variant: "secondary", size: "default" },
-  },
-);
+import { useOfflineLock, type NetworkNeed } from "./network";
 
 type ButtonProps = ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     /** In-place action running: keeps the label, shows a spinner and blocks repeat submits. */
     loading?: boolean;
+    /** Whether the button needs the server; see `networkDefault`. */
+    network?: NetworkNeed;
   };
+
+/**
+ * What a button is when it does not say. Buttons that send a form, are the page's main or a destructive action, or
+ * show a running action (`loading` is passed) talk to the server and are switched off while offline (§13.6). A
+ * button that works on the page alone says `network="local"`; a secondary or tertiary one that calls the server
+ * says `network="required"`.
+ */
+export function networkDefault(
+  props: Pick<ButtonProps, "type" | "variant" | "loading">,
+): NetworkNeed {
+  const strong =
+    props.variant === "primary" ||
+    props.variant === "destructive" ||
+    props.variant === "destructive-solid";
+  return props.type === "submit" || strong || props.loading !== undefined ? "required" : "local";
+}
 
 export function Button({
   className,
   variant,
   size,
   asChild = false,
-  loading = false,
+  loading,
   disabled,
   children,
   type,
+  network,
   ...rest
 }: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size }), className);
+  const lock = useOfflineLock(network ?? networkDefault({ type, variant, loading }));
   if (asChild) {
     return (
       <Slot.Root className={classes} {...rest}>
@@ -61,15 +57,17 @@ export function Button({
       </Slot.Root>
     );
   }
+  const busy = loading === true;
   return (
     <button
       type={type ?? "button"}
       className={classes}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
+      disabled={disabled || busy || lock.locked}
+      aria-busy={busy || undefined}
+      {...lock.props}
       {...rest}
     >
-      {loading ? <Icon icon={LoaderCircle} className="animate-spin" /> : null}
+      {busy ? <Icon icon={LoaderCircle} className="animate-spin" /> : null}
       {children}
     </button>
   );

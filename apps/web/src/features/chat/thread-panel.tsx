@@ -123,7 +123,7 @@ export function ThreadPanel({
         ) : (
           <div className="flex flex-col items-start gap-2 p-4">
             <p className="text-sm text-muted">{t("threadFailed")}</p>
-            <Button size="dense" onClick={() => void initial.refetch()}>
+            <Button network="required" size="dense" onClick={() => void initial.refetch()}>
               {t("retry")}
             </Button>
           </div>

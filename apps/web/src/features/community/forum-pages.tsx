@@ -360,6 +360,7 @@ export function AnswerCard({
             aria-label={t("voteGroup")}
           >
             <Button
+              network="required"
               size="icon-dense"
               variant={answer.my_vote === 1 ? "primary" : "secondary"}
               aria-label={t("voteUp")}
@@ -373,6 +374,7 @@ export function AnswerCard({
               {answer.score}
             </span>
             <Button
+              network="required"
               size="icon-dense"
               variant={answer.my_vote === -1 ? "primary" : "secondary"}
               aria-label={t("voteDown")}

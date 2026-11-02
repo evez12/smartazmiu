@@ -1,6 +1,7 @@
 """Notifications about exams: a new or moved slot reaches the offering's students and teachers, once per change,
 never for an exam that is over, and is checked again at delivery time (D-105)."""
 
+import re
 import uuid
 from datetime import timedelta
 
@@ -54,7 +55,8 @@ async def test_a_new_exam_notifies_students_and_teachers_of_the_offering_only(
         assert note.kind is NotificationKind.EXAM_SCHEDULED
         assert note.category is NotificationCategory.SCHEDULE
         assert note.subject_id == uuid.UUID(created.json()["id"])
-        assert note.title.startswith("Statistika, ")
+        # Digits only: the title is stored once for every recipient, whatever their language (D-121).
+        assert re.fullmatch(r"Statistika, \d{2}\.\d{2} \d{2}:\d{2}", note.title)
         assert note.link == "/exams"
     assert await inbox(db, people["outsider"]) == []
     assert await inbox(db, people["staff"]) == []

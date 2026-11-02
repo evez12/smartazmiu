@@ -14,7 +14,7 @@ import {
   shouldOffer,
 } from "@/lib/offline/install";
 
-import { useOnline } from "./use-online";
+import { useOnline } from "@/lib/use-online";
 
 type InstallEvent = Event & { prompt: () => Promise<void> };
 

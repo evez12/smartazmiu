@@ -124,6 +124,7 @@ function ExamModeSwitches() {
               {items.map((subject) => (
                 <li key={subject.id} className="py-3">
                   <Switch
+                    network="required"
                     label={subject.name}
                     description={t("meta", { code: subject.code, count: subject.upcoming_exams })}
                     checked={subject.exam_mode}

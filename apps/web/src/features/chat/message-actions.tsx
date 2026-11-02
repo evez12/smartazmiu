@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useOfflineLock } from "@/components/ui/network";
 import { Icon } from "@/components/ui/icon";
 import {
   Menu,
@@ -72,6 +73,7 @@ export function ReactionChips({
   onToggle: (emoji: string, add: boolean) => void;
 }) {
   const t = useTranslations("chat");
+  const lock = useOfflineLock("required");
   if (!message.reactions.length) return null;
   const mine = message.my_reactions ?? [];
   return (
@@ -82,7 +84,8 @@ export function ReactionChips({
           <li key={reaction.emoji}>
             <button
               type="button"
-              disabled={disabled}
+              disabled={disabled || lock.locked}
+              {...lock.props}
               aria-pressed={pressed}
               aria-label={t("reactionCount", {
                 emoji: reaction.emoji,
@@ -140,7 +143,7 @@ export function MessageToolbar({
           mine={message.my_reactions ?? []}
           onPick={onReact}
           trigger={
-            <Button variant="tertiary" size="icon-dense" aria-label={t("react")}>
+            <Button network="required" variant="tertiary" size="icon-dense" aria-label={t("react")}>
               <Icon icon={SmilePlus} />
             </Button>
           }

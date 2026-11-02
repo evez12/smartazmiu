@@ -8,7 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Banner } from "@/components/ui/banner";
 import { Checkbox } from "@/components/ui/choice";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon";
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
@@ -306,7 +307,7 @@ export function MessagePane({
       {truncated && listed?.last_read_message_id ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-bg-subtle px-4 py-2 text-sm">
           <span>{t("gapTooLarge")}</span>
-          <Button size="dense" onClick={() => void load("unread")}>
+          <Button network="required" size="dense" onClick={() => void load("unread")}>
             {t("jumpToUnread")}
           </Button>
         </div>
@@ -324,7 +325,7 @@ export function MessagePane({
       ) : (latest.isError || historyFailed) && messages.length === 0 ? (
         <div className="flex flex-1 flex-col items-start gap-2 p-4">
           <p className="text-sm text-muted">{t("historyFailed")}</p>
-          <Button size="dense" onClick={() => void latest.refetch()}>
+          <Button network="required" size="dense" onClick={() => void latest.refetch()}>
             {t("retry")}
           </Button>
         </div>

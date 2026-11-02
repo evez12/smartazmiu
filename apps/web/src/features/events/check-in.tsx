@@ -194,6 +194,7 @@ export function CheckInDesk({ eventId }: { eventId: string }) {
                   <TableCell label={t("columns.action")}>
                     {person.checked_in_at ? null : (
                       <Button
+                        network="required"
                         size="dense"
                         onClick={() => admit.mutate({ registration_id: person.registration_id })}
                       >
