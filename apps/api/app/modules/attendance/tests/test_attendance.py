@@ -1,5 +1,6 @@
 """QR attendance: rotating codes, idempotent check-in, manual marks and reports (§6.1, D-094)."""
 
+import asyncio
 import io
 import uuid
 from collections.abc import Awaitable, Callable
@@ -7,21 +8,24 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from alembic import command
 from httpx import AsyncClient
 from openpyxl import load_workbook
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.ratelimit import RateLimit
 from app.core.time import utc_now
-from app.modules.academics.models import AcademicGroup
+from app.modules.academics.models import AcademicGroup, Enrollment
 from app.modules.attendance import codes, export
 from app.modules.attendance import service as attendance_service
-from app.modules.attendance.models import AttendanceSession
+from app.modules.attendance.models import AttendanceRecord, AttendanceSession
 from app.modules.audit.models import AuditLog
 from app.modules.chat.tests.conftest import MakePerson, Person
 from app.modules.materials.tests.test_materials import sign_in
+from app.modules.users.models import User
+from conftest import alembic_config
 from tests.support import TokenFactory
 
 API = "/api/v1/attendance"
@@ -434,6 +438,39 @@ async def test_reports_for_teacher_curator_and_exports(
     assert (
         await client.get(f"{API}/offerings/{offering}/report.csv", headers=aysel.headers)
     ).status_code == 404
+
+
+async def test_a_deleted_account_leaves_anonymous_rows_the_report_still_counts(
+    client: AsyncClient, db: AsyncSession, settings: Settings, people: dict[str, Person]
+) -> None:
+    """D-108: deleting the student or the teacher keeps the meeting and its tally; the downgrade refuses to lose them."""
+    leyla, aysel, staff = people["leyla"], people["aysel"], people["staff"]
+    offering = await statistika(client, leyla)
+    meeting = await open_meeting(client, staff, offering)
+    shown = await current(client, staff, meeting["id"])
+    assert (await check_in(client, aysel, qr=shown["qr"])).is_success
+
+    # Enrolments are the deletion task's to clear; the three D-108 references are what this test is about.
+    await db.execute(delete(Enrollment).where(Enrollment.user_id == aysel.id))
+    await db.execute(delete(User).where(User.id.in_([aysel.id, staff.id])))
+    await db.commit()
+
+    record = await db.scalar(select(AttendanceRecord))
+    assert record is not None
+    assert record.student_id is None
+    opened = await db.scalar(select(AttendanceSession.opened_by))
+    assert opened is None
+    detail = (await client.get(f"{API}/sessions/{meeting['id']}", headers=leyla.headers)).json()
+    assert detail["present"] == 1
+    report = (await client.get(f"{API}/offerings/{offering}/report", headers=leyla.headers)).json()
+    assert [(s["id"], s["title"]) for s in report["sessions"]] == [(meeting["id"], "Mühazirə 5")]
+    assert "Aysel Məmmədova" not in {r["display_name"] for r in report["rows"]}
+
+    with pytest.raises(RuntimeError, match="belong to deleted accounts"):
+        await asyncio.to_thread(command.downgrade, alembic_config(settings), "0035")
+    await db.execute(delete(AttendanceRecord))
+    await db.execute(delete(AttendanceSession))
+    await db.commit()
 
 
 async def test_guessing_codes_is_rate_limited(

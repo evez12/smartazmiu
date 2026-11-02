@@ -82,6 +82,7 @@ async def startup(ctx: dict[str, Any]) -> None:
         relevance=RELEVANCE,
         public_url=settings.app_public_url,
         mail_batch=settings.mail_batch_size,
+        mail_reserve=settings.mail_priority_reserve,
         mail_window=timedelta(seconds=settings.mail_batch_interval_seconds),
     )
     ctx["mail_interval"] = settings.mail_batch_interval_seconds

@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     # Throttle for mass announcements: at most this many e-mails per interval, across all workers (D-055).
     mail_batch_size: int = 200
     mail_batch_interval_seconds: int = 60
+    mail_priority_reserve: int = 50
 
     # Web Push: the VAPID key pair is derived from this secret (D-049).
     vapid_secret: str = ""

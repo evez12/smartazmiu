@@ -33,10 +33,26 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
   `make up` must still start the full stack (including api, web, nginx) in Docker.
 - Single `Makefile` (GNU make via winget `ezwinports.make`); no PowerShell task scripts. Package manager: pnpm.
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
-- Current scope: **Sprint 14** (QR attendance, exam center, GPA; Sprints 1-13 accepted). Stop and summarize
-  for review after each task group the product owner hands over; never pull Sprint 15+ scope forward.
+- Current scope: **Sprint 15** (integrations, PWA, i18n; Sprints 1-14 accepted; Sprint 11 stays deferred, D-102).
+  Stop and summarize for review after each task group the product owner hands over; never pull Sprint 16+ scope forward.
 - Ask the product owner first for: auth changes, hard deletion of data, anything that could expose grades, and any
   CSP relaxation (e.g. for the Markdown sanitizer or KaTeX delivery).
+
+### Sprint 15 ask-first list and answers
+
+Ask in ONE question-tool call before the affected group; the answers below are already given, so do not re-ask them.
+Still ask first throughout: authentication or session changes, hard deletes, grade exposure, CSP relaxations.
+
+1. **Cabinet (Group C):** nightly sync (ARQ, idempotent), not live read. Match users by `university_id`, never by
+   e-mail alone. Fields: grades, transcript, appeals status; read-only. No real data exists: build against the fake
+   provider and contract tests only.
+2. **Offline cache (Group B):** channels only, last 50 messages per channel; DMs are NOT cached. Everything is wiped on
+   sign-out and session end; the cache is keyed by user id. Never cache grades, attendance, exports, tokens, or any
+   response with `Cache-Control: no-store`.
+3. **Headers (Group B):** any CSP / Permissions-Policy / nginx change needed by the service worker or manifest is
+   ask-first, with the exact diff. No CSP relaxation by default.
+4. **Glossary (Group A):** no official EN/RU terminology list exists. Propose the glossary in a file for review before
+   translating the whole app; formal register.
 
 ## Git
 

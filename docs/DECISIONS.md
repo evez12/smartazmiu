@@ -2448,3 +2448,42 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   and were left alone (they were not started in this session). They run code from before D-105, so they may fail on
   the new notification kinds; no failure was traced to them, but they should be stopped before any release check.
 - **Final result:** see the report of the closeout; the numbers are not repeated here so this entry cannot go stale.
+
+## D-111 · 2026-11-02 · Mail priority: announcements and events are read first and keep a budget reserve
+
+- **Context:** D-110 left open that the D-055 throttle has no priority: the seed queues about 460 guide invitations,
+  and an announcement created behind them waited up to three windows.
+- **Options:** (a) two queues, each with its own budget; (b) a `priority` column on the delivery, read first, with
+  the budget split by class.
+- **Decision:** (b). `notification_deliveries.priority` is 1 for the `announcements` and `events` categories and 0 for
+  everything else (migration 0035; existing rows are back-filled from their notification). The dispatcher orders by
+  `priority DESC, not_before`. The window budget stays one number across all workers (`MAIL_BATCH_SIZE`, 200, so the
+  SMTP relay sees no more than before); bulk mail (priority 0) may use at most `MAIL_BATCH_SIZE - MAIL_PRIORITY_RESERVE`
+  of it (150 by default), so an announcement that arrives after the invitations have used their share still goes out
+  in the same window. A throttled bulk delivery blocks only bulk mail for the rest of the run; a throttled priority
+  delivery blocks both, since the whole budget is gone. Push is unaffected. One queue keeps the single continuation job
+  of D-055.
+- **Test:** 460 invitations and one announcement, batch 200, reserve 50: the invitations stop at 150, the
+  announcement goes out immediately; in a later window with 310 invitations still pending a new announcement is sent
+  before any of them.
+- **Found on the way:** seven tests in `test_delivery.py` failed on `main` from 06:00 UTC on 2 November 2026 on. They
+  pinned a fake clock to that moment, while deliveries get `not_before` from the database clock, so nothing counted as
+  due once real time passed it. The test clock is now relative to tomorrow. Separately, a full run overlapping a second
+  pytest process on the same `smartazmiu_test` database deadlocks on the teardown `TRUNCATE`; run one suite at a time.
+- **Consequences:** a university-wide announcement (D-055's case) is still throttled at 200 a minute among itself. The
+  announcement mail of one window can use the reserve only; a long bulk mailing now takes 150 a minute instead of 200.
+
+## D-112 · 2026-11-02 · Account-deletion schema changes of D-108
+
+- **Context:** D-108 fixed the rule (anonymize) and left the schema for a later task; account deletion itself is
+  still not built.
+- **Decision:** migration 0036 makes `attendance_records.student_id`, `attendance_sessions.opened_by` and
+  `past_papers.uploader_id` nullable with `ON DELETE SET NULL`. The attendance report skips rows without a student, so
+  a deleted student's marks still count in each meeting but name nobody. No screen shows the opener, the uploader or
+  the student of an orphaned row today (the paper list returns `uploaded_by_me`, the roster is driven by enrolments),
+  so the "Silinmiş istifadəçi" placeholder (`deletedUser` in `messages/az.json`) has no new place to appear yet; the
+  deletion task wires it where an actor becomes visible.
+- **Downgrade:** refuses to run while any of the three columns holds NULL (the rows cannot get a NOT NULL back
+  without inventing a person), as D-108 requires. Tested both ways.
+- **Consequences:** deleting a user row no longer cascades into attendance or past papers; it also no longer blocks on a
+  teacher who opened a meeting.

@@ -104,8 +104,9 @@ class PastPaper(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
     subject_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subjects.id", ondelete="CASCADE"))
-    uploader_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    # NULL once the uploader's account is deleted; the approved paper stays in the archive (D-108).
+    uploader_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     semester_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("semesters.id", ondelete="CASCADE")

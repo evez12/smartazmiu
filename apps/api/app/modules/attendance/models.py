@@ -44,7 +44,8 @@ class AttendanceSession(Base):
     course_offering_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("course_offerings.id"), index=True
     )
-    opened_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    # NULL once the teacher's account is deleted (D-108).
+    opened_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(120), default="")
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Check-in stops here even if nobody pressed "close"; closed_at records the end of the meeting itself.
@@ -60,8 +61,9 @@ class AttendanceRecord(Base):
     session_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("attendance_sessions.id", ondelete="CASCADE")
     )
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    # NULL once the student's account is deleted: the row still counts in the meeting's total (D-108).
+    student_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     method: Mapped[CheckInMethod] = mapped_column(
         Enum(
