@@ -515,7 +515,10 @@ class AttendanceService:
                 AttendanceRecord.session_id.in_([m.id for m in meetings])
             )
         ):
-            marks.setdefault(student_id, set()).add(session_id)
+            if (
+                student_id is not None
+            ):  # a deleted account's rows stay countable but anonymous (D-108)
+                marks.setdefault(student_id, set()).add(session_id)
         query = (
             select(User, AcademicGroup.code)
             .outerjoin(AcademicGroup, AcademicGroup.id == User.academic_group_id)

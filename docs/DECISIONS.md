@@ -2468,3 +2468,18 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   before any of them.
 - **Consequences:** a university-wide announcement (D-055's case) is still throttled at 200 a minute among itself. The
   announcement mail of one window can use the reserve only; a long bulk mailing now takes 150 a minute instead of 200.
+
+## D-112 · 2026-11-02 · Account-deletion schema changes of D-108
+
+- **Context:** D-108 fixed the rule (anonymize) and left the schema for a later task; account deletion itself is
+  still not built.
+- **Decision:** migration 0036 makes `attendance_records.student_id`, `attendance_sessions.opened_by` and
+  `past_papers.uploader_id` nullable with `ON DELETE SET NULL`. The attendance report skips rows without a student, so
+  a deleted student's marks still count in each meeting but name nobody. No screen shows the opener, the uploader or
+  the student of an orphaned row today (the paper list returns `uploaded_by_me`, the roster is driven by enrolments),
+  so the "Silinmiş istifadəçi" placeholder (`deletedUser` in `messages/az.json`) has no new place to appear yet; the
+  deletion task wires it where an actor becomes visible.
+- **Downgrade:** refuses to run while any of the three columns holds NULL (the rows cannot get a NOT NULL back
+  without inventing a person), as D-108 requires. Tested both ways.
+- **Consequences:** deleting a user row no longer cascades into attendance or past papers; it also no longer blocks on a
+  teacher who opened a meeting.
