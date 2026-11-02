@@ -103,7 +103,7 @@ export function TagList({ tags, base }: { tags: Tag[]; base: string }) {
 }
 
 const FILTER_LINK =
-  "inline-flex min-h-8 items-center rounded-control border border-border px-2 text-sm aria-[current=page]:border-primary aria-[current=page]:font-medium pointer-coarse:min-h-11";
+  "inline-flex min-h-8 items-center rounded-control border border-border px-2 text-sm aria-[current=page]:border-primary aria-[current=page]:font-medium pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center";
 
 /** Filters a list by one tag; the same control clears the filter. */
 export function TagFilter({ base, active }: { base: string; active?: string }) {

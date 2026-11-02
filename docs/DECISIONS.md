@@ -2574,3 +2574,27 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     staff and administrator screens only through the specimens; the Keycloak login page stays Azerbaijani, so a
     signed-out Russian user sees one Azerbaijani screen; the PWA manifest and the offline page (Group B) will need
     the same three languages.
+
+## D-116 · 2026-11-02 · What the Group A gate found
+
+- **Context:** `make lint test` and the whole browser suite (`--retries=0`, seed-data check on) on the rebuilt Docker
+  stack, plus the visual project. Each finding below was traced, not retried away.
+- **Findings:**
+  - **Deadlock when a new account is provisioned** (one failure in the first browser run, a 500 on `/admin/feedback`).
+    The layout and the page of a first page load both call `sync_from_claims` for the same new subject; the database
+    can abort one of them with `40P01`, which the existing retry (integrity errors only) did not cover. It is older
+    than this group: the race exists whenever a new account's first page makes two requests at once. Now one retry
+    after a deadlock, any other database error propagates (`test_a_deadlock_between_first_requests_is_retried_once`,
+    `test_other_database_errors_are_not_retried`). The retry after the second attempt is unchanged.
+  - **Russian "Все" filter, 40 px wide on a phone** (`/forum`, tag filter). The Azerbaijani word is long enough to
+    reach 44 px, the Russian one is not. The filter links now have a 44 px minimum width for coarse pointers.
+  - **Subject name broken inside the word at 320 px in Russian** (ÜOMG subjects table): the long column label of the
+    stacked layout left the name and the code side by side in a narrow space. Name and code are now one block.
+  - **Two visual baselines moved without a visual change:** the taller glyph section shifts the sub-pixel position of
+    the sections below it, so `phone-dark-03` (buttons) re-rasterised; it was re-recorded with the glyph ones. The
+    visual project runs on two workers (a dev server on six workers timed out screenshots).
+  - **Test setup, not product:** after `docker compose up --build api`, nginx still pointed at the old container's
+    address, so the live chat tests lost their socket; restarting `nginx` fixed it (`make up` recreates everything).
+    The two unit tests that expected Russian to fall back to Azerbaijani now expect Russian.
+- **Result:** API 519 tests, 94.91 % coverage; web 400 tests; browser suite 76 of 76 with no retries; visual project 6
+  of 6 with no retry; lint, formatting and types clean.
