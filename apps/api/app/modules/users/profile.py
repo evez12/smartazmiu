@@ -53,6 +53,12 @@ class ProfileService:
             user.onboarded_at = None
         await self.session.commit()
 
+    async def set_locale(self, user_id: uuid.UUID, locale: str) -> None:
+        # Not part of the versioned profile: switching language must never fail on a stale edit.
+        user = await self.get(user_id)
+        user.locale = locale
+        await self.session.commit()
+
     async def update(self, user_id: uuid.UUID, changes: ProfileChanges) -> User:
         user = await self._locked(user_id)
         if changes.version != user.profile_version:

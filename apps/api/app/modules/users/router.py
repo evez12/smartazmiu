@@ -11,7 +11,7 @@ from app.core.rbac import CurrentUserDep
 from app.modules.users.models import User
 from app.modules.users.photos import MAX_UPLOAD_BYTES
 from app.modules.users.profile import ProfileChanges, ProfileService, photo_url
-from app.modules.users.schemas import MeResponse, OnboardingIn, ProfileOut, ProfileUpdate
+from app.modules.users.schemas import LocaleIn, MeResponse, OnboardingIn, ProfileOut, ProfileUpdate
 
 PHOTO_UPLOADS = RateLimit("photo_upload", limit=10, window_seconds=3600)
 
@@ -38,7 +38,18 @@ async def read_me(user: CurrentUserDep, profiles: Profiles) -> MeResponse:
         permissions=sorted(user.permissions),
         photo_url=photo_url(account),
         onboarding_done=account.onboarded_at is not None,
+        locale=account.locale,
     )
+
+
+@router.put(
+    "/me/locale",
+    status_code=204,
+    operation_id="setMyLocale",
+    summary="Choose the interface language",
+)
+async def set_my_locale(user: CurrentUserDep, profiles: Profiles, body: LocaleIn) -> None:
+    await profiles.set_locale(user.id, body.locale)
 
 
 @router.put(

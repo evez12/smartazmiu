@@ -57,7 +57,11 @@ class DataExportService:
                 "onboarded_at": user.onboarded_at.isoformat() if user.onboarded_at else None,
             },
             "roles": await self._roles(user.id),
-            "profile": {"bio": user.bio, "photo": await self._photo(user)},
+            "profile": {
+                "bio": user.bio,
+                "locale": user.locale,
+                "photo": await self._photo(user),
+            },
             "privacy_settings": {
                 "dm_policy": user.dm_policy,
                 "contact_visibility": user.contact_visibility,

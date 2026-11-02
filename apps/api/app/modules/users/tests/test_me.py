@@ -51,6 +51,7 @@ async def test_first_request_provisions_the_user(
         "permissions": ["admin.reports.handle", "admin.reports.read", "chat.moderate"],
         "photo_url": None,
         "onboarding_done": False,
+        "locale": None,
     }
     assert uuid.UUID(body["id"]).version == 7
     user = await db.scalar(select(User).where(User.idp_subject == subject))
@@ -169,3 +170,34 @@ async def test_onboarding_is_finished_once_and_can_be_shown_again(
     assert (await client.get("/api/v1/me", headers=headers)).json()["onboarding_done"] is False
     invalid = await client.put("/api/v1/me/onboarding", headers=headers, json={})
     assert invalid.status_code == 422
+
+
+async def test_the_chosen_language_is_stored_per_user_and_exported(
+    client: AsyncClient, tokens: TokenFactory, db: AsyncSession
+) -> None:
+    headers = bearer(tokens.issue(str(uuid.uuid4()), ["student"]))
+    me = (await client.get("/api/v1/me", headers=headers)).json()
+    assert me["locale"] is None
+
+    for locale in ("ru", "en", "az"):
+        changed = await client.put("/api/v1/me/locale", headers=headers, json={"locale": locale})
+        assert changed.status_code == 204
+        assert (await client.get("/api/v1/me", headers=headers)).json()["locale"] == locale
+
+    await client.put("/api/v1/me/locale", headers=headers, json={"locale": "ru"})
+    exported = (await client.get("/api/v1/me/export", headers=headers)).json()
+    assert exported["profile"]["locale"] == "ru"
+    # The versioned profile is untouched, so a stale edit form never blocks a language switch.
+    profile = (await client.get("/api/v1/me/profile", headers=headers)).json()
+    assert profile["version"] == 1
+
+
+async def test_an_unsupported_language_is_refused(
+    client: AsyncClient, tokens: TokenFactory
+) -> None:
+    headers = bearer(tokens.issue(str(uuid.uuid4()), ["student"]))
+    for body in ({"locale": "de"}, {"locale": ""}, {}, {"locale": "ru", "extra": 1}):
+        response = await client.put("/api/v1/me/locale", headers=headers, json=body)
+        assert response.status_code == 422, body
+    anonymous = await client.put("/api/v1/me/locale", json={"locale": "en"})
+    assert anonymous.status_code == 401
