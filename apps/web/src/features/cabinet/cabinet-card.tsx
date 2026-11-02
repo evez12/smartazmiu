@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
+import { TextLink } from "@/components/ui/text-link";
 
 import { SourceNotice } from "./source-notice";
 import { formatAverage, useTranscript } from "./transcript-page";
@@ -38,11 +38,7 @@ export function CabinetCard() {
           </p>
         ) : null}
         {differs > 0 ? <p className="text-sm">{t("differs", { count: differs })}</p> : null}
-        <p className="text-sm">
-          <Link href="/transcript" className="text-primary underline">
-            {t("open")}
-          </Link>
-        </p>
+        <TextLink href="/transcript">{t("open")}</TextLink>
       </PanelBody>
     </Panel>
   );

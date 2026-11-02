@@ -74,7 +74,8 @@ test("a student reads their mirrored transcript after staff start a sync; an out
   await expect(studentPage.getByRole("heading", { level: 2, name: "2025 Payız" })).toBeVisible();
   await expect(studentPage.getByRole("heading", { level: 2, name: "2026 Yaz" })).toBeVisible();
   for (const code of ["SOS-1101", "KAR-1101", "SOS-1202", "KAR-1202"]) {
-    await expect(studentPage.getByText(code, { exact: true })).toBeVisible();
+    // A course with an appeal shows its code twice: in the semester table and in the appeals.
+    await expect(studentPage.getByText(code, { exact: true }).first()).toBeVisible();
   }
   await expect(studentPage.getByText("Fərq var")).toHaveCount(0);
   await expectNoSeriousViolations(studentPage, "transcript");
