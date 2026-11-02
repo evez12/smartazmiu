@@ -10,9 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TextLink } from "@/components/ui/text-link";
-import { formatDateTime } from "@/lib/format";
 
 import { actionKey, type AuditEntry } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 function useDetailsText() {
   const t = useTranslations("admin.audit");
@@ -57,6 +57,7 @@ function targetHref(entry: AuditEntry): string | null {
 
 /** Audit entries with localized actions and readable details; never shows raw codes (§12.8). */
 export function AuditTable({ entries, caption }: { entries: AuditEntry[]; caption: string }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("admin.audit");
   const details = useDetailsText();
   return (

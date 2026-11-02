@@ -10,10 +10,10 @@ import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import type { ChatMessage } from "./model";
 import { useOptionalChatRuntime } from "./runtime";
+import { useFormatters } from "@/lib/use-format";
 
 type Poll = NonNullable<ChatMessage["poll"]>;
 
@@ -27,6 +27,7 @@ export function PollCard({
   poll: Poll;
   canVote: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("chat.poll");
   const tChat = useTranslations("chat");
   const api = useApi();

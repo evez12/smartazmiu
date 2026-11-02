@@ -5,12 +5,13 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { Tag } from "@/components/ui/tag";
 import { AudienceLabel } from "@/features/audiences/audience-label";
-import { formatDateTimeRange } from "@/lib/format";
 
 import { hasEnded, type EventItem } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 /** Time (with the zone, §13.4), place with a map link, places left and audience. */
 export function EventFacts({ event }: { event: EventItem }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("events");
   return (
     <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">

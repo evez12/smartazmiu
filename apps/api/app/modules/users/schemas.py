@@ -1,9 +1,11 @@
 import re
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from app.modules.users.models import ContactVisibility, DmPolicy, PersonType, UserStatus
+
+Locale = Literal["az", "en", "ru"]
 
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x09\x0b-\x1f\x7f]")
 
@@ -29,6 +31,14 @@ class MeResponse(BaseModel):
     photo_url: str | None
     onboarding_done: bool
     """False until the user finishes or dismisses the first-run tour."""
+    locale: Locale | None
+    """Chosen interface language; null until the user picks one."""
+
+
+class LocaleIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    locale: Locale
 
 
 class OnboardingIn(BaseModel):

@@ -5327,6 +5327,25 @@
         "title": "LinkPreviewOut",
         "type": "object"
       },
+      "LocaleIn": {
+        "additionalProperties": false,
+        "properties": {
+          "locale": {
+            "enum": [
+              "az",
+              "en",
+              "ru"
+            ],
+            "title": "Locale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale"
+        ],
+        "title": "LocaleIn",
+        "type": "object"
+      },
       "ManagedAnnouncementOut": {
         "properties": {
           "audience": {
@@ -6055,6 +6074,22 @@
             "title": "Id",
             "type": "string"
           },
+          "locale": {
+            "anyOf": [
+              {
+                "enum": [
+                  "az",
+                  "en",
+                  "ru"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
           "onboarding_done": {
             "title": "Onboarding Done",
             "type": "boolean"
@@ -6097,7 +6132,8 @@
           "roles",
           "permissions",
           "photo_url",
-          "onboarding_done"
+          "onboarding_done",
+          "locale"
         ],
         "title": "MeResponse",
         "type": "object"
@@ -23752,6 +23788,85 @@
         "summary": "My finished courses with their final scores, for the ÜOMG calculator",
         "tags": [
           "grades"
+        ]
+      }
+    },
+    "/api/v1/me/locale": {
+      "put": {
+        "operationId": "setMyLocale",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocaleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Choose the interface language",
+        "tags": [
+          "users"
         ]
       }
     },

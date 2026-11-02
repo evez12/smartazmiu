@@ -14,7 +14,7 @@ import {
 import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 export type MyConsents = components["schemas"]["MyConsentsOut"];
 
@@ -43,6 +43,7 @@ export function NoticePrompt({ consents }: { consents: MyConsents }) {
 }
 
 export function ConsentHistory({ consents }: { consents: MyConsents }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("profile.data");
   if (consents.history.length === 0) {
     return <EmptyState className="py-0" message={t("historyEmpty")} />;

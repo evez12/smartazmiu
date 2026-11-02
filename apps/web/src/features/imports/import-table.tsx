@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
-import { formatDateTime, formatNumber } from "@/lib/format";
 
 import { displayStatus, STATUS_TONE, type ImportOut } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 export function ImportTable({ items, now }: { items: ImportOut[]; now: Date }) {
+  const { formatDateTime, formatNumber } = useFormatters();
   const t = useTranslations("imports");
   return (
     <Table>

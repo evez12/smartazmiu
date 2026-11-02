@@ -103,6 +103,7 @@ function Typography() {
 
 const ALPHABET = "A B C Ç D E Ə F G Ğ H X I İ J K Q L M N O Ö P R S Ş T U Ü V Y Z";
 const SPECIAL = "Ə ə İ ı Ş ş Ğ ğ Ç ç Ö ö Ü ü";
+const CYRILLIC = "А Б В Г Д Е Ё Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я";
 
 function Glyphs() {
   const t = useTranslations("designSystem.glyphs");
@@ -132,7 +133,15 @@ function Glyphs() {
       </Row>
       <p className="max-w-[75ch]">{t("sentence")}</p>
       <Row label={t("cyrillic")}>
-        <p lang="ru">{t("cyrillicSample")}</p>
+        <div lang="ru" className="flex flex-col gap-1">
+          <p className="text-md">{CYRILLIC}</p>
+          <p className="text-md">{CYRILLIC.toLocaleLowerCase("ru")}</p>
+          {weights.map((weight) => (
+            <p key={weight} className={cn("text-lg", weight)}>
+              {t("cyrillicSample")}
+            </p>
+          ))}
+        </div>
       </Row>
     </Section>
   );

@@ -18,10 +18,11 @@ import { Tag } from "@/components/ui/tag";
 import { formatPoints, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 /** Statistics and every attempt of one quiz, for the people who manage its offering (§8 Sprint 13). */
 export function QuizResults({ quizId }: { quizId: string }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("quizzes");
   const api = useApi();
   const stats = useQuery({

@@ -12,14 +12,15 @@ import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { MessageMarkdown } from "./markdown";
+import { useFormatters } from "@/lib/use-format";
 
 const SAVED_KEY = ["chat", "saved"] as const;
 
 /** The reader's own bookmarks (§5.3); unreadable ones show a notice instead of their content. */
 export function SavedList({ currentUserId }: { currentUserId: string }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("saved");
   const tChat = useTranslations("chat");
   const api = useApi();

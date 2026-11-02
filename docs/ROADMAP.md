@@ -632,7 +632,7 @@ Load target: 3 000 concurrent sockets, p95 message delivery < 300 ms (pilot hard
 #### Sprint 15 (06-14 → 06-25) — Integrations, PWA, i18n
 - [ ] Personal cabinet adapter (grades, transcript, appeals) — read-only mirror, nightly sync or live API.
 - [ ] PWA: manifest, service worker, offline schedule + last 50 messages/channel, install prompt.
-- [ ] i18n EN + RU (strings), locale switcher.
+- [x] i18n EN + RU (strings), locale switcher.
 - [ ] Feature freeze. **Acceptance:** M4.
 
 ---

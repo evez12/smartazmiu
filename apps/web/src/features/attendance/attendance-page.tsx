@@ -16,9 +16,9 @@ import { touchTarget } from "@/components/ui/touch-target";
 import { offeringLabel, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { formatRate, rateTone, type AttendanceOffering } from "./attendance-shared";
+import { useFormatters } from "@/lib/use-format";
 
 const DURATIONS = [45, 90, 135, 180] as const;
 
@@ -264,6 +264,7 @@ function MeetingList({
   error: unknown;
   retry: () => void;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("attendance");
   return (
     <>

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { AudienceLabel } from "@/features/audiences/audience-label";
-import { formatDateTime } from "@/lib/format";
 
 import type { Announcement } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 /** Newest first: title, audience and publication time; the full text is on the announcement's page. */
 export function AnnouncementList({
@@ -14,6 +14,7 @@ export function AnnouncementList({
   items: Announcement[];
   compact?: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("announcements");
   return (
     <ul className="divide-y divide-border">

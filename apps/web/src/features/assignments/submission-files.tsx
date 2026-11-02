@@ -11,8 +11,8 @@ import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 import { formatSize } from "@/lib/uploads";
+import { useFormatters } from "@/lib/use-format";
 
 export type SubmissionFile = components["schemas"]["SubmissionFileOut"];
 
@@ -25,6 +25,7 @@ const TONE = {
 
 /** The files of one submission, newest first; only a scanned file can be downloaded (§14, D-092). */
 export function SubmissionFiles({ files }: { files: SubmissionFile[] }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments.submission");
   const api = useApi();
   const toast = useToast();

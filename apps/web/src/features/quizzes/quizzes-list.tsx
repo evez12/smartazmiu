@@ -11,12 +11,13 @@ import { offeringLabel, ScreenState, useManagedOfferings } from "@/features/cour
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 export type QuizSummary = components["schemas"]["QuizSummaryOut"];
 
 /** Facts shown under a quiz title in the list and on its page. */
 export function QuizFacts({ quiz }: { quiz: QuizSummary }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("quizzes");
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted tabular">

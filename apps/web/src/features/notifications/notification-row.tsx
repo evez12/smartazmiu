@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
-import { formatDateTime } from "@/lib/format";
 
 import { KIND_KEYS, type NotificationItem } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 type NotificationRowProps = {
   notification: NotificationItem;
@@ -17,6 +17,7 @@ type NotificationRowProps = {
 
 /** One notification: kind, the item's title and the time; unread rows carry a text tag, not colour alone. */
 export function NotificationRow({ notification, onOpen, dense = false }: NotificationRowProps) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("notifications");
   const unread = notification.read_at === null;
   return (

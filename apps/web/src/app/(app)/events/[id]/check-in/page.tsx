@@ -6,7 +6,7 @@ import { CheckInDesk } from "@/features/events/check-in";
 import { CHECK_IN_PERMISSION } from "@/features/events/model";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { hasPermission, loaded, serverApi } from "@/lib/api/server";
-import { formatDateTimeRange } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("events.checkIn");
@@ -16,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 type CheckInPageProps = { params: Promise<{ id: string }> };
 
 export default async function CheckInPage({ params }: CheckInPageProps) {
+  const { formatDateTimeRange } = await getFormatters();
   const t = await getTranslations("events");
   const { id } = await params;
   if (!(await hasPermission(CHECK_IN_PERMISSION))) {

@@ -12,7 +12,7 @@ import { RoleEditor } from "@/features/admin/role-editor";
 import { RoleTags, StatusTag } from "@/features/admin/user-table";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
-import { formatDateTime } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: UserPageProps): Promise<Metad
 }
 
 export default async function UserPage({ params }: UserPageProps) {
+  const { formatDateTime } = await getFormatters();
   const t = await getTranslations("admin");
   const result = await loadUser((await params).id);
   if (result.status === "forbidden") {

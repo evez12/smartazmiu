@@ -24,11 +24,11 @@ import { formatPoints, offeringLabel, ScreenState } from "@/features/coursework/
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 import { ACCEPTED_FILES, formatSize, putFile, uploadType } from "@/lib/uploads";
 
 import { AssignmentStatus } from "./assignments-list";
 import { SubmissionFiles } from "./submission-files";
+import { useFormatters } from "@/lib/use-format";
 
 type Detail = components["schemas"]["AssignmentDetailOut"];
 
@@ -73,6 +73,7 @@ export function AssignmentPage({ id }: { id: string }) {
 }
 
 export function AssignmentInfo({ assignment }: { assignment: Detail }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments");
   return (
     <Panel>
@@ -119,6 +120,7 @@ export function AssignmentInfo({ assignment }: { assignment: Detail }) {
 }
 
 export function MySubmission({ assignment }: { assignment: Detail }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments");
   const mine = assignment.my_submission;
   return (
@@ -293,6 +295,7 @@ function UploadForm({ assignmentId, replacing }: { assignmentId: string; replaci
 }
 
 function ClassTable({ assignment }: { assignment: Detail }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments");
   const tStatus = useTranslations("assignments.submission.fileStatus");
   const api = useApi();

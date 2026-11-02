@@ -12,9 +12,9 @@ import { Sheet } from "@/components/ui/overlay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { MessageMarkdown } from "./markdown";
+import { useFormatters } from "@/lib/use-format";
 
 /** The channel's "Faydalı" collection: pinned messages, newest pin first (§5.3). */
 export function UsefulButton({
@@ -48,6 +48,7 @@ function UsefulSheet({
   currentUserId: string;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("chat");
   const api = useApi();
   const pins = useQuery({

@@ -33,7 +33,7 @@ This file condenses §0, §3.2, §12 and §15 of the spec. If it conflicts with 
   `make up` must still start the full stack (including api, web, nginx) in Docker.
 - Single `Makefile` (GNU make via winget `ezwinports.make`); no PowerShell task scripts. Package manager: pnpm.
 - No real AzMİU data or SSO info yet: use realistic made-up Azerbaijani seed data and local Keycloak test users.
-- Current scope: **Sprint 15** (integrations, PWA, i18n; Sprints 1-14 accepted; Sprint 11 stays deferred, D-102).
+- Current scope: **Sprint 15, Group A (i18n EN + RU)** (integrations, PWA, i18n; Sprints 1-14 accepted; Sprint 11 stays deferred, D-102).
   Stop and summarize for review after each task group the product owner hands over; never pull Sprint 16+ scope forward.
 - Ask the product owner first for: auth changes, hard deletion of data, anything that could expose grades, and any
   CSP relaxation (e.g. for the Markdown sanitizer or KaTeX delivery).
@@ -53,6 +53,8 @@ Still ask first throughout: authentication or session changes, hard deletes, gra
    ask-first, with the exact diff. No CSP relaxation by default.
 4. **Glossary (Group A):** no official EN/RU terminology list exists. Propose the glossary in a file for review before
    translating the whole app; formal register.
+5. **Locale (Group A, answered):** `users.locale` column (profile setting, in `/me/export`) plus a `NEXT_LOCALE` cookie for
+   logged-out pages; fallback Accept-Language, then az. The Keycloak login theme stays az-only for now.
 
 ## Git
 

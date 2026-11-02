@@ -5,6 +5,8 @@ import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
+import { DEFAULT_LOCALE, LOCALE_COOKIE } from "@/i18n/config";
+import { resolveLocale } from "@/i18n/resolve";
 import { readSession, type SessionData } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 import { PATHNAME_HEADER } from "@/lib/request-headers";
@@ -15,12 +17,12 @@ export type Me = components["schemas"]["MeResponse"];
 export type ApiError = components["schemas"]["ErrorResponse"]["error"];
 
 /** Typed client for calls made by the Next.js server on behalf of the signed-in user. */
-export function apiClient(accessToken: string, requestId?: string) {
+export function apiClient(accessToken: string, requestId?: string, language = DEFAULT_LOCALE) {
   return createClient<paths>({
     baseUrl: env.apiInternalUrl,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      "Accept-Language": "az",
+      "Accept-Language": language,
       ...(requestId ? { "X-Request-ID": requestId } : {}),
     },
   });
@@ -31,6 +33,14 @@ export type CurrentUserResult =
   | { status: "ok"; user: Me; session: SessionData }
   | { status: "inactive" }
   | { status: "unavailable" };
+
+/** The language of this request, as the browser's cookie or Accept-Language says (same rule as the pages). */
+async function requestLanguage() {
+  return resolveLocale(
+    (await cookies()).get(LOCALE_COOKIE)?.value,
+    (await headers()).get("accept-language"),
+  );
+}
 
 async function signInUrl(): Promise<string> {
   const pathname = (await headers()).get(PATHNAME_HEADER) ?? "/";
@@ -52,10 +62,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUserResult> => {
 
   const requestId = (await headers()).get("x-request-id") ?? undefined;
   try {
-    const { data, error, response } = await apiClient(session.accessToken, requestId).GET(
-      "/api/v1/me",
-      { signal: AbortSignal.timeout(5000) },
-    );
+    const { data, error, response } = await apiClient(
+      session.accessToken,
+      requestId,
+      await requestLanguage(),
+    ).GET("/api/v1/me", { signal: AbortSignal.timeout(5000) });
     if (data) return { status: "ok", user: data, session };
     if (response.status === 401) return { status: "signed_out" };
     if (error?.error.code === "auth.account_inactive") return { status: "inactive" };
@@ -85,7 +96,11 @@ export async function hasPermission(code: string): Promise<boolean> {
 export const serverApi = cache(async () => {
   const session = await readSession(await cookies());
   if (!session) redirect(await signInUrl());
-  return apiClient(session.accessToken, (await headers()).get("x-request-id") ?? undefined);
+  return apiClient(
+    session.accessToken,
+    (await headers()).get("x-request-id") ?? undefined,
+    await requestLanguage(),
+  );
 });
 
 export type Loaded<T> = { status: "ok"; data: T } | { status: "forbidden" };

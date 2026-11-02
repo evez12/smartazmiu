@@ -22,10 +22,11 @@ export class ApiRequestError extends Error {
 export function createBrowserApi(csrfToken: string) {
   const client = createClient<paths>({
     baseUrl: globalThis.location?.origin ?? "",
-    headers: { "Accept-Language": "az" },
   });
   client.use({
     onRequest({ request }) {
+      // Read per request: the language can change without a reload of the API client.
+      request.headers.set("Accept-Language", globalThis.document?.documentElement.lang || "az");
       if (!SAFE_METHODS.has(request.method)) request.headers.set(CSRF_HEADER, csrfToken);
       return request;
     },

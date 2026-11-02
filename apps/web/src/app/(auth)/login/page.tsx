@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { Wordmark } from "@/components/brand/wordmark";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -81,7 +82,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-4">
           <p className="text-sm text-muted">{t("footer")}</p>
-          <ThemeSwitcher />
+          <div className="flex flex-wrap items-center gap-3">
+            <LocaleSwitcher />
+            <ThemeSwitcher />
+          </div>
         </div>
       </footer>
     </div>

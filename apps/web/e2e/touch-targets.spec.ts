@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 
 import { openPage, password, signIn, signInWithSecondFactor, test } from "./support/auth";
+import { undersizedTargets } from "./support/touch-targets";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 
@@ -13,41 +14,6 @@ test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
  * (WCAG 2.5.8), which are recognised by the text around them.
  */
 test.use({ viewport: { width: 320, height: 640 }, hasTouch: true, isMobile: true });
-
-const MIN = 44;
-
-async function undersizedTargets(page: Page): Promise<string[]> {
-  return page.evaluate((min) => {
-    const selector =
-      "a[href],button,input:not([type=hidden]),select,textarea,summary,[role=tab],[role=menuitem],[role=switch]";
-    return Array.from(document.querySelectorAll<HTMLElement>(selector)).flatMap((el) => {
-      const box = el.getBoundingClientRect();
-      const style = getComputedStyle(el);
-      if (box.width < 2 || box.height < 2 || style.visibility === "hidden") return [];
-      if (
-        el.matches('a[href="#main"],[aria-hidden="true"],[tabindex="-1"]:not(button,a,summary)')
-      ) {
-        return [];
-      }
-      const sentence =
-        el.tagName === "A" &&
-        style.display === "inline" &&
-        (el.parentElement?.textContent ?? "").trim().length >
-          (el.textContent ?? "").trim().length + 10;
-      if (sentence) return [];
-      let width = box.width;
-      let height = box.height;
-      const after = getComputedStyle(el, "::after");
-      if (after.content !== "none" && after.display !== "none" && after.position === "absolute") {
-        width = Math.max(width, parseFloat(after.width) || 0);
-        height = Math.max(height, parseFloat(after.height) || 0);
-      }
-      if (width >= min - 0.5 && height >= min - 0.5) return [];
-      const name = (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40);
-      return [`${el.tagName.toLowerCase()} "${name}" ${Math.round(width)}×${Math.round(height)}`];
-    });
-  }, MIN);
-}
 
 async function expectTargets(page: Page, url: string) {
   await openPage(page, url);

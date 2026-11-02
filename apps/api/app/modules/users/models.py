@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -55,6 +55,7 @@ class RoleCode(StrEnum):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (CheckConstraint("locale IN ('az', 'en', 'ru')", name="locale_supported"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
     # Stable subject from the identity provider; e-mail and names may change. NULL until an imported
@@ -80,6 +81,8 @@ class User(Base):
         server_default=UserStatus.ACTIVE.value,
     )
     bio: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    # Interface language chosen in the profile menu (az, en, ru); NULL until chosen. Mail and push follow it (D-113).
+    locale: Mapped[str | None] = mapped_column(String(2))
     # Object key of the re-encoded profile photo; the random part doubles as the cache version.
     photo_key: Mapped[str | None] = mapped_column(String(200))
     dm_policy: Mapped[DmPolicy] = mapped_column(

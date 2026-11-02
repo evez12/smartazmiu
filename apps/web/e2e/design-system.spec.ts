@@ -69,3 +69,62 @@ test("theme switch applies the dark tokens", async ({ page }) => {
   const background = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(background).toBe("rgb(15, 20, 26)");
 });
+
+const LANGUAGES = [
+  { locale: "en", heading: "Design system" },
+  { locale: "ru", heading: "Дизайн-система" },
+] as const;
+
+for (const { locale, heading } of LANGUAGES) {
+  for (const viewport of viewports) {
+    test.describe(`design system · ${locale} · ${viewport.width}px`, () => {
+      test.use({ viewport });
+
+      test("has no serious accessibility violations and no sideways scroll", async ({
+        page,
+        baseURL,
+      }) => {
+        await page.context().addCookies([{ name: "NEXT_LOCALE", value: locale, url: baseURL! }]);
+        await page.goto("/design-system");
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(overflow).toBe(0);
+
+        const { violations } = await new AxeBuilder({ page }).analyze();
+        const serious = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+        expect(serious.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      });
+    });
+  }
+}
+
+test("renders Cyrillic in IBM Plex Sans at every weight", async ({ page, baseURL }) => {
+  await page.context().addCookies([{ name: "NEXT_LOCALE", value: "ru", url: baseURL! }]);
+  await page.goto("/design-system");
+  await page.evaluate(() => document.fonts.ready);
+  const loaded = await page.evaluate(() =>
+    ["400", "500", "600"].map((weight) =>
+      document.fonts.check(
+        `${weight} 16px "IBM Plex Sans"`,
+        "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+      ),
+    ),
+  );
+  expect(loaded).toEqual([true, true, true]);
+  const mono = await page.evaluate(() =>
+    document.fonts.check('400 16px "IBM Plex Mono"', "Расписание"),
+  );
+  expect(mono).toBe(true);
+  // The specimen shows the Cyrillic sample at the three weights the product uses.
+  const weights = await page
+    .locator('[lang="ru"] p')
+    .filter({ hasText: "Расписание занятий для группы" })
+    .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).fontWeight));
+  // Once per theme.
+  expect(weights.slice(0, 3)).toEqual(["400", "500", "600"]);
+  expect(weights).toHaveLength(6);
+});

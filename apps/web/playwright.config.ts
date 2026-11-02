@@ -16,7 +16,8 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFileName}/{arg}{ext}",
   expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: "disabled" } },
-  use: { baseURL, trace: "retain-on-failure" },
+  // The app follows Accept-Language when no language was chosen; the specs are written in Azerbaijani.
+  use: { baseURL, locale: "az-AZ", trace: "retain-on-failure" },
   projects: [
     {
       name: "functional",

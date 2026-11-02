@@ -5,9 +5,9 @@ import { Icon } from "@/components/ui/icon";
 import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
 import { cn } from "@/lib/cn";
-import { formatWeekdayDate } from "@/lib/format";
 
 import { mapHref, type ClassItem } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 const STATUS_TONE = {
   cancelled: "danger",
@@ -17,6 +17,7 @@ const STATUS_TONE = {
 } as const;
 
 function ChangeDetails({ item }: { item: ClassItem }) {
+  const { formatWeekdayDate } = useFormatters();
   const t = useTranslations("schedule");
   const lines: string[] = [];
   if (item.moved_to) {

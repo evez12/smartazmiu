@@ -22,9 +22,9 @@ import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { ApiRequestError, unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 
 import { MAX_TAGS, type ContentKind, type Tag } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 type Author = components["schemas"]["AuthorOut"] | null;
 
@@ -103,7 +103,7 @@ export function TagList({ tags, base }: { tags: Tag[]; base: string }) {
 }
 
 const FILTER_LINK =
-  "inline-flex min-h-8 items-center rounded-control border border-border px-2 text-sm aria-[current=page]:border-primary aria-[current=page]:font-medium pointer-coarse:min-h-11";
+  "inline-flex min-h-8 items-center rounded-control border border-border px-2 text-sm aria-[current=page]:border-primary aria-[current=page]:font-medium pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:justify-center";
 
 /** Filters a list by one tag; the same control clears the filter. */
 export function TagFilter({ base, active }: { base: string; active?: string }) {
@@ -174,6 +174,7 @@ export function AuthorLine({
   createdAt: string;
   hidden: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("community");
   const name = author?.display_name ?? t("deletedUser");
   return (

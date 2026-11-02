@@ -7,7 +7,7 @@ import { AcknowledgeButton } from "@/features/privacy/acknowledge-button";
 import { NOTICE_SECTIONS } from "@/features/privacy/privacy-parts";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
-import { formatDate } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("privacy");
@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PrivacyPage() {
+  const { formatDate } = await getFormatters();
   const t = await getTranslations("privacy");
   const result = await loaded(await (await serverApi()).GET("/api/v1/me/consents"));
   const header = (

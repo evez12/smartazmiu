@@ -17,7 +17,7 @@ import { PhotoControls } from "@/features/profile/photo-controls";
 import { ProfileForm } from "@/features/profile/profile-form";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
-import { formatDate } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("profile");
@@ -25,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ProfilePage() {
+  const { formatDate } = await getFormatters();
   const t = await getTranslations("profile");
   const tTour = await getTranslations("onboarding");
   const api = await serverApi();

@@ -212,13 +212,17 @@ class Dispatcher:
                 return Result.suppressed("preference_off")
             if (await preferences.quiet_window()).covers(now):
                 return Result.suppressed("quiet_hours")
-            return await self._push(session, user.id, notification, url)
+            return await self._push(session, user.id, notification, url, user.locale)
         if not channels.email:
             return Result.suppressed("preference_off")
         if not user.email:
             return Result.suppressed("no_address")
         mail = messages.email(
-            notification, user.display_name, url, f"{self.public_url}/notifications/settings"
+            notification,
+            user.display_name,
+            url,
+            f"{self.public_url}/notifications/settings",
+            user.locale,
         )
         if not await self._mail_slot(session, delivery.priority):
             return THROTTLED
@@ -229,7 +233,12 @@ class Dispatcher:
         return SENT
 
     async def _push(
-        self, session: AsyncSession, user_id: uuid.UUID, notification: Notification, url: str
+        self,
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        notification: Notification,
+        url: str,
+        locale: str | None,
     ) -> Result:
         if self.push is None:
             return Result.suppressed("push_unavailable")
@@ -238,7 +247,9 @@ class Dispatcher:
                 select(PushSubscription).where(PushSubscription.user_id == user_id)
             )
         )
-        payload = json.dumps(messages.push_payload(notification, url), ensure_ascii=False).encode()
+        payload = json.dumps(
+            messages.push_payload(notification, url, locale), ensure_ascii=False
+        ).encode()
         outcomes: list[PushOutcome] = []
         for subscription in subscriptions:
             outcome = await self.push.send(

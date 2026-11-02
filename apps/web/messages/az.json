@@ -26,6 +26,20 @@
     "dark": "Tünd",
     "system": "Sistem"
   },
+  "locale": {
+    "label": "Dil",
+    "failed": "Dili dəyişmək mümkün olmadı. Yenidən cəhd edin.",
+    "names": {
+      "az": "Azərbaycanca",
+      "en": "English",
+      "ru": "Русский"
+    },
+    "short": {
+      "az": "AZ",
+      "en": "EN",
+      "ru": "RU"
+    }
+  },
   "designSystem": {
     "title": "Dizayn sistemi",
     "description": "Əsas komponentlər açıq və tünd mövzuda, bütün vəziyyətləri ilə. Bu daxili səhifədir və istehsal mühitində göstərilmir.",

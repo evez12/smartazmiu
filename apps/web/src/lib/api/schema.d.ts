@@ -1914,6 +1914,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/locale": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Choose the interface language */
+    put: operations["setMyLocale"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/notification-settings": {
     parameters: {
       query?: never;
@@ -4647,6 +4664,14 @@ export interface components {
       /** Url */
       url: string;
     };
+    /** LocaleIn */
+    LocaleIn: {
+      /**
+       * Locale
+       * @enum {string}
+       */
+      locale: "az" | "en" | "ru";
+    };
     /** ManagedAnnouncementOut */
     ManagedAnnouncementOut: {
       audience: components["schemas"]["AudienceOut"];
@@ -4930,6 +4955,8 @@ export interface components {
       given_name: string;
       /** Id */
       id: string;
+      /** Locale */
+      locale: ("az" | "en" | "ru") | null;
       /** Onboarding Done */
       onboarding_done: boolean;
       /** Permissions */
@@ -15929,6 +15956,73 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["FinishedCourseListOut"];
         };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  setMyLocale: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LocaleIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Missing, expired or invalid access token */
       401: {
