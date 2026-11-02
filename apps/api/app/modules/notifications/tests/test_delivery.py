@@ -17,8 +17,10 @@ from app.modules.notifications.delivery import MAX_ATTEMPTS, Dispatcher
 from app.modules.notifications.models import (
     DeliveryChannel,
     DeliveryStatus,
+    Notification,
     NotificationCategory,
     NotificationDelivery,
+    NotificationKind,
     NotificationPreference,
     PushSubscription,
     QuietHours,
@@ -33,7 +35,7 @@ from app.modules.notifications.push import (
     b64url,
     b64url_decode,
 )
-from app.modules.notifications.service import Notifier
+from app.modules.notifications.service import NotificationSpec, Notifier
 from app.modules.notifications.tests.conftest import (
     FakePush,
     MakeUser,
@@ -45,8 +47,10 @@ from app.modules.notifications.tests.conftest import (
 from app.modules.users.models import User, UserStatus
 from tests.support import TokenFactory
 
+# Tomorrow, so deliveries created now (``not_before`` defaults to the database clock) are already due.
+TOMORROW = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
 # 10:00 in Baku, outside the default quiet hours.
-MORNING = datetime(2026, 11, 2, 6, 0, tzinfo=UTC)
+MORNING = TOMORROW.replace(hour=6)
 FCM = "https://fcm.googleapis.com/fcm/send/abc"
 
 
@@ -159,7 +163,7 @@ async def test_quiet_hours_suppress_push_but_not_email(
     aysel = await make_user("Aysel", "Məmmədova", "aysel.mammadova@smartazmiu.test")
     await subscribe(db, aysel)
     await notify(db, [aysel], spec())
-    clock.now = datetime(2026, 11, 2, 19, 30, tzinfo=UTC)  # 23:30 in Baku
+    clock.now = TOMORROW.replace(hour=19, minute=30)  # 23:30 in Baku
 
     await dispatcher.run()
     assert (await statuses(db))[DeliveryChannel.PUSH] == (DeliveryStatus.SUPPRESSED, "quiet_hours")
@@ -301,7 +305,7 @@ async def test_stored_quiet_hours_apply(
 )
 def test_quiet_window_in_baku_time(window: QuietWindow, baku: str, covered: bool) -> None:
     hour, minute = map(int, baku.split(":"))
-    moment = datetime(2026, 11, 2, hour, minute, tzinfo=UTC) - timedelta(hours=4)
+    moment = TOMORROW.replace(hour=hour, minute=minute) - timedelta(hours=4)
     assert window.covers(moment) is covered
 
 
@@ -389,7 +393,7 @@ async def test_quiet_hours_drop_the_push_but_keep_the_in_app_notification(
     aysel = await make_user("Aysel", "Məmmədova", "aysel.mammadova@smartazmiu.test")
     await subscribe(db, aysel)
     await notify(db, [aysel], spec(title="Gecə dərc olunan elan"))
-    clock.now = datetime(2026, 11, 2, 21, 0, tzinfo=UTC)  # 01:00 in Baku
+    clock.now = TOMORROW.replace(hour=21)  # 01:00 in Baku
     await dispatcher.run()
 
     assert (await statuses(db))[DeliveryChannel.PUSH] == (DeliveryStatus.SUPPRESSED, "quiet_hours")
@@ -485,3 +489,92 @@ async def test_mass_e_mail_is_sent_in_throttled_batches_once_however_jobs_are_re
         .where(NotificationDelivery.status != DeliveryStatus.SENT)
     )
     assert pending == 0
+
+
+async def test_announcement_e_mail_is_not_held_behind_a_mass_invitation_mailing(
+    engine: AsyncEngine, db: AsyncSession, relevance: Relevance, clock: Clock
+) -> None:
+    """460 guide invitations and one announcement: the announcement goes out at once, in every window (D-111)."""
+    await db.execute(
+        insert(User),
+        [
+            {
+                "given_name": "Tələbə",
+                "family_name": str(number),
+                "display_name": f"Tələbə {number}",
+                "email": f"{'elan' if number == 0 else 'bulk'}-{number}@smartazmiu.test",
+                "idp_subject": f"priority-{number}",
+            }
+            for number in range(461)
+        ],
+    )
+    await db.execute(
+        insert(NotificationPreference).from_select(
+            ["user_id", "category", "push", "email"],
+            select(
+                User.id,
+                literal(
+                    NotificationCategory.MENTORSHIP,
+                    NotificationPreference.__table__.c.category.type,
+                ),
+                false(),
+                true(),
+            ).where(User.email.like("bulk-%")),
+        )
+    )
+    await db.commit()
+    guides = select(User.id).where(User.email.like("bulk-%"))
+    assert await Notifier(db).notify(guides, mass_invitation()) == 460
+    await db.commit()
+
+    mailer = MemoryMailer()
+    dispatcher = Dispatcher(
+        async_sessionmaker(engine, expire_on_commit=False),
+        push=None,
+        mailer=mailer,
+        relevance={"announcement": relevance},
+        public_url="https://smartazmiu.test",
+        mail_batch=200,
+        mail_window=timedelta(minutes=1),
+        mail_reserve=50,
+        clock=clock,
+    )
+
+    async def announce() -> None:
+        recipient = select(User.id).where(User.email.like("elan-%"))
+        assert await Notifier(db).notify(recipient, spec()) == 1
+        await db.commit()
+
+    # The first window: the invitations stop at the batch size minus the reserve.
+    first = await dispatcher.run()
+    assert len(mailer.sent) == 150
+    assert first.mail_waiting
+
+    await announce()
+    await dispatcher.run()
+    assert len(mailer.sent) == 151
+    assert mailer.sent[-1][0] == "elan-0@smartazmiu.test"
+
+    # A later window with 310 invitations still pending: a new announcement is read before them.
+    await db.execute(
+        update(NotificationDelivery)
+        .where(NotificationDelivery.status == DeliveryStatus.SENT)
+        .values(updated_at=func.now() - text("interval '2 minutes'"))
+    )
+    await db.execute(
+        delete(Notification).where(Notification.category == NotificationCategory.ANNOUNCEMENTS)
+    )
+    await db.commit()
+    await announce()
+    await dispatcher.run()
+    assert mailer.sent[151][0] == "elan-0@smartazmiu.test"
+    # The announcement uses one of the bulk class's 150 slots of the window, so 149 invitations follow it.
+    assert len(mailer.sent) == 151 + 1 + 149
+
+
+def mass_invitation() -> NotificationSpec:
+    return spec(
+        category=NotificationCategory.MENTORSHIP,
+        kind=NotificationKind.MENTORSHIP_INVITATION,
+        dedupe_key="mentorship-invitation:2026-fall",
+    )
