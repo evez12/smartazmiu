@@ -80,7 +80,9 @@
       "quizCards": "Testlər: siyahı",
       "quizAttempt": "Test: suallar və nəticə",
       "offlineNotices": "Oflayn rejim: bildirişlər və quraşdırma",
-      "offlinePage": "Oflayn səhifə"
+      "offlinePage": "Oflayn səhifə",
+      "transcript": "Transkript: ümumi məlumat, fənlər və apellyasiyalar",
+      "cabinetStaff": "Kabinet sinxronizasiyası: nəticələr və fərqlər"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -299,7 +301,9 @@
       "attendance": "Davamiyyət",
       "exams": "İmtahanlar",
       "gpa": "ÜOMG",
-      "examSlots": "İmtahan cədvəli idarəsi"
+      "examSlots": "İmtahan cədvəli idarəsi",
+      "transcript": "Transkript",
+      "cabinet": "Kabinet sinxronizasiyası"
     },
     "saved": "Saxlanılanlar",
     "signedOutOfflineTitle": "Çıxış etdiniz",
@@ -729,7 +733,11 @@
         "exam_slot_edited": "İmtahan vaxtı dəyişdirildi",
         "exam_slot_deleted": "İmtahan vaxtı silindi",
         "exam_mode_changed": "Fənnin imtahan rejimi dəyişdirildi",
-        "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi"
+        "past_paper_reviewed": "İmtahan kağızı baxışdan keçirildi",
+        "cabinet_sync_run": "Kabinet sinxronizasiyası icra edildi",
+        "cabinet_sync_requested": "Kabinet sinxronizasiyası istənildi",
+        "cabinet_viewed": "Kabinet məlumatına baxıldı",
+        "cabinet_conflicts_viewed": "Kabinet fərqlərinə baxıldı"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",
@@ -2673,6 +2681,95 @@
     },
     "network": {
       "reason": "İnternet bağlantısı olmadan bu əməliyyat mümkün deyil."
+    }
+  },
+  "cabinet": {
+    "transcript": {
+      "title": "Transkript",
+      "description": "Şəxsi kabinetdən köçürülmüş akademik məlumatınız. Məlumat gecələr yenilənir və yalnız oxumaq üçündür.",
+      "error": "Transkripti yükləmək alınmadı. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "empty": "Şəxsi kabinetdə sizə aid qeyd tapılmadı. Məlumat varsa, növbəti gecə sinxronizasiyasından sonra burada görünəcək.",
+      "emptyUnavailable": "Şəxsi kabinetlə əlaqə qurulmadığı üçün hələ məlumat yoxdur.",
+      "summaryTitle": "Ümumi məlumat",
+      "summaryDescription": "Rəqəmlər şəxsi kabinetdə göstərildiyi kimidir.",
+      "specialty": "İxtisas",
+      "creditsEarned": "Qazanılmış kredit",
+      "cumulativeAverage": "Ümumi orta bal",
+      "differsHelp": "{count} fənn üzrə reyestrdəki və kabinetdəki bal fərqlənir. Reyestrdəki bal göstərilir. Dəqiqləşdirmək üçün dekanlığa müraciət edin.",
+      "semesterName": "{year} {term}",
+      "semesterFigures": "Semestr ortalaması: {average} · Kredit: {earned}/{attempted}",
+      "subject": "Fənn",
+      "credits": "Kredit",
+      "score": "Bal",
+      "status": "Vəziyyət",
+      "passed": "Keçib",
+      "failed": "Keçməyib",
+      "differs": "Fərq var",
+      "appealsTitle": "Apellyasiyalar",
+      "appealsDescription": "İmtahan nəticəsinə dair müraciətlərinizin vəziyyəti.",
+      "appealsEmpty": "Apellyasiya müraciətiniz yoxdur.",
+      "reference": "Nömrə",
+      "submittedOn": "Verilib",
+      "decidedOn": "Qərar",
+      "appealStatus": {
+        "submitted": "Təqdim edilib",
+        "under_review": "Baxılır",
+        "upheld": "Təmin edilib",
+        "rejected": "Rədd edilib"
+      }
+    },
+    "source": {
+      "unavailableTitle": "Mənbə əlçatan deyil",
+      "unavailable": "Şəxsi kabinetlə əlaqə qurulmadı. Aşağıda son uğurlu sinxronizasiyanın məlumatı göstərilir: {time}.",
+      "unavailableNever": "Şəxsi kabinetlə əlaqə qurulmadı və hələ heç bir məlumat köçürülməyib.",
+      "neverSynced": "Məlumat hələ şəxsi kabinetdən köçürülməyib. Sinxronizasiya gecələr aparılır.",
+      "lastSynced": "Son sinxronizasiya: {time}"
+    },
+    "gpaCard": {
+      "title": "Şəxsi kabinetdəki göstərici",
+      "description": "Kabinetin özünün hesabladığı ümumi orta bal. Kalkulyator bundan asılı deyil.",
+      "credits": "Qazanılmış kredit: {n}",
+      "differs": "{count} fənn üzrə reyestrdəki və kabinetdəki bal fərqlənir.",
+      "open": "Transkripti aç"
+    },
+    "admin": {
+      "title": "Kabinet sinxronizasiyası",
+      "description": "Şəxsi kabinetdən qiymət, transkript və apellyasiya məlumatının gecə köçürülməsi.",
+      "error": "Məlumatı yükləmək alınmadı. Bir az sonra yenidən cəhd edin.",
+      "retry": "Yenidən cəhd et",
+      "runsTitle": "Son sinxronizasiyalar",
+      "runsDescription": "Yalnız nəticə və say göstərilir.",
+      "runsEmpty": "Hələ sinxronizasiya aparılmayıb.",
+      "start": "İndi sinxronlaşdır",
+      "requested": "Sinxronizasiya növbəyə qoyuldu. Nəticə bir neçə dəqiqəyə siyahıda görünəcək.",
+      "requestFailed": "Sinxronizasiyanı başlatmaq alınmadı. Bir az sonra yenidən cəhd edin.",
+      "trigger": {
+        "nightly": "Gecə",
+        "manual": "Əl ilə"
+      },
+      "outcome": {
+        "succeeded": "Uğurlu",
+        "failed": "Alınmadı"
+      },
+      "errorUnavailable": "Mənbə cavab vermədi",
+      "errorInternal": "Daxili xəta",
+      "columns": {
+        "time": "Vaxt",
+        "trigger": "Başlatma",
+        "outcome": "Nəticə",
+        "synced": "Köçürülən tələbə",
+        "notFound": "Tapılmayan",
+        "mismatched": "Uyğunsuz cavab",
+        "conflicts": "Fərq",
+        "universityId": "Tələbə nömrəsi",
+        "subject": "Fənn kodu",
+        "semester": "Semestr",
+        "detected": "Aşkarlanıb"
+      },
+      "conflictsTitle": "Reyestr ilə kabinet arasındakı fərqlər",
+      "conflictsDescription": "Yalnız tələbə nömrəsi və fənn kodu göstərilir, ballar göstərilmir. Düzəlişi reyestrdə edin; fərq növbəti sinxronizasiyada aradan qalxır.",
+      "conflictsEmpty": "Fərq aşkarlanmayıb."
     }
   }
 }

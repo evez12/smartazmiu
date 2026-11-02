@@ -96,6 +96,8 @@ describe("what the worker takes over", () => {
   it.each([
     "/api/v1/me/schedule",
     "/api/v1/me/grades",
+    "/api/v1/me/transcript",
+    "/api/v1/me/transcript/appeals",
     "/api/v1/chat/channels/c1/messages",
     "/api/v1/me/export",
     "/api/v1/chat/ws-ticket",

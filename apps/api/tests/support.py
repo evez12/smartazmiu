@@ -151,6 +151,7 @@ class FakeJobs:
         self.provisions = 0
         self.scans = 0
         self.guide_syncs = 0
+        self.cabinet_syncs: list[str] = []
 
     async def dispatch_notifications(self) -> None:
         self.dispatches += 1
@@ -166,6 +167,9 @@ class FakeJobs:
 
     async def sync_guides(self) -> None:
         self.guide_syncs += 1
+
+    async def sync_cabinet(self, triggered_by: str) -> None:
+        self.cabinet_syncs.append(triggered_by)
 
     async def close(self) -> None:
         return None

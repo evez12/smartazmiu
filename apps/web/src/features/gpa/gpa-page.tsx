@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
+import { CabinetCard } from "@/features/cabinet/cabinet-card";
 import { ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
@@ -72,6 +73,7 @@ export function GpaPage() {
       {query.isSuccess ? (
         <>
           <Summary grades={grades} config={config} />
+          <CabinetCard />
           {grades.length > 0 ? <Courses grades={grades} config={config} /> : null}
           <Rules config={config} onChange={changeRules} />
           <Simulator grades={grades} config={config} />

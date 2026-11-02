@@ -63,6 +63,16 @@ groups:
           summary: Uploads are waiting for the virus scan; ClamAV or storage may be unavailable.
           runbook: docs/runbooks/pilot.md#scan-backlog
 
+      - alert: CabinetSyncFailing
+        # The nightly run failed twice in a row (or a manual run failed after a failed night): grades and
+        # appeals on the students' screens are going stale, and they are told so (D-126).
+        expr: smartazmiu_cabinet_sync_consecutive_failures >= 2
+        labels:
+          severity: warning
+        annotations:
+          summary: The personal cabinet sync has failed {{ $value }} times in a row.
+          runbook: docs/runbooks/pilot.md#cabinet-sync-failing
+
       - alert: InfectedUpload
         expr: increase(smartazmiu_scan_rejected{status="infected"}[15m]) > 0
         labels:

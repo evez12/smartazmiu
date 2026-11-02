@@ -57,6 +57,10 @@ class AuditAction(StrEnum):
     EXAM_SLOT_DELETED = "exam_slot.deleted"
     EXAM_MODE_CHANGED = "exam_mode.changed"
     PAST_PAPER_REVIEWED = "past_paper.reviewed"
+    CABINET_SYNC_RUN = "cabinet.sync_run"
+    CABINET_SYNC_REQUESTED = "cabinet.sync_requested"
+    CABINET_VIEWED = "cabinet.viewed"
+    CABINET_CONFLICTS_VIEWED = "cabinet.conflicts_viewed"
 
 
 class AuditLog(Base):

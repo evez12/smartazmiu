@@ -16,6 +16,8 @@ const SECTIONS = [
   { index: 28, name: "assignment" },
   { index: 31, name: "offline-notices" },
   { index: 32, name: "offline-page" },
+  { index: 33, name: "transcript" },
+  { index: 34, name: "cabinet-staff" },
 ] as const;
 
 const VIEWPORTS = [

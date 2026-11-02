@@ -2,11 +2,15 @@
 
 import { useTranslations } from "next-intl";
 
+import { SourceNotice } from "@/features/cabinet/source-notice";
+import { ConflictTable, RunTable } from "@/features/cabinet/sync-admin";
+import { AppealTable, SemesterPanel, Summary } from "@/features/cabinet/transcript-page";
 import { InstallOffer } from "@/features/offline/install-prompt";
 import type { ChannelHistory, ChannelList } from "@/features/offline/model";
 import { OfflineBanner } from "@/features/offline/notices";
 import { StoredContent } from "@/features/offline/offline-app";
 import { UpdateNotice } from "@/features/offline/update-banner";
+import type { components } from "@/lib/api/schema";
 import type { Schedule, ScheduleDay } from "@/features/schedule/model";
 
 import { Section } from "./section";
@@ -116,6 +120,109 @@ const STORED = {
   ],
 };
 
+const MIRROR_SYNCED = "2026-11-03T22:40:00Z";
+const TRANSCRIPT: components["schemas"]["TranscriptOut"] = {
+  source: { state: "unavailable", last_synced_at: MIRROR_SYNCED },
+  student: {
+    specialty_name: "İqtisadiyyat",
+    credits_earned: 24,
+    cumulative_average: 78.4,
+    synced_at: MIRROR_SYNCED,
+  },
+  semesters: [
+    {
+      semester_year: 2025,
+      semester_term: "fall",
+      credits_attempted: 30,
+      credits_earned: 25,
+      average: 74.5,
+      courses: [
+        {
+          subject_code: "SOS-1101",
+          subject_name: "Azərbaycan tarixi",
+          credits: 5,
+          score: 87,
+          passed: true,
+          differs: true,
+        },
+        {
+          subject_code: "XDL-1101",
+          subject_name: "Xarici dildə işgüzar və akademik kommunikasiya-1",
+          credits: 4,
+          score: 76,
+          passed: true,
+          differs: false,
+        },
+        {
+          subject_code: "KAR-1101",
+          subject_name: "Karyera planlaşması-1",
+          credits: 5,
+          score: 42,
+          passed: false,
+          differs: false,
+        },
+      ],
+    },
+  ],
+};
+const APPEALS: components["schemas"]["AppealOut"][] = [
+  {
+    reference: "MQ-2025-5201-1",
+    subject_code: "KAR-1101",
+    subject_name: "Karyera planlaşması-1",
+    semester_year: 2025,
+    semester_term: "fall",
+    status: "under_review",
+    submitted_on: "2026-02-05",
+    decided_on: null,
+  },
+  {
+    reference: "MQ-2025-5201-2",
+    subject_code: "SOS-1101",
+    subject_name: "Azərbaycan tarixi",
+    semester_year: 2025,
+    semester_term: "fall",
+    status: "upheld",
+    submitted_on: "2026-02-03",
+    decided_on: "2026-02-10",
+  },
+];
+const RUNS: components["schemas"]["SyncRunOut"][] = [
+  {
+    id: "r2",
+    trigger: "nightly",
+    outcome: "failed",
+    started_at: "2026-11-03T22:40:00Z",
+    finished_at: "2026-11-03T22:41:00Z",
+    students_synced: 0,
+    students_not_found: 0,
+    students_mismatched: 0,
+    conflicts: 0,
+    error_code: "cabinet.unavailable",
+  },
+  {
+    id: "r1",
+    trigger: "manual",
+    outcome: "succeeded",
+    started_at: "2026-11-02T22:40:00Z",
+    finished_at: "2026-11-02T22:41:00Z",
+    students_synced: 47,
+    students_not_found: 1,
+    students_mismatched: 0,
+    conflicts: 1,
+    error_code: null,
+  },
+];
+const CONFLICTS: components["schemas"]["ConflictOut"][] = [
+  {
+    university_id: "25765201",
+    subject_code: "SOS-1101",
+    semester_year: 2025,
+    semester_term: "fall",
+    detected_at: MIRROR_SYNCED,
+  },
+];
+
 export function Sprint15Specimens() {
   const t = useTranslations("designSystem.sections");
   return (
@@ -130,6 +237,18 @@ export function Sprint15Specimens() {
       </Section>
       <Section title={t("offlinePage")}>
         <StoredContent data={STORED} today={TODAY} />
+      </Section>
+      <Section title={t("transcript")}>
+        <SourceNotice source={TRANSCRIPT.source} />
+        <Summary data={TRANSCRIPT} />
+        {TRANSCRIPT.semesters.map((semester) => (
+          <SemesterPanel key={semester.semester_year} semester={semester} />
+        ))}
+        <AppealTable items={APPEALS} />
+      </Section>
+      <Section title={t("cabinetStaff")}>
+        <RunTable items={RUNS} />
+        <ConflictTable items={CONFLICTS} />
       </Section>
     </>
   );

@@ -540,6 +540,98 @@
         "title": "AnswersIn",
         "type": "object"
       },
+      "AppealListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AppealOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut"
+          }
+        },
+        "required": [
+          "source",
+          "items"
+        ],
+        "title": "AppealListOut",
+        "type": "object"
+      },
+      "AppealOut": {
+        "properties": {
+          "decided_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided On"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "semester_term": {
+            "$ref": "#/components/schemas/SemesterTerm"
+          },
+          "semester_year": {
+            "title": "Semester Year",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppealStatus"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Name"
+          },
+          "submitted_on": {
+            "format": "date",
+            "title": "Submitted On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "subject_code",
+          "subject_name",
+          "semester_year",
+          "semester_term",
+          "status",
+          "submitted_on",
+          "decided_on"
+        ],
+        "title": "AppealOut",
+        "type": "object"
+      },
+      "AppealStatus": {
+        "enum": [
+          "submitted",
+          "under_review",
+          "upheld",
+          "rejected"
+        ],
+        "title": "AppealStatus",
+        "type": "string"
+      },
       "AssignableRole": {
         "description": "Global roles an administrator may grant; `guest` is never assigned (§2).",
         "enum": [
@@ -2286,7 +2378,11 @@
           "exam_slot.edited",
           "exam_slot.deleted",
           "exam_mode.changed",
-          "past_paper.reviewed"
+          "past_paper.reviewed",
+          "cabinet.sync_run",
+          "cabinet.sync_requested",
+          "cabinet.viewed",
+          "cabinet.conflicts_viewed"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -2625,6 +2721,42 @@
           "name"
         ],
         "title": "BuildingRef",
+        "type": "object"
+      },
+      "CabinetStudentOut": {
+        "properties": {
+          "credits_earned": {
+            "title": "Credits Earned",
+            "type": "integer"
+          },
+          "cumulative_average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Average"
+          },
+          "specialty_name": {
+            "title": "Specialty Name",
+            "type": "string"
+          },
+          "synced_at": {
+            "format": "date-time",
+            "title": "Synced At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "specialty_name",
+          "credits_earned",
+          "cumulative_average",
+          "synced_at"
+        ],
+        "title": "CabinetStudentOut",
         "type": "object"
       },
       "CategoryChannels": {
@@ -3194,6 +3326,56 @@
           "items"
         ],
         "title": "CommentPage",
+        "type": "object"
+      },
+      "ConflictListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ConflictListOut",
+        "type": "object"
+      },
+      "ConflictOut": {
+        "description": "Which course differs for whom. Neither grade is included (D-126).",
+        "properties": {
+          "detected_at": {
+            "format": "date-time",
+            "title": "Detected At",
+            "type": "string"
+          },
+          "semester_term": {
+            "$ref": "#/components/schemas/SemesterTerm"
+          },
+          "semester_year": {
+            "title": "Semester Year",
+            "type": "integer"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "university_id": {
+            "title": "University Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "university_id",
+          "subject_code",
+          "semester_year",
+          "semester_term",
+          "detected_at"
+        ],
+        "title": "ConflictOut",
         "type": "object"
       },
       "ConsentPurpose": {
@@ -10253,6 +10435,41 @@
         "title": "SendResultOut",
         "type": "object"
       },
+      "SourceOut": {
+        "description": "Whether the cabinet data is current. ``unavailable`` means the latest run failed: the figures shown are\nfrom the last successful one, at ``last_synced_at``.",
+        "properties": {
+          "last_synced_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Synced At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SourceState"
+          }
+        },
+        "required": [
+          "state",
+          "last_synced_at"
+        ],
+        "title": "SourceOut",
+        "type": "object"
+      },
+      "SourceState": {
+        "enum": [
+          "ok",
+          "unavailable",
+          "never_synced"
+        ],
+        "title": "SourceState",
+        "type": "string"
+      },
       "StudentOut": {
         "properties": {
           "display_name": {
@@ -10623,6 +10840,121 @@
         ],
         "title": "SubmissionRowOut",
         "type": "object"
+      },
+      "SyncOutcome": {
+        "enum": [
+          "succeeded",
+          "failed"
+        ],
+        "title": "SyncOutcome",
+        "type": "string"
+      },
+      "SyncRequestedOut": {
+        "description": "The run is queued; its result appears in the list of runs.",
+        "properties": {
+          "queued": {
+            "title": "Queued",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "queued"
+        ],
+        "title": "SyncRequestedOut",
+        "type": "object"
+      },
+      "SyncRunListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SyncRunOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut"
+          }
+        },
+        "required": [
+          "source",
+          "items"
+        ],
+        "title": "SyncRunListOut",
+        "type": "object"
+      },
+      "SyncRunOut": {
+        "properties": {
+          "conflicts": {
+            "title": "Conflicts",
+            "type": "integer"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "title": "Finished At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SyncOutcome"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "students_mismatched": {
+            "title": "Students Mismatched",
+            "type": "integer"
+          },
+          "students_not_found": {
+            "title": "Students Not Found",
+            "type": "integer"
+          },
+          "students_synced": {
+            "title": "Students Synced",
+            "type": "integer"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/SyncTrigger"
+          }
+        },
+        "required": [
+          "id",
+          "trigger",
+          "outcome",
+          "started_at",
+          "finished_at",
+          "students_synced",
+          "students_not_found",
+          "students_mismatched",
+          "conflicts",
+          "error_code"
+        ],
+        "title": "SyncRunOut",
+        "type": "object"
+      },
+      "SyncTrigger": {
+        "enum": [
+          "nightly",
+          "manual"
+        ],
+        "title": "SyncTrigger",
+        "type": "string"
       },
       "TagListOut": {
         "properties": {
@@ -11172,6 +11504,136 @@
           "name"
         ],
         "title": "TopicOut",
+        "type": "object"
+      },
+      "TranscriptCourseOut": {
+        "properties": {
+          "credits": {
+            "title": "Credits",
+            "type": "integer"
+          },
+          "differs": {
+            "title": "Differs",
+            "type": "boolean"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "subject_code": {
+            "title": "Subject Code",
+            "type": "string"
+          },
+          "subject_name": {
+            "title": "Subject Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_code",
+          "subject_name",
+          "credits",
+          "score",
+          "passed",
+          "differs"
+        ],
+        "title": "TranscriptCourseOut",
+        "type": "object"
+      },
+      "TranscriptOut": {
+        "properties": {
+          "semesters": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSemesterOut"
+            },
+            "title": "Semesters",
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceOut"
+          },
+          "student": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CabinetStudentOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source",
+          "student",
+          "semesters"
+        ],
+        "title": "TranscriptOut",
+        "type": "object"
+      },
+      "TranscriptSemesterOut": {
+        "properties": {
+          "average": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptCourseOut"
+            },
+            "title": "Courses",
+            "type": "array"
+          },
+          "credits_attempted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credits Attempted"
+          },
+          "credits_earned": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credits Earned"
+          },
+          "semester_term": {
+            "$ref": "#/components/schemas/SemesterTerm"
+          },
+          "semester_year": {
+            "title": "Semester Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "semester_year",
+          "semester_term",
+          "credits_attempted",
+          "credits_earned",
+          "average",
+          "courses"
+        ],
+        "title": "TranscriptSemesterOut",
         "type": "object"
       },
       "UnreadCountOut": {
@@ -15134,6 +15596,232 @@
         "summary": "Faculties, specialties, groups or course offerings to address (staff)",
         "tags": [
           "audiences"
+        ]
+      }
+    },
+    "/api/v1/cabinet/conflicts": {
+      "get": {
+        "operationId": "listCabinetConflicts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Courses where the registry and the cabinet mirror disagree, without any grade",
+        "tags": [
+          "cabinet"
+        ]
+      }
+    },
+    "/api/v1/cabinet/sync-runs": {
+      "get": {
+        "operationId": "listCabinetSyncRuns",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncRunListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Recent personal cabinet sync runs: outcome and counts only",
+        "tags": [
+          "cabinet"
+        ]
+      },
+      "post": {
+        "operationId": "requestCabinetSync",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncRequestedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start a personal cabinet sync now",
+        "tags": [
+          "cabinet"
         ]
       }
     },
@@ -25227,6 +25915,158 @@
         "summary": "My tickets for events that have not ended",
         "tags": [
           "events"
+        ]
+      }
+    },
+    "/api/v1/me/transcript": {
+      "get": {
+        "operationId": "readMyTranscript",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My transcript from the personal cabinet mirror",
+        "tags": [
+          "cabinet"
+        ]
+      }
+    },
+    "/api/v1/me/transcript/appeals": {
+      "get": {
+        "operationId": "listMyAppeals",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, expired or invalid access token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Authenticated but not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflicts with existing data"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request validation failed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unexpected server error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The status of my appeals, from the personal cabinet mirror",
+        "tags": [
+          "cabinet"
         ]
       }
     },
