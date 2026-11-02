@@ -1,12 +1,16 @@
 import asyncio
 import uuid
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import TokenClaims
 from app.modules.users.models import User, UserStatus
+from app.modules.users.service import CurrentUser, UserService
 from tests.support import TokenFactory
 
 
@@ -201,3 +205,46 @@ async def test_an_unsupported_language_is_refused(
         assert response.status_code == 422, body
     anonymous = await client.put("/api/v1/me/locale", json={"locale": "en"})
     assert anonymous.status_code == 401
+
+
+class _DriverError(Exception):
+    def __init__(self, sqlstate: str) -> None:
+        self.sqlstate = sqlstate
+
+
+async def test_a_deadlock_between_first_requests_is_retried_once(
+    client: AsyncClient, tokens: TokenFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The layout and the page of a new account's first page load both provision it; the database may abort one."""
+    attempts: list[int] = []
+    real_sync = UserService._sync
+
+    async def sync(self: UserService, claims: TokenClaims) -> CurrentUser:
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise DBAPIError("INSERT INTO users", {}, _DriverError("40P01"))
+        return await real_sync(self, claims)
+
+    monkeypatch.setattr(UserService, "_sync", sync)
+    response = await client.get(
+        "/api/v1/me", headers=bearer(tokens.issue(str(uuid.uuid4()), ["student"]))
+    )
+
+    assert response.status_code == 200
+    assert len(attempts) == 2
+
+
+async def test_other_database_errors_are_not_retried(
+    client: AsyncClient, tokens: TokenFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    attempts: list[int] = []
+
+    async def sync(self: UserService, claims: TokenClaims) -> CurrentUser:
+        attempts.append(1)
+        raise DBAPIError("INSERT INTO users", {}, _DriverError("57P01"))
+
+    monkeypatch.setattr(UserService, "_sync", sync)
+    with pytest.raises(DBAPIError):
+        await client.get("/api/v1/me", headers=bearer(tokens.issue(str(uuid.uuid4()), ["student"])))
+
+    assert attempts == [1]

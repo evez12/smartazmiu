@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import structlog
 from sqlalchemy import Uuid, case, delete, literal, select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
@@ -52,6 +52,10 @@ def user_search_key(user: User) -> str:
     return search_key(user.given_name, user.family_name, user.email, user.university_id)
 
 
+def _is_deadlock(error: DBAPIError) -> bool:
+    return getattr(error.orig, "sqlstate", None) == "40P01"
+
+
 class UserService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -66,6 +70,12 @@ class UserService:
         try:
             return await self._sync(claims)
         except IntegrityError:
+            await self.session.rollback()
+        except DBAPIError as exc:
+            if not _is_deadlock(exc):
+                raise
+            # Two first requests of one new account (the layout and the page render in parallel) can take the
+            # row and index locks in opposite order; the database aborts one of them, which then retries.
             await self.session.rollback()
         # A concurrent first request for the same subject can lose the insert race on the e-mail index
         # instead of the subject index; once the winner has committed, the retry takes the update path.
