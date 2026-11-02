@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NetworkProvider } from "@/components/ui/network";
 import { ToastProvider } from "@/components/ui/toast";
+import { SyncAdmin } from "@/features/cabinet/sync-admin";
 import { Composer } from "@/features/chat/composer";
 import { Rsvp } from "@/features/events/rsvp";
 import type { EventItem } from "@/features/events/model";
@@ -96,6 +97,24 @@ function event(overrides: Partial<EventItem> = {}): EventItem {
 }
 
 describe("a screen offline", () => {
+  it("switches off the cabinet sync button and sends nothing", async () => {
+    fetchMock.mockImplementation(async (request) => {
+      const runs = { source: { state: "ok", last_synced_at: "2026-11-03T22:40:00Z" }, items: [] };
+      return new Response(
+        JSON.stringify(new URL(request.url).pathname.endsWith("conflicts") ? { items: [] } : runs),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    });
+    renderOffline(<SyncAdmin />);
+    const start = await screen.findByRole("button", { name: "İndi sinxronlaşdır" });
+    expect(start).toBeDisabled();
+    expect(start).toHaveAttribute("title", REASON);
+    await userEvent.click(start);
+    expect(fetchMock.mock.calls.filter(([request]) => request.method === "POST")).toEqual([]);
+  });
+
   it("switches off RSVP and does not send the request", async () => {
     renderOffline(<Rsvp event={event()} />);
     const register = screen.getByRole("button", { name: "Qeydiyyatdan keçin" });
