@@ -2487,3 +2487,16 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   without inventing a person), as D-108 requires. Tested both ways.
 - **Consequences:** deleting a user row no longer cascades into attendance or past papers; it also no longer blocks on a
   teacher who opened a meeting.
+
+## D-113 · 2026-11-02 · i18n EN + RU (Sprint 15, Group A): locale storage, login theme and glossary process
+
+- **Context:** Sprint 15 adds English and Russian. No official EN/RU terminology list exists.
+- **Decisions (product owner's answers):**
+  - **Storage:** a nullable `users.locale` (`az`, `en`, `ru`) is the profile setting and is exported with `/me/export`;
+    a `NEXT_LOCALE` cookie mirrors it for logged-out pages and server rendering. Resolution order: signed-in user's
+    column, cookie, `Accept-Language`, then `az`. E-mail and push texts use the recipient's column.
+  - **Keycloak login theme (D-019):** stays Azerbaijani; revisit later, it needs its own review and a realm re-import.
+  - **Glossary:** proposed in `docs/i18n/glossary.md` for review; no string is translated app-wide before the product
+    owner approves it. One term per concept, formal register ("вы"), no exclamation marks.
+- **Consequences:** a reversible migration adds `users.locale`; `next-intl` reads the locale per request instead of the
+  fixed `az`; no machine-translation SDK or API is used (§3.2).
