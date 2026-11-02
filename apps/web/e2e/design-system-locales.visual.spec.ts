@@ -14,6 +14,8 @@ const SECTIONS = [
   { index: 10, name: "chat" },
   { index: 22, name: "gpa" },
   { index: 28, name: "assignment" },
+  { index: 31, name: "offline-notices" },
+  { index: 32, name: "offline-page" },
 ] as const;
 
 const VIEWPORTS = [
@@ -27,6 +29,7 @@ for (const locale of ["en", "ru"] as const) {
       page,
       baseURL,
     }) => {
+      test.setTimeout(120_000);
       if (size) await page.setViewportSize(size);
       await page.context().addCookies([{ name: "NEXT_LOCALE", value: locale, url: baseURL! }]);
       await page.goto("/design-system");

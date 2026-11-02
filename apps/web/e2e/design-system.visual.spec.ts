@@ -29,6 +29,8 @@ for (const { prefix, size } of VIEWPORTS) {
   test(`design system sections match their ${prefix ? "phone " : ""}baselines`, async ({
     page,
   }) => {
+    // One test takes a screenshot of every section in both themes; the page has outgrown the 30 s default.
+    test.setTimeout(120_000);
     if (size) await page.setViewportSize(size);
     await page.goto("/design-system");
     // The sticky page header would otherwise be captured on top of whatever section is scrolled under it.
