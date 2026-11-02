@@ -23,7 +23,7 @@ import { TextLink } from "@/components/ui/text-link";
 import { AudienceLabel } from "@/features/audiences/audience-label";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
-import { formatDateTime, formatNumber } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("announcements.staff");
@@ -33,6 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
 type ManagePageProps = { searchParams: Promise<{ page?: string }> };
 
 export default async function ManageAnnouncementsPage({ searchParams }: ManagePageProps) {
+  const { formatDateTime, formatNumber } = await getFormatters();
   const t = await getTranslations("announcements");
   const page = pageFromParam((await searchParams).page);
   const api = await serverApi();

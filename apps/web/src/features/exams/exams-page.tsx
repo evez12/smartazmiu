@@ -13,9 +13,9 @@ import { useNow } from "@/features/attendance/attendance-shared";
 import { offeringLabel, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
-import { formatDateTimeRange } from "@/lib/format";
 
 import { countdown, mapLink, type ExamSlot } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 /** The student's or teacher's upcoming exams with a countdown in Baku time, the room on the map and a calendar file. */
 export function ExamsPage() {
@@ -63,6 +63,7 @@ export function ExamsPage() {
 }
 
 export function ExamCard({ slot, now }: { slot: ExamSlot; now: number }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("exams");
   const left = countdown(slot.starts_at, slot.ends_at, now);
   return (

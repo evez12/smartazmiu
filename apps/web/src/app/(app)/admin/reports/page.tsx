@@ -25,7 +25,7 @@ import { ReportTable } from "@/features/reports/report-table";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
 import { cn } from "@/lib/cn";
-import { formatDateTime } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 const PAGE_SIZE = 25;
 const STATUSES = ["open", "actioned", "dismissed"] as const;
@@ -45,6 +45,7 @@ type ReportsPageProps = {
  * default. No moderation console yet (Sprint 10).
  */
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  const { formatDateTime } = await getFormatters();
   const t = await getTranslations("reports.admin");
   const tMaterials = await getTranslations("materials");
   const params = await searchParams;

@@ -22,9 +22,9 @@ import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { ApiRequestError, unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 
 import { MAX_TAGS, type ContentKind, type Tag } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 type Author = components["schemas"]["AuthorOut"] | null;
 
@@ -174,6 +174,7 @@ export function AuthorLine({
   createdAt: string;
   hidden: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("community");
   const name = author?.display_name ?? t("deletedUser");
   return (

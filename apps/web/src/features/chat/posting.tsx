@@ -4,9 +4,9 @@ import { Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Icon } from "@/components/ui/icon";
-import { formatDateTime } from "@/lib/format";
 
 import { REASON_KEYS, type Posting, type PostingReason } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 /** Plain-language text for a refusal code from the policy (ADR 0004) or the socket (§13.2). */
 export function useRefusalText(): (
@@ -14,6 +14,7 @@ export function useRefusalText(): (
   detail?: { until?: string | null; retry_after_seconds?: number | null },
 ) => string {
   const t = useTranslations("chat.reasons");
+  const { formatDateTime } = useFormatters();
   return (code, detail = {}) => {
     if (code === "chat.queue_expired") return t("queueExpired");
     const key = code ? REASON_KEYS[code as PostingReason] : undefined;

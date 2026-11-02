@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ChatRuntimeProvider } from "@/features/chat/runtime";
+import { LocaleSync } from "@/features/shell/locale";
 import { AppShell } from "@/features/shell/app-shell";
 import { ApiProvider } from "@/lib/api/provider";
 import { NAV_COOKIE } from "@/features/shell/nav";
@@ -66,6 +67,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         >
           {children}
         </AppShell>
+        <LocaleSync preferred={user.locale} />
       </ChatRuntimeProvider>
     </ApiProvider>
   );

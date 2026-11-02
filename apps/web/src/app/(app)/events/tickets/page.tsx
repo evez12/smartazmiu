@@ -10,7 +10,7 @@ import { Tag } from "@/components/ui/tag";
 import { TicketQr } from "@/features/events/ticket-qr";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
-import { formatDateTimeRange } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("events");
@@ -18,6 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TicketsPage() {
+  const { formatDateTimeRange } = await getFormatters();
   const t = await getTranslations("events");
   const api = await serverApi();
   const result = await api.GET("/api/v1/me/tickets").then(loaded);

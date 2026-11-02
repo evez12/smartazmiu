@@ -11,7 +11,7 @@ import { offeringLabel, ScreenState, useManagedOfferings } from "@/features/cour
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 export type AssignmentSummary = components["schemas"]["AssignmentSummaryOut"];
 
@@ -67,6 +67,7 @@ export function AssignmentsPage() {
 }
 
 export function AssignmentCard({ item }: { item: AssignmentSummary }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments");
   return (
     <Panel>

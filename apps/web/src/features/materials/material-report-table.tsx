@@ -20,9 +20,9 @@ import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 
 import { materialHref } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 export type MaterialReportItem = components["schemas"]["MaterialReportOut"];
 type Status = MaterialReportItem["status"];
@@ -37,6 +37,7 @@ export function MaterialReportTable({
   items: MaterialReportItem[];
   canHandle: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("reports.admin");
   const tMaterials = useTranslations("materials");
   return (

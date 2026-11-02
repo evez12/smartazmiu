@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/overlay";
 import { NotificationBell } from "@/features/notifications/bell";
 import { FeedbackDialog } from "@/features/feedback/feedback-dialog";
+import { LocaleMenuGroup } from "@/features/shell/locale";
 import { useRestartTour } from "@/features/onboarding/onboarding-tour";
 import { cn } from "@/lib/cn";
 
@@ -306,6 +307,8 @@ function ProfileMenu({ user, onSignOut }: { user: ShellUser; onSignOut: () => vo
               <MenuRadioItem value="system">{tTheme("system")}</MenuRadioItem>
             </MenuRadioGroup>
           </MenuGroup>
+          <MenuSeparator />
+          <LocaleMenuGroup />
           <MenuSeparator />
           <MenuItem asChild>
             <Link href="/saved">

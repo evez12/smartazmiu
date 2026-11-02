@@ -3,10 +3,10 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { cn } from "@/lib/cn";
-import { formatNumber } from "@/lib/format";
 
 import { buttonVariants } from "./button";
 import { Icon } from "./icon";
+import { useFormatters } from "@/lib/use-format";
 
 type PaginationProps = {
   /** 1-based. */
@@ -20,6 +20,7 @@ type PaginationProps = {
 
 /** Offset pagination for admin tables (§4.2) with the total count (§12.4). */
 export function Pagination({ page, pageSize, total, href, className }: PaginationProps) {
+  const { formatNumber } = useFormatters();
   const t = useTranslations("ui.pagination");
   if (total <= pageSize && page === 1) return null;
   const from = Math.min((page - 1) * pageSize + 1, total);

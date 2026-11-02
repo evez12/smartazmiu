@@ -20,9 +20,9 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { chatKeys, isMuted, type Channel, type NotifyLevel } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 const HOUR_MS = 3_600_000;
 const SNOOZES = [
@@ -39,6 +39,7 @@ type Change = { notify_level?: NotifyLevel; muted_until?: string | null };
  * history stays as it is. This is not the moderator's posting mute (D-058).
  */
 export function NotifyMenu({ channel }: { channel: Channel }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("chat.notify");
   const api = useApi();
   const toast = useToast();

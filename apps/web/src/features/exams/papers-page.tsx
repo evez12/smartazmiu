@@ -17,8 +17,8 @@ import { ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 import { ACCEPTED_FILES, formatSize, putFile, uploadType } from "@/lib/uploads";
+import { useFormatters } from "@/lib/use-format";
 
 type Paper = components["schemas"]["PaperOut"];
 type Kind = components["schemas"]["PastPaperKind"];
@@ -101,6 +101,7 @@ function SubjectPapers({ subjectId }: { subjectId: string }) {
 }
 
 export function PaperCard({ paper, subjectId }: { paper: Paper; subjectId: string }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("exams.papers");
   const api = useApi();
   const toast = useToast();

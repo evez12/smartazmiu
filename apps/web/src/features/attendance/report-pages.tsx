@@ -19,9 +19,9 @@ import { offeringLabel, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
 
 import { formatRate, rateTone } from "./attendance-shared";
+import { useFormatters } from "@/lib/use-format";
 
 /** Attendance of every student of an offering, for its teacher, the dean's office and a group curator. */
 export function ReportPage({ offeringId }: { offeringId: string }) {
@@ -120,6 +120,7 @@ export function ReportTable({ rows }: { rows: ReportRow[] }) {
 
 /** One course, meeting by meeting: what a student sees of their own attendance. */
 export function MyCoursePage({ offeringId }: { offeringId: string }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("attendance.mine");
   const api = useApi();
   const query = useQuery({

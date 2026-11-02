@@ -19,7 +19,7 @@ import {
 import { displayStatus } from "@/features/imports/model";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { loaded, serverApi } from "@/lib/api/server";
-import { formatDateTime } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 type ImportPageProps = { params: Promise<{ id: string }> };
 
@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: ImportPageProps): Promise<Met
 }
 
 export default async function ImportPage({ params }: ImportPageProps) {
+  const { formatDateTime } = await getFormatters();
   const t = await getTranslations("imports");
   const result = await loadImport((await params).id);
   if (result.status === "forbidden") {

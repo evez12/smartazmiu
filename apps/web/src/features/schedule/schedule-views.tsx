@@ -9,7 +9,6 @@ import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
 import { cn } from "@/lib/cn";
-import { formatDayMonth, formatWeekdayDate } from "@/lib/format";
 
 import { ClassList } from "./class-list";
 import {
@@ -20,6 +19,7 @@ import {
   type ScheduleDay,
   type ScheduleView,
 } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 function useParityLabel() {
   const t = useTranslations("schedule");
@@ -77,6 +77,7 @@ export function ScheduleToolbar({
 }
 
 function DayPanel({ day, today }: { day: ScheduleDay; today: string }) {
+  const { formatWeekdayDate } = useFormatters();
   const t = useTranslations("schedule");
   const isToday = day.date === today;
   return (
@@ -98,6 +99,7 @@ function DayPanel({ day, today }: { day: ScheduleDay; today: string }) {
 }
 
 export function WeekView({ schedule }: { schedule: Schedule }) {
+  const { formatDayMonth } = useFormatters();
   const t = useTranslations("schedule");
   const parityLabel = useParityLabel();
   const days = visibleDays(schedule.days);
@@ -138,6 +140,7 @@ export function WeekView({ schedule }: { schedule: Schedule }) {
 }
 
 export function DayView({ schedule }: { schedule: Schedule }) {
+  const { formatWeekdayDate } = useFormatters();
   const t = useTranslations("schedule");
   const parityLabel = useParityLabel();
   const day = schedule.days[0]!;
@@ -161,6 +164,7 @@ export function DayView({ schedule }: { schedule: Schedule }) {
 
 /** Dashboard widget: today's classes with links to the rooms on the map. */
 export function TodayClasses({ schedule }: { schedule: Schedule }) {
+  const { formatWeekdayDate } = useFormatters();
   const t = useTranslations("schedule");
   const parityLabel = useParityLabel();
   const day = schedule.days[0]!;

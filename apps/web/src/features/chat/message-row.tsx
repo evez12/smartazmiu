@@ -29,7 +29,7 @@ import { useOptionalApi } from "@/lib/api/provider";
 import { cn } from "@/lib/cn";
 
 import { AuthorBadge } from "./author-badge";
-import { formatDate, formatDateTime, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 
 import { Composer } from "./composer";
 import { MessageToolbar, ReactionChips } from "./message-actions";
@@ -47,6 +47,7 @@ import {
 } from "./model";
 import { useRefusalText } from "./posting";
 import { useOptionalChatRuntime } from "./runtime";
+import { useFormatters } from "@/lib/use-format";
 
 type RowProps = {
   item: TimelineItem;
@@ -57,6 +58,7 @@ type RowProps = {
 
 /** One row of the message list: left-aligned, no bubbles (§12.7). */
 export function TimelineRow({ item, context, blockedIds, onRetry }: RowProps) {
+  const { formatDate } = useFormatters();
   const t = useTranslations("chat");
   if (item.kind === "day") {
     return (
@@ -124,6 +126,7 @@ export function MessageRow({
   collapsedAsBlocked: boolean;
   context: RowContext;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("chat");
   const tReports = useTranslations("reports");
   const tCommunity = useTranslations("community");

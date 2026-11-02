@@ -24,9 +24,10 @@ import { useToast } from "@/components/ui/toast";
 import { OfferingField, offeringLabel, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
-import { bakuInputToIso, formatDateTimeRange, isoToBakuInput } from "@/lib/format";
+import { bakuInputToIso, isoToBakuInput } from "@/lib/format";
 
 import type { ExamOverlap, ExamSlot } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 type Errors = Partial<Record<"offering" | "starts" | "ends", string>>;
 
@@ -140,6 +141,7 @@ function ExamModeSwitches() {
 }
 
 export function Overlaps({ overlaps }: { overlaps: ExamOverlap[] }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("exams.admin");
   if (overlaps.length === 0) return null;
   return (
@@ -240,6 +242,7 @@ function CreateForm({ onSaved }: { onSaved: () => void }) {
 }
 
 export function SlotTable({ items }: { items: ExamSlot[] }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("exams.admin");
   const [editing, setEditing] = useState<ExamSlot | null>(null);
   const [removing, setRemoving] = useState<ExamSlot | null>(null);
@@ -368,6 +371,7 @@ function EditDialog({ slot, onClose }: { slot: ExamSlot; onClose: () => void }) 
 }
 
 function RemoveDialog({ slot, onClose }: { slot: ExamSlot; onClose: () => void }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("exams.admin");
   const api = useApi();
   const client = useQueryClient();

@@ -14,9 +14,9 @@ import { useToast } from "@/components/ui/toast";
 import { formatPoints, ScreenState } from "@/features/coursework/coursework";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { SubmissionFiles } from "./submission-files";
+import { useFormatters } from "@/lib/use-format";
 
 /** A teacher or staff member reads one submission and gives points and feedback (grades are audited, D-092). */
 export function GradeSubmission({
@@ -26,6 +26,7 @@ export function GradeSubmission({
   assignmentId: string;
   submissionId: string;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("assignments");
   const tForm = useTranslations("assignments.gradeForm");
   const api = useApi();

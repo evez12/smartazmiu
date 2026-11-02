@@ -19,7 +19,7 @@ import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 export type FeedbackItem = components["schemas"]["FeedbackOut"];
 
@@ -27,6 +27,7 @@ const STATUS_TONE = { open: "warning", closed: "neutral" } as const;
 
 /** Feedback for staff (D-074): what was said, where, by whom, and whether it was handled. */
 export function FeedbackTable({ items, canHandle }: { items: FeedbackItem[]; canHandle: boolean }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("feedback.admin");
   const tCategories = useTranslations("feedback.categories");
   return (

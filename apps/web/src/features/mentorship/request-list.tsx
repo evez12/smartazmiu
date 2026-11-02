@@ -17,10 +17,10 @@ import { Tag } from "@/components/ui/tag";
 import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi, useErrorMessage } from "@/lib/api/provider";
-import { formatDateTime } from "@/lib/format";
 
 import { StudentAdviceDisclaimer } from "./disclaimer";
 import { mentorshipKeys, STATUS_TONE, type MentorRequest } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 /** Every request I sent, received or could take (the "Məsləhət sorğuları" page). */
 export function RequestList() {
@@ -90,6 +90,7 @@ export function ChannelRequests({ channelId }: { channelId: string }) {
 }
 
 function RequestCard({ request, compact = false }: { request: MentorRequest; compact?: boolean }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("guides.request");
   const api = useApi();
   const toast = useToast();

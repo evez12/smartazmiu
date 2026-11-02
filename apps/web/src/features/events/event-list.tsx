@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-import { formatDateTimeRange } from "@/lib/format";
-
 import { EventTags } from "./event-facts";
 import type { EventItem } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 export function EventList({ items }: { items: EventItem[] }) {
+  const { formatDateTimeRange } = useFormatters();
   const t = useTranslations("events");
   return (
     <ul className="divide-y divide-border">

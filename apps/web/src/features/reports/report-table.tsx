@@ -21,7 +21,7 @@ import { useToast } from "@/components/ui/toast";
 import { unwrap } from "@/lib/api/browser";
 import { useApi } from "@/lib/api/provider";
 import type { components } from "@/lib/api/schema";
-import { formatDateTime } from "@/lib/format";
+import { useFormatters } from "@/lib/use-format";
 
 export type ReportItem = components["schemas"]["ReportOut"];
 type Status = ReportItem["status"];
@@ -40,6 +40,7 @@ export function ReportTable({
   canHandle: boolean;
   canGlobalBan: boolean;
 }) {
+  const { formatDateTime } = useFormatters();
   const t = useTranslations("reports.admin");
   const tReasons = useTranslations("reports.reasons");
   return (

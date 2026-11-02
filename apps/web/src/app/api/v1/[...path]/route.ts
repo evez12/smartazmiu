@@ -9,6 +9,8 @@ import {
   isAllowedMutation,
   SAFE_METHODS,
 } from "@/lib/api/proxy";
+import { LOCALE_COOKIE } from "@/i18n/config";
+import { resolveLocale } from "@/i18n/resolve";
 import { readSession, type SessionData } from "@/lib/auth/session";
 import { env } from "@/lib/env";
 
@@ -55,7 +57,10 @@ async function forward(request: NextRequest, context: { params: Promise<{ path: 
 
   const headers = new Headers({
     Authorization: `Bearer ${session.accessToken}`,
-    "Accept-Language": "az",
+    "Accept-Language": resolveLocale(
+      request.cookies.get(LOCALE_COOKIE)?.value,
+      request.headers.get("accept-language"),
+    ),
   });
   for (const name of FORWARDED_REQUEST_HEADERS) {
     const value = request.headers.get(name);

@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/table";
 import { Tag } from "@/components/ui/tag";
 import { TextLink } from "@/components/ui/text-link";
-import { formatDate } from "@/lib/format";
 import { formatSize } from "@/lib/uploads";
 
 import { materialHref, type Material } from "./model";
 import { VersionActions } from "./version-actions";
+import { useFormatters } from "@/lib/use-format";
 
 /** A subject's catalogue (§6.1): one row per material, its newest clean file and the actions on it. */
 export function MaterialTable({
@@ -27,6 +27,7 @@ export function MaterialTable({
   caption: string;
   showSemester: boolean;
 }) {
+  const { formatDate } = useFormatters();
   const t = useTranslations("materials");
   return (
     <Table>

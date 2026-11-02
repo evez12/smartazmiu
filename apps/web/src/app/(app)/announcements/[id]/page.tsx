@@ -13,7 +13,7 @@ import { PUBLISH_PERMISSION } from "@/features/announcements/model";
 import { AudienceLabel } from "@/features/audiences/audience-label";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { hasPermission, loaded, serverApi } from "@/lib/api/server";
-import { formatDateTime } from "@/lib/format";
+import { getFormatters } from "@/lib/server-format";
 
 type AnnouncementPageProps = { params: Promise<{ id: string }> };
 
@@ -23,6 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnnouncementPage({ params }: AnnouncementPageProps) {
+  const { formatDateTime } = await getFormatters();
   const t = await getTranslations("announcements");
   const { id } = await params;
   const api = await serverApi();

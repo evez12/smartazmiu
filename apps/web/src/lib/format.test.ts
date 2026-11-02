@@ -27,4 +27,26 @@ describe("formatting", () => {
   it("uses Azerbaijani number grouping", () => {
     expect(formatNumber(20000)).toBe("20.000");
   });
+
+  it("writes the same instant in English and Russian, day first, in Baku time", () => {
+    expect(formatDate("2026-10-24T10:30:00Z", "en")).toBe("24 October 2026");
+    expect(formatDate("2026-10-24T10:30:00Z", "ru")).toBe("24 октября 2026 г.");
+    expect(formatDateTime("2026-10-24T21:30:00Z", "ru")).toBe("25 октября 2026 г., 01:30");
+    expect(formatDayMonth("2026-11-09", "ru")).toBe("9 ноября");
+    expect(formatWeekdayDate("2026-10-26", "en")).toBe("Monday, 26 October");
+    expect(formatWeekdayDate("2026-11-01", "ru")).toBe("Воскресенье, 1 ноября");
+  });
+
+  it("starts the week on Monday in every language", () => {
+    for (const locale of ["az", "en", "ru"] as const) {
+      expect(formatWeekdayDate("2026-10-26", locale).split(",")[0]).toBe(
+        { az: "Bazar ertəsi", en: "Monday", ru: "Понедельник" }[locale],
+      );
+    }
+  });
+
+  it("groups numbers per language", () => {
+    expect(formatNumber(20000, "en")).toBe("20,000");
+    expect(formatNumber(1234.5, "ru")).toMatch(/^1\s234,5$/);
+  });
 });

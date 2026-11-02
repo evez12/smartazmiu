@@ -23,8 +23,8 @@ import { materialHref, STATUS_TONE } from "@/features/materials/model";
 import { VersionActions } from "@/features/materials/version-actions";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
 import { hasPermission, loaded, serverApi } from "@/lib/api/server";
-import { formatDateTime } from "@/lib/format";
 import { formatSize } from "@/lib/uploads";
+import { getFormatters } from "@/lib/server-format";
 
 type MaterialPageProps = { params: Promise<{ subjectId: string; materialId: string }> };
 
@@ -42,6 +42,7 @@ export async function generateMetadata({ params }: MaterialPageProps): Promise<M
 
 /** A material with every version the viewer may see (§6.1): others see checked files only. */
 export default async function MaterialPage({ params }: MaterialPageProps) {
+  const { formatDateTime } = await getFormatters();
   const t = await getTranslations("materials");
   const { subjectId, materialId } = await params;
   const [result, canManage] = await Promise.all([

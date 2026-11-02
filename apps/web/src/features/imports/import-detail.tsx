@@ -11,11 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime, formatNumber } from "@/lib/format";
 
 import { DownloadReportButton } from "./import-actions";
 import { useIssueText } from "./issue-text";
 import type { DisplayStatus, ImportDetail } from "./model";
+import { useFormatters } from "@/lib/use-format";
 
 export function ImportStatusBanner({
   record,
@@ -24,6 +24,7 @@ export function ImportStatusBanner({
   record: ImportDetail;
   status: DisplayStatus;
 }) {
+  const { formatDateTime, formatNumber } = useFormatters();
   const t = useTranslations("imports.detail");
   switch (status) {
     case "ready":
@@ -81,6 +82,7 @@ export function EncodingBanner({ record }: { record: ImportDetail }) {
 }
 
 export function ImportSummary({ record }: { record: ImportDetail }) {
+  const { formatNumber } = useFormatters();
   const t = useTranslations("imports");
   const facts = [
     { label: t("detail.rows"), value: formatNumber(record.row_count) },
@@ -116,6 +118,7 @@ export function ImportSummary({ record }: { record: ImportDetail }) {
 }
 
 export function ImportIssues({ record }: { record: ImportDetail }) {
+  const { formatNumber } = useFormatters();
   const t = useTranslations("imports");
   const describe = useIssueText();
   if (record.errors.length === 0) return null;
