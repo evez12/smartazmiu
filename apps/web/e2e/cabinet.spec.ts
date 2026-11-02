@@ -56,7 +56,7 @@ test("a student reads their mirrored transcript after staff start a sync; an out
     page.getByRole("heading", { level: 1, name: "Kabinet sinxronizasiyası" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "İndi sinxronlaşdır" }).click();
-  await expect(page.getByText(/növbəyə qoyuldu/)).toBeVisible();
+  await expect(page.getByText(/növbəyə qoyuldu/).first()).toBeVisible();
 
   const own = await browser.newContext();
   const studentPage = await own.newPage();
@@ -158,9 +158,11 @@ for (const [locale, heading] of [
       viewport: { width: 320, height: 640 },
       hasTouch: true,
     });
-    await context.addCookies([{ name: "NEXT_LOCALE", value: locale, url: baseURL! }]);
     const phone = await context.newPage();
+    // The sign-in helper reads Azerbaijani labels, so the language is chosen after signing in.
     await signIn(phone, "aysel.mammadova", "/transcript");
+    await context.addCookies([{ name: "NEXT_LOCALE", value: locale, url: baseURL! }]);
+    await phone.reload();
     await expect(phone.getByRole("heading", { level: 1, name: heading })).toBeVisible();
     await expectFits(phone, "/transcript");
     await expectFits(phone, "/gpa");
