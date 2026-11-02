@@ -144,6 +144,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
   | Added in Sprint 14 | web: jsqr 1.4.0 (QR decoding in a worker where the browser has no BarcodeDetector, D-095; `pnpm audit` reports nothing for it, the two moderate findings are `glob` under `@sentry/nextjs`, already there). |
   | Added in Sprint 15 | web dev: @formatjs/icu-messageformat-parser 3.5.22 (ICU syntax guard for the message catalogues, D-114); already in the tree through next-intl |
+  | Added in Sprint 15, Group B | web: idb 8.0.4 (IndexedDB wrapper for the offline store, published 2026-10-06); web dev: fake-indexeddb 6.2.6 (published 2026-10-16; 6.2.7 was three days old on 2026-11-02 and was skipped). No new rasterizer: the icons are rendered with the Playwright dependency already in the tree (D-117). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
