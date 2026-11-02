@@ -2448,3 +2448,23 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   and were left alone (they were not started in this session). They run code from before D-105, so they may fail on
   the new notification kinds; no failure was traced to them, but they should be stopped before any release check.
 - **Final result:** see the report of the closeout; the numbers are not repeated here so this entry cannot go stale.
+
+## D-111 · 2026-11-02 · Mail priority: announcements and events are read first and keep a budget reserve
+
+- **Context:** D-110 left open that the D-055 throttle has no priority: the seed queues about 460 guide invitations,
+  and an announcement created behind them waited up to three windows.
+- **Options:** (a) two queues, each with its own budget; (b) a `priority` column on the delivery, read first, with
+  the budget split by class.
+- **Decision:** (b). `notification_deliveries.priority` is 1 for the `announcements` and `events` categories and 0 for
+  everything else (migration 0035; existing rows are back-filled from their notification). The dispatcher orders by
+  `priority DESC, not_before`. The window budget stays one number across all workers (`MAIL_BATCH_SIZE`, 200, so the
+  SMTP relay sees no more than before); bulk mail (priority 0) may use at most `MAIL_BATCH_SIZE - MAIL_PRIORITY_RESERVE`
+  of it (150 by default), so an announcement that arrives after the invitations have used their share still goes out
+  in the same window. A throttled bulk delivery blocks only bulk mail for the rest of the run; a throttled priority
+  delivery blocks both, since the whole budget is gone. Push is unaffected. One queue keeps the single continuation job
+  of D-055.
+- **Test:** 460 invitations and one announcement, batch 200, reserve 50: the invitations stop at 150, the
+  announcement goes out immediately; in a later window with 310 invitations still pending a new announcement is sent
+  before any of them.
+- **Consequences:** a university-wide announcement (D-055's case) is still throttled at 200 a minute among itself. The
+  announcement mail of one window can use the reserve only; a long bulk mailing now takes 150 a minute instead of 200.

@@ -18,6 +18,9 @@ from app.modules.notifications.models import (
 )
 
 # Push and e-mail per category until the user changes them; in-app is always on (the bell is the record).
+HIGH_PRIORITY = frozenset({NotificationCategory.ANNOUNCEMENTS, NotificationCategory.EVENTS})
+"""Categories whose e-mail must not wait behind bulk invitations (D-111)."""
+
 DEFAULT_CHANNELS: dict[NotificationCategory, tuple[bool, bool]] = {
     NotificationCategory.ANNOUNCEMENTS: (True, True),
     NotificationCategory.EVENTS: (True, False),
@@ -92,16 +95,18 @@ class Notifier:
         ids = list(created)
         if ids and deliver:
             push_default, email_default = DEFAULT_CHANNELS[spec.category]
+            priority = 1 if spec.category in HIGH_PRIORITY else 0
             for channel, column, default in (
                 (DeliveryChannel.PUSH, NotificationPreference.push, push_default),
                 (DeliveryChannel.EMAIL, NotificationPreference.email, email_default),
             ):
                 await self.session.execute(
                     insert(NotificationDelivery).from_select(
-                        ["notification_id", "channel"],
+                        ["notification_id", "channel", "priority"],
                         select(
                             Notification.id,
                             literal(channel, NotificationDelivery.__table__.c.channel.type),
+                            literal(priority, NotificationDelivery.__table__.c.priority.type),
                         )
                         .outerjoin(
                             NotificationPreference,

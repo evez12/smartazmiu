@@ -112,12 +112,14 @@ class NotificationDelivery(Base):
         UniqueConstraint("notification_id", "channel"),
         Index(
             "ix_notification_deliveries_pending",
+            text("priority DESC"),
             "not_before",
             postgresql_where=text("status = 'pending'"),
         ),
         Index(
             "ix_notification_deliveries_mail_sent",
             "updated_at",
+            "priority",
             postgresql_where=text("channel = 'email' AND status = 'sent'"),
         ),
     )
@@ -134,6 +136,8 @@ class NotificationDelivery(Base):
     )
     reason: Mapped[str | None] = mapped_column(String(40))
     attempts: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    priority: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
+    """1 for announcements and events, 0 for the rest; read first, with a reserve in the mail budget (D-111)."""
     not_before: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
