@@ -248,6 +248,7 @@ export function Composer({
         ) : null}
         <textarea
           id={`${baseId}-field`}
+          data-composer=""
           ref={field}
           value={body}
           rows={editing ? 2 : 1}

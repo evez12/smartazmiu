@@ -76,7 +76,7 @@ export function ScheduleToolbar({
   );
 }
 
-function DayPanel({ day, today }: { day: ScheduleDay; today: string }) {
+function DayPanel({ day, today, links }: { day: ScheduleDay; today: string; links: boolean }) {
   const { formatWeekdayDate } = useFormatters();
   const t = useTranslations("schedule");
   const isToday = day.date === today;
@@ -89,7 +89,7 @@ function DayPanel({ day, today }: { day: ScheduleDay; today: string }) {
       />
       <div className="px-4">
         {day.classes.length ? (
-          <ClassList classes={day.classes} />
+          <ClassList classes={day.classes} links={links} />
         ) : (
           <p className="py-3 text-sm text-muted">{t("noClasses")}</p>
         )}
@@ -98,7 +98,8 @@ function DayPanel({ day, today }: { day: ScheduleDay; today: string }) {
   );
 }
 
-export function WeekView({ schedule }: { schedule: Schedule }) {
+/** `links` is off on the offline page, where neither the map nor another week can be opened. */
+export function WeekView({ schedule, links = true }: { schedule: Schedule; links?: boolean }) {
   const { formatDayMonth } = useFormatters();
   const t = useTranslations("schedule");
   const parityLabel = useParityLabel();
@@ -121,9 +122,11 @@ export function WeekView({ schedule }: { schedule: Schedule }) {
               icon={CalendarDays}
               message={t("noClassesWeek")}
               action={
-                <TextLink href={scheduleHref("week", addDays(schedule.start, 7))}>
-                  {t("goToNextWeek")}
-                </TextLink>
+                links ? (
+                  <TextLink href={scheduleHref("week", addDays(schedule.start, 7))}>
+                    {t("goToNextWeek")}
+                  </TextLink>
+                ) : undefined
               }
             />
           </PanelBody>
@@ -131,7 +134,7 @@ export function WeekView({ schedule }: { schedule: Schedule }) {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {days.map((day) => (
-            <DayPanel key={day.date} day={day} today={schedule.today} />
+            <DayPanel key={day.date} day={day} today={schedule.today} links={links} />
           ))}
         </div>
       )}

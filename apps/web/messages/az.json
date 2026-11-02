@@ -78,7 +78,9 @@
       "assignmentCards": "Tapşırıqlar: siyahı",
       "assignmentSubmission": "Tapşırıq: təqdim və qiymət",
       "quizCards": "Testlər: siyahı",
-      "quizAttempt": "Test: suallar və nəticə"
+      "quizAttempt": "Test: suallar və nəticə",
+      "offlineNotices": "Oflayn rejim: bildirişlər və quraşdırma",
+      "offlinePage": "Oflayn səhifə"
     },
     "colors": {
       "surfaces": "Fon və səthlər",
@@ -299,7 +301,9 @@
       "gpa": "ÜOMG",
       "examSlots": "İmtahan cədvəli idarəsi"
     },
-    "saved": "Saxlanılanlar"
+    "saved": "Saxlanılanlar",
+    "signedOutOfflineTitle": "Çıxış etdiniz",
+    "signedOutOfflineBody": "Bu cihazdan məlumat silindi. Bağlantı bərpa olunanda sessiyanız bağlanacaq."
   },
   "roles": {
     "student": "Tələbə",
@@ -2602,5 +2606,70 @@
     "draftExamHelp": "{n}-dən aşağı imtahan balı sayılmır.",
     "simulatedTotal": "Yeni ÜOMG",
     "delta": "Dəyişiklik: {value}"
+  },
+  "offline": {
+    "banner": {
+      "title": "İnternet bağlantısı yoxdur",
+      "live": "Göndərilməmiş mesajlar bağlantı bərpa olunanda göndəriləcək. Dəyişiklik etmək üçün internet lazımdır.",
+      "cached": "Yalnız bu cihazda saxlanmış məlumat göstərilir və onu yalnız oxumaq olar. Dəyişiklik etmək və mesaj göndərmək üçün internet lazımdır.",
+      "lastUpdated": "Son yenilənmə: {time}."
+    },
+    "update": {
+      "title": "Yeni versiya var",
+      "body": "Yeniləmək üçün səhifə yenidən yüklənəcək.",
+      "action": "Yeniləyin",
+      "blocked": "Göndərilməmiş mətniniz və ya mesajınız var. Səhifəni yeniləməzdən əvvəl onu göndərin."
+    },
+    "install": {
+      "title": "SmartAzMİU-nu cihazınıza quraşdırın",
+      "body": "Tətbiq kimi açılır və ana ekrandan tez əlçatan olur.",
+      "ios": "Brauzerin «Paylaş» menyusunu açın və «Ana ekrana əlavə et» seçin.",
+      "action": "Quraşdırın"
+    },
+    "device": {
+      "title": "Oflayn rejim",
+      "label": "Bu cihazda oflayn saxla",
+      "hint": "Cədvəliniz (bu və növbəti həftə) və kanallardakı son 50 mesaj bu cihazda saxlanılır ki, internet olmadan da oxuya biləsiniz. Şəxsi mesajlar saxlanılmır. Çıxış etdikdə və ya sessiya bitdikdə hamısı silinir. Ortaq kompüterdə bu seçimi söndürülü saxlayın.",
+      "enabled": "Bu cihazda oflayn saxlama aktiv edildi",
+      "disabled": "Oflayn məlumat bu cihazdan silindi",
+      "savedAt": "Son yenilənmə: {time}.",
+      "savedNever": "Məlumat hələ saxlanılmayıb.",
+      "failed": "Məlumat saxlanıla bilmədi",
+      "unavailableTitle": "Oflayn saxlama mümkün deyil",
+      "unavailable": "Brauzer bu cihazda məlumat saxlamağa icazə vermir. Gizli rejimdə olmadığınızı yoxlayın."
+    },
+    "page": {
+      "title": "Oflayn rejim",
+      "description": "Bu cihazda saxlanmış cədvəl və mesajlar göstərilir.",
+      "signOut": "Çıxış edin",
+      "onlineTitle": "Bağlantı bərpa olundu",
+      "onlineBody": "Ən son məlumatı görmək üçün tətbiqə qayıdın.",
+      "goToApp": "Tətbiqə qayıdın",
+      "sections": "Bölmələr",
+      "scheduleTab": "Cədvəl",
+      "channelsTab": "Kanallar",
+      "weeks": "Həftə",
+      "thisWeek": "Bu həftə",
+      "nextWeek": "Növbəti həftə",
+      "channelList": "Saxlanmış kanallar",
+      "backToChannels": "Kanallara qayıdın",
+      "edited": "redaktə olunub",
+      "attachments": "Qoşmalar: {names}. Fayllar oflayn açılmır.",
+      "empty": {
+        "none": "Bu cihazda saxlanmış məlumat yoxdur. Daxil olduqdan sonra Bildiriş ayarlarında oflayn saxlamanı aktiv edin.",
+        "disabled": "Oflayn saxlama bu cihazda aktiv deyil. İnternetə qoşulanda Bildiriş ayarlarında onu aktiv edin.",
+        "expired": "Sessiyanız bitib və saxlanmış məlumat silinib. Yenidən daxil olmaq üçün internet lazımdır.",
+        "unavailable": "Brauzer saxlanmış məlumatı oxumağa icazə vermir.",
+        "signedOut": "Bu cihazdan çıxış etdiniz və məlumat silindi. Bağlantı bərpa olunanda sessiyanız bağlanacaq.",
+        "noSchedule": "Saxlanmış cədvəl yoxdur.",
+        "noChannels": "Saxlanmış kanal yoxdur.",
+        "noMessages": "Bu kanalda saxlanmış mesaj yoxdur."
+      },
+      "state": {
+        "deleted": "Mesaj silinib.",
+        "blocked": "Bloklanmış istifadəçinin mesajı.",
+        "moderated": "Mesaj gizlədilib."
+      }
+    }
   }
 }

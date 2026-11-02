@@ -4,9 +4,10 @@ import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { PushDevice } from "@/features/notifications/push-device";
+import { OfflineDeviceSwitch } from "@/features/offline/device-switch";
 import { NotificationSettingsForm } from "@/features/notifications/settings-form";
 import { ForbiddenState } from "@/features/shell/forbidden-state";
-import { loaded, serverApi } from "@/lib/api/server";
+import { getCurrentUser, loaded, serverApi } from "@/lib/api/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("notifications.settings");
@@ -15,8 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function NotificationSettingsPage() {
   const t = await getTranslations("notifications");
+  const tOffline = await getTranslations("offline.device");
   const api = await serverApi();
   const settings = await api.GET("/api/v1/me/notification-settings").then(loaded);
+  const current = await getCurrentUser();
   return (
     <>
       <PageHeader
@@ -41,6 +44,17 @@ export default async function NotificationSettingsPage() {
               />
             </PanelBody>
           </Panel>
+          {current.status === "ok" ? (
+            <Panel>
+              <PanelHeader title={tOffline("title")} />
+              <PanelBody>
+                <OfflineDeviceSwitch
+                  userId={current.user.id}
+                  sessionEndsAt={current.session.expiresAt}
+                />
+              </PanelBody>
+            </Panel>
+          ) : null}
         </div>
       ) : (
         <ForbiddenState />

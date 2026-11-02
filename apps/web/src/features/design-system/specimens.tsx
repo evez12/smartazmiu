@@ -30,6 +30,7 @@ import { GroupTable } from "./group-table";
 import { Section } from "./section";
 import { Sprint1213Specimens } from "./sprint12-13-specimens";
 import { Sprint14Specimens } from "./sprint14-specimens";
+import { Sprint15Specimens } from "./sprint15-specimens";
 import { Sprint6Specimens } from "./sprint6-specimens";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -413,6 +414,7 @@ export function StaticSpecimens() {
       <Sprint6Specimens />
       <Sprint14Specimens />
       <Sprint1213Specimens />
+      <Sprint15Specimens />
     </div>
   );
 }

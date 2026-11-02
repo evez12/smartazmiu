@@ -10,6 +10,7 @@ import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Panel, PanelBody } from "@/components/ui/panel";
+import { OfflineGuard } from "@/features/offline/guard";
 import { getCurrentUser } from "@/lib/api/server";
 import { safeReturnTo } from "@/lib/auth/return-to";
 
@@ -42,6 +43,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg-subtle">
+      <OfflineGuard />
       <a
         href="#main"
         className="fixed top-2 left-4 z-50 -translate-y-20 rounded-control border border-border-control bg-surface px-3 py-2 text-primary focus:translate-y-0"

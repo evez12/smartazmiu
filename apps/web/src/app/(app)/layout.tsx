@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ChatRuntimeProvider } from "@/features/chat/runtime";
+import { OfflineRuntime } from "@/features/offline/runtime";
 import { LocaleSync } from "@/features/shell/locale";
 import { AppShell } from "@/features/shell/app-shell";
 import { ApiProvider } from "@/lib/api/provider";
@@ -68,6 +69,11 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
           {children}
         </AppShell>
         <LocaleSync preferred={user.locale} />
+        <OfflineRuntime
+          userId={user.id}
+          sessionEndsAt={session.expiresAt}
+          csrfToken={session.csrfToken}
+        />
       </ChatRuntimeProvider>
     </ApiProvider>
   );
