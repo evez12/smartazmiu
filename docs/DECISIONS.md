@@ -143,6 +143,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
   | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
   | Added in Sprint 14 | web: jsqr 1.4.0 (QR decoding in a worker where the browser has no BarcodeDetector, D-095; `pnpm audit` reports nothing for it, the two moderate findings are `glob` under `@sentry/nextjs`, already there). |
+  | Added in Sprint 15 | web dev: @formatjs/icu-messageformat-parser 3.5.22 (ICU syntax guard for the message catalogues, D-114); already in the tree through next-intl |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -2500,3 +2501,76 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     owner approves it. One term per concept, formal register ("вы"), no exclamation marks.
 - **Consequences:** a reversible migration adds `users.locale`; `next-intl` reads the locale per request instead of the
   fixed `az`; no machine-translation SDK or API is used (§3.2).
+
+## D-114 · 2026-11-02 · i18n EN + RU: how the language is chosen, formatted and tested
+
+- **Context:** the product owner approved the glossary (British English, "Quiz", "Room" / «Аудитория» for both
+  `Auditoriya` and `Otaq`; the other proposals as written) and the storage of D-113. This entry records the
+  implementation choices.
+- **Decisions:**
+  - **Order of resolution.** The page language is the `NEXT_LOCALE` cookie, then `Accept-Language`, then Azerbaijani
+    (`i18n/resolve.ts`). The account's `users.locale` wins once it is known: the app layout renders `LocaleSync`,
+    which writes the cookie and refreshes when the account's language differs from the page's. The alternative, reading
+    the account in `getRequestConfig`, would add an API call to every request, including public pages. Cost: on a
+    device with no cookie the first page is in the browser's language and switches once (one refresh, no sign-in
+    again). Tested across two browser contexts (`i18n.spec.ts`).
+  - **Writing.** `PUT /me/locale` (`az`, `en`, `ru`, 422 otherwise), not part of the versioned profile so a stale edit
+    form can never block a language switch. `users.locale` is nullable (never chosen) with a check constraint
+    (migration 0037, reversible); `/me` returns it and `/me/export` lists it under `profile`.
+  - **API language.** The browser client sets `Accept-Language` from `<html lang>` on every request; server components
+    and the same-origin proxy take it from the cookie, then the header. API errors, e-mail and push follow it; mail
+    and push use the recipient's stored language, `az` when none (`notifications/messages.py`). The Russian greeting
+    is «Здравствуйте, {name}.» with a full stop: no exclamation marks anywhere.
+  - **Dates and numbers.** Month and weekday names are written out for all three languages in `lib/format.ts` (D-023's
+    reasoning: reduced ICU data). English is day first ("24 October 2026"), Russian has genitive months and the "г."
+    suffix; the week starts on Monday and all times stay Asia/Baku. Components use `useFormatters()`; async server
+    components use `getFormatters()`. The plain functions take the language as an optional last argument (default
+    `az`), so non-component code and old tests are unchanged.
+  - **Not translated.** Names, subjects, groups and rooms are data. `Intl.Collator("az")` and `toLocaleUpperCase("az")`
+    stay: they apply to Azerbaijani data in every interface language. Keycloak's login theme stays `az` (D-113).
+  - **Guards.** `i18n/messages.test.ts`: same keys in the three files; every message valid ICU; same argument names
+    as the Azerbaijani message; English `other`, Russian `one/few/many/other` on every plural; no Azerbaijani-only
+    letters in English or Russian outside a short list of names and specimen texts; Russian prose has Cyrillic; no
+    exclamation marks or emoji; British spelling; no title-case sentences. `test_error_catalogue.py` requires `az`,
+    `en` and `ru` for every error code and checks `Accept-Language` negotiation. New dev dependency
+    `@formatjs/icu-messageformat-parser` 3.5.22 (already in the tree through `next-intl`), for the syntax guard.
+  - **Tests in a browser** run with `locale: "az-AZ"` so the Azerbaijani specs keep their text; the language specs
+    set the cookie or choose a language in the UI.
+  - **Specimens.** The `/design-system` glyph section gained the Cyrillic alphabet and the Cyrillic sample at 400, 500
+    and 600 (its four baselines were re-recorded on purpose). `design-system-locales.visual.spec.ts` records eight
+    sections in English and Russian, light and dark, at 1440 and 320 px; the Azerbaijani baselines are not renumbered.
+- **Consequences:** the Russian and English texts were written by the assistant from the approved glossary and are
+  **not yet reviewed by a native speaker or by the university**; they are a first complete draft and the wording of
+  legal and academic sentences (privacy notice, exam rules, ÜOMG) needs that review before release. Stored
+  notification titles built from a date (exam slot, schedule change) still contain the Azerbaijani month name,
+  because the title is stored once; localising them means storing the instant and formatting at delivery. Both are
+  listed as open in D-115.
+
+## D-115 · 2026-11-02 · §13 review of Sprint 15 Group A (D-113, D-114)
+
+- **Context:** the same review as D-076, done for the language work; "tested" names the test, "by design" means the
+  code does it but nothing asserts it, "open" means neither.
+- **Decision:**
+  - Tested: the language of an account follows it to a browser with no cookie and a different `Accept-Language`, and
+    a change on one device reaches the other on its next load (`i18n.spec.ts`, §13.1 stable identity, not the
+    device); a browser asking for Russian gets Russian and a choice survives a reload (`i18n.spec.ts`,
+    `resolve.test.ts`); an unsupported language is `422` and an anonymous caller `401`, and the versioned profile is
+    untouched (`test_the_chosen_language_is_stored_per_user_and_exported`, `test_an_unsupported_language_is_refused`);
+    the migrations still go down to the base and up again (`test_migrations_are_reversible`); every error code has three languages
+    and the negotiation picks the best supported one (`test_error_catalogue.py`); push and e-mail follow the
+    recipient's language and an account without one gets Azerbaijani (`test_push_and_email_follow_the_recipients_language`);
+    dates are rendered in Baku time in all three languages, Monday first, day first (`format.test.ts`, §13.4);
+    plural forms, placeholders and wording of all 2 192 messages (`messages.test.ts`); no sideways scroll, no
+    touch target under 44 px on 22 screens in Russian at 320 px, and no serious axe violation on six screens in each
+    language and on the specimens (`i18n.spec.ts`, `design-system.spec.ts`, §13.6); a failed save of the language
+    keeps the current language and says so (`locale.test.tsx`).
+  - By design, not asserted: every screen still has its loading, empty, error and forbidden states because only the
+    strings changed; the language switcher is a keyboard-operable radio group and a menu group (axe passes, no
+    dedicated keyboard test); the cookie is not `HttpOnly` or secret (a preference, not a credential); user content
+    is never translated.
+  - Open: native-speaker review of the English and Russian texts (D-114); stored notification titles with an
+    Azerbaijani month name (exam slot, schedule change); the first page on a new device is in the browser's language
+    for a moment before the account's language is applied; the 320 px Russian check covers the student screens, the
+    staff and administrator screens only through the specimens; the Keycloak login page stays Azerbaijani, so a
+    signed-out Russian user sees one Azerbaijani screen; the PWA manifest and the offline page (Group B) will need
+    the same three languages.

@@ -1,10 +1,10 @@
 # SmartAzMİU terminology glossary (az → en → ru)
 
-> **Status: proposal for the product owner's review.** No official EN/RU terminology list from the university exists
-> (Sprint 15, Group A, question 1). The English column follows the university's own English pages
-> (`docs/AZMIU_ACADEMIC_DATA.md`) where they exist; the Russian column follows common usage in Azerbaijani
-> Russian-language higher education. Nothing is translated app-wide until this file is approved.
-> Open choices are collected in section 9.
+> **Status: approved by the product owner on 2026-11-02** (British English, "Quiz", "Room" / «Аудитория» for both
+> `Auditoriya` and `Otaq`; the other open choices of section 9 as proposed). The app's English and Russian texts
+> follow it (D-113, D-114). No official EN/RU terminology list from the university exists; the English column follows
+> the university's own English pages (`docs/AZMIU_ACADEMIC_DATA.md`) where they exist, the Russian column common usage
+> in Azerbaijani Russian-language higher education. The texts have not been reviewed by a native speaker (D-114).
 
 ## 1. Rules for every string
 
@@ -185,7 +185,7 @@ User-generated content (chat messages, posts, answers, assignment text), subject
 names, seeded academic data, file names, the "SmartAzMİU" wordmark, and the Keycloak login theme (stays Azerbaijani,
 Sprint 15 answer 3).
 
-## 9. Open choices for review
+## 9. Choices made at review
 
 1. **Bələdçi.** EN "Guide" is direct and matches the roadmap. RU "Наставник" (mentor) reads better than "Гид"
    (tour guide) or "Проводник"; "Куратор" is taken by the group curator. Proposed: **Guide / Наставник**.
@@ -198,7 +198,8 @@ Sprint 15 answer 3).
    ("centre", "programme", "organisation") except for the product term "Exam center" which is kept short;
    if you prefer one rule, say "American" and every string follows it.
 5. **Quiz vs Test.** Proposed EN **Quiz**, RU **Тест**. Say if EN should be "Test".
-6. **Auditoriya vs Otaq.** Both become "Room" / «Аудитория»; the schedule keeps «Аудитория», the map uses
-   «Помещение». Confirm or collapse to one.
-7. **Dates in English.** Day-first (`24 October 2026`), as in section 1. Confirm.
-8. **Russian greeting without "!"** in e-mail (section 7). Confirm, or allow the standard form.
+6. **Auditoriya vs Otaq.** Both become "Room" / «Аудитория» everywhere (decided at review). The classroom *type* on the
+   map reads "Classroom" / «Учебная аудитория»; the audience of an announcement (also `Auditoriya`) is
+   "Audience" / «Адресаты».
+7. **Dates in English.** Day-first (`24 October 2026`), as in section 1 (accepted).
+8. **Russian greeting without "!"** in e-mail (section 7) (accepted).

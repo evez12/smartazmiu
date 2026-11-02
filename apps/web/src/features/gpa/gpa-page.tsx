@@ -215,8 +215,11 @@ export function Courses({ grades, config }: { grades: Grade[]; config: GpaConfig
             {rows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell label={t("subject")}>
-                  <span className="break-words">{row.name}</span>
-                  <span className="block text-sm text-muted">{row.code}</span>
+                  {/* One block, so a long label in the stacked layout does not squeeze the name against the code. */}
+                  <div className="min-w-0 max-md:text-right">
+                    <span className="break-words">{row.name}</span>
+                    <span className="block text-sm text-muted">{row.code}</span>
+                  </div>
                 </TableCell>
                 <TableCell label={t("semester")}>
                   <SemesterName semester={row.semester} />
