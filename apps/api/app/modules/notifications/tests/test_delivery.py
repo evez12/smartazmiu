@@ -578,3 +578,35 @@ def mass_invitation() -> NotificationSpec:
         kind=NotificationKind.MENTORSHIP_INVITATION,
         dedupe_key="mentorship-invitation:2026-fall",
     )
+
+
+@pytest.mark.parametrize(
+    ("locale", "label", "greeting"),
+    [
+        ("en", "New announcement", "Dear Aysel Məmmədova,"),
+        ("ru", "Новое объявление", "Здравствуйте, Aysel Məmmədova."),
+        (None, "Yeni elan", "Hörmətli Aysel Məmmədova,"),
+    ],
+)
+async def test_push_and_email_follow_the_recipients_language(
+    db: AsyncSession,
+    make_user: MakeUser,
+    dispatcher: Dispatcher,
+    push: FakePush,
+    mailer: MemoryMailer,
+    locale: str | None,
+    label: str,
+    greeting: str,
+) -> None:
+    aysel = await make_user("Aysel", "Məmmədova", "aysel.mammadova@smartazmiu.test")
+    aysel.locale = locale
+    await subscribe(db, aysel)
+    announcement = spec()
+    await notify(db, [aysel], announcement)
+
+    await dispatcher.run()
+    assert json.loads(push.sent[0][1])["title"] == label
+    _, subject, text = mailer.sent[0]
+    assert subject == f"{label}: {announcement.title}"
+    assert greeting in text
+    assert "!" not in text
