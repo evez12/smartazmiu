@@ -1,9 +1,9 @@
-/**
- * Web Push in the browser: the service worker (`public/sw.js`), permission and the push subscription. The server
- * stores the subscription; the browser only ever holds its own.
- */
+import { registerServiceWorker, SERVICE_WORKER_URL } from "@/lib/offline/register";
 
-const WORKER_URL = "/sw.js";
+/**
+ * Web Push in the browser: the service worker (`public/sw-core.js`, served as `/sw.js`), permission and the push
+ * subscription. The server stores the subscription; the browser only ever holds its own.
+ */
 
 export type PushSupport = "supported" | "unsupported" | "denied";
 
@@ -36,7 +36,7 @@ export function applicationServerKey(base64url: string): Uint8Array<ArrayBuffer>
 }
 
 export async function currentSubscription(): Promise<PushSubscription | null> {
-  const registration = await navigator.serviceWorker.getRegistration(WORKER_URL);
+  const registration = await navigator.serviceWorker.getRegistration(SERVICE_WORKER_URL);
   return (await registration?.pushManager.getSubscription()) ?? null;
 }
 
@@ -44,7 +44,7 @@ export type SubscriptionBody = { endpoint: string; keys: { p256dh: string; auth:
 
 /** Asks for permission (only on this explicit user action) and subscribes this browser. */
 export async function subscribe(publicKey: string): Promise<SubscriptionBody> {
-  const registration = await navigator.serviceWorker.register(WORKER_URL);
+  const registration = await registerServiceWorker();
   if ((await Notification.requestPermission()) !== "granted") throw new PushPermissionError();
   await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.subscribe({

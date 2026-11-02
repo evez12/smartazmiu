@@ -78,7 +78,9 @@
       "assignmentCards": "Assignments: list",
       "assignmentSubmission": "Assignment: submission and grade",
       "quizCards": "Quizzes: list",
-      "quizAttempt": "Quiz: questions and result"
+      "quizAttempt": "Quiz: questions and result",
+      "offlineNotices": "Offline mode: notices and installation",
+      "offlinePage": "Offline page"
     },
     "colors": {
       "surfaces": "Backgrounds and surfaces",
@@ -299,7 +301,9 @@
       "gpa": "ÜOMG",
       "examSlots": "Exam schedule management"
     },
-    "saved": "Saved"
+    "saved": "Saved",
+    "signedOutOfflineTitle": "You have signed out",
+    "signedOutOfflineBody": "The data on this device was deleted. Your session will be closed when the connection returns."
   },
   "roles": {
     "student": "Student",
@@ -2602,5 +2606,70 @@
     "draftExamHelp": "An exam score below {n} is not counted.",
     "simulatedTotal": "New ÜOMG",
     "delta": "Change: {value}"
+  },
+  "offline": {
+    "banner": {
+      "title": "No internet connection",
+      "live": "Messages you have not sent will be sent when the connection returns. Changes need an internet connection.",
+      "cached": "Only data stored on this device is shown, and it is read-only. Making changes and sending messages need an internet connection.",
+      "lastUpdated": "Last updated: {time}."
+    },
+    "update": {
+      "title": "A new version is available",
+      "body": "The page will reload to update.",
+      "action": "Update",
+      "blocked": "You have text or a message that has not been sent. Send it before updating the page."
+    },
+    "install": {
+      "title": "Install SmartAzMİU on your device",
+      "body": "It opens like an app and is quick to reach from the home screen.",
+      "ios": "Open the browser’s Share menu and choose “Add to Home Screen”.",
+      "action": "Install"
+    },
+    "device": {
+      "title": "Offline mode",
+      "label": "Store data on this device for offline use",
+      "hint": "Your schedule (this week and next) and the latest 50 messages of your channels are stored on this device so that you can read them without internet. Direct messages are not stored. Everything is deleted when you sign out or the session ends. Keep this off on a shared computer.",
+      "enabled": "Offline storage is on for this device",
+      "disabled": "Offline data was deleted from this device",
+      "savedAt": "Last updated: {time}.",
+      "savedNever": "Nothing has been stored yet.",
+      "failed": "The data could not be stored",
+      "unavailableTitle": "Offline storage is not available",
+      "unavailable": "The browser does not allow this device to store data. Check that you are not in a private window."
+    },
+    "page": {
+      "title": "Offline mode",
+      "description": "The schedule and messages stored on this device.",
+      "signOut": "Sign out",
+      "onlineTitle": "The connection is back",
+      "onlineBody": "Return to the app to see the latest data.",
+      "goToApp": "Return to the app",
+      "sections": "Sections",
+      "scheduleTab": "Schedule",
+      "channelsTab": "Channels",
+      "weeks": "Week",
+      "thisWeek": "This week",
+      "nextWeek": "Next week",
+      "channelList": "Stored channels",
+      "backToChannels": "Back to channels",
+      "edited": "edited",
+      "attachments": "Attachments: {names}. Files cannot be opened offline.",
+      "empty": {
+        "none": "No data is stored on this device. After you sign in, turn on offline storage in the notification settings.",
+        "disabled": "Offline storage is off on this device. When you are online, turn it on in the notification settings.",
+        "expired": "Your session has ended and the stored data was deleted. You need an internet connection to sign in again.",
+        "unavailable": "The browser does not allow the stored data to be read.",
+        "signedOut": "You signed out on this device and the data was deleted. Your session will be closed when the connection returns.",
+        "noSchedule": "There is no stored schedule.",
+        "noChannels": "There are no stored channels.",
+        "noMessages": "There are no stored messages in this channel."
+      },
+      "state": {
+        "deleted": "The message was deleted.",
+        "blocked": "A message from a blocked user.",
+        "moderated": "The message is hidden."
+      }
+    }
   }
 }

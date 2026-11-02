@@ -1,5 +1,7 @@
 import createClient from "openapi-fetch";
 
+import { wipeOfflineData } from "@/lib/offline/wipe";
+
 import { CSRF_HEADER, SAFE_METHODS } from "./proxy";
 import type { components, paths } from "./schema";
 
@@ -29,6 +31,11 @@ export function createBrowserApi(csrfToken: string) {
       request.headers.set("Accept-Language", globalThis.document?.documentElement.lang || "az");
       if (!SAFE_METHODS.has(request.method)) request.headers.set(CSRF_HEADER, csrfToken);
       return request;
+    },
+    onResponse({ response }) {
+      // The session ended (sign-out elsewhere, expiry, revocation): nothing stored for it may stay on the device.
+      if (response.status === 401) void wipeOfflineData();
+      return response;
     },
   });
   return client;

@@ -57,7 +57,7 @@ export function ChatScreen({
       />
     ) : null;
   return (
-    <div className="flex h-[calc(100dvh-56px-48px-64px-env(safe-area-inset-bottom))] min-h-[420px] overflow-hidden rounded-panel border border-border bg-surface lg:h-[calc(100dvh-56px-64px)]">
+    <div className="flex h-[calc(100dvh-56px-48px-64px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[420px] overflow-hidden rounded-panel border border-border bg-surface lg:h-[calc(100dvh-56px-64px)]">
       <HydrationMark />
       <aside
         className={cn(

@@ -216,9 +216,10 @@ async def test_the_rest_fallback_sends_idempotently_even_without_redis(
                 json={"body": f"Mesaj {n}", "client_msg_id": str(uuid.uuid4())},
             )
         ).status_code
-        for n in range(20)
+        for n in range(25)
     ]
-    # 10 per 10 s per channel (§5.5); 20 quick sends cannot all fit in one window or two.
+    # 10 per 10 s per channel (§5.5), counted in fixed windows. 25 sends take about 3 s, so they span at most two
+    # windows and one of them gets more than 10 (20 could split 10 + 10 across a boundary and never be refused).
     assert 429 in limited
 
 

@@ -1,0 +1,10 @@
+{
+  "light": {
+    "background": "#ffffff",
+    "surface": "#ffffff"
+  },
+  "dark": {
+    "background": "#0f141a",
+    "surface": "#161d26"
+  }
+}

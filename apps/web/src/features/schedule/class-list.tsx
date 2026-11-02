@@ -40,7 +40,7 @@ function ChangeDetails({ item }: { item: ClassItem }) {
   return <p className="text-sm text-text">{lines.join(" ")}</p>;
 }
 
-function ClassRow({ item }: { item: ClassItem }) {
+function ClassRow({ item, links }: { item: ClassItem; links: boolean }) {
   const t = useTranslations("schedule");
   const inactive = item.status === "cancelled" || item.status === "moved_away";
   return (
@@ -59,7 +59,12 @@ function ClassRow({ item }: { item: ClassItem }) {
           ) : null}
         </div>
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
-          {item.room ? (
+          {item.room && !links ? (
+            <span className="inline-flex items-center gap-1">
+              <Icon icon={MapPin} />
+              <span className="tabular">{item.room.code}</span>
+            </span>
+          ) : item.room ? (
             <TextLink
               href={mapHref(item.room.code)}
               aria-label={t("showOnMap", { room: item.room.code })}
@@ -81,12 +86,15 @@ function ClassRow({ item }: { item: ClassItem }) {
   );
 }
 
-/** Classes of one day in time order; changes are marked with a text tag, never by colour alone. */
-export function ClassList({ classes }: { classes: ClassItem[] }) {
+/**
+ * Classes of one day in time order; changes are marked with a text tag, never by colour alone. `links` is off on
+ * the offline page, where the map cannot be opened.
+ */
+export function ClassList({ classes, links = true }: { classes: ClassItem[]; links?: boolean }) {
   return (
     <ul className="flex flex-col">
       {classes.map((item) => (
-        <ClassRow key={`${item.id}:${item.date}`} item={item} />
+        <ClassRow key={`${item.id}:${item.date}`} item={item} links={links} />
       ))}
     </ul>
   );

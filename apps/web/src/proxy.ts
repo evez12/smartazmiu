@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth/session";
 import { contentSecurityPolicy } from "@/lib/csp";
 import { env } from "@/lib/env";
+import { OFFLINE_PATH } from "@/lib/offline/policy";
 import { PATHNAME_HEADER } from "@/lib/request-headers";
 
 /** Refresh a little before expiry so a page never renders with a token that dies mid-request. */
@@ -64,6 +65,8 @@ export async function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
+  // The offline shell holds no user data, so the service worker may keep it; every other page stays `no-store`.
+  if (request.nextUrl.pathname === OFFLINE_PATH) response.headers.set("Cache-Control", "no-cache");
   if (env.isHttps) {
     response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
@@ -83,7 +86,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!_next/static|_next/image|icon.svg|healthz).*)",
+      source: "/((?!_next/static|_next/image|icon.svg|icons/|healthz).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

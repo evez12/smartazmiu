@@ -8,6 +8,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { cn } from "@/lib/cn";
 
 import { Icon } from "./icon";
+import { touchTarget } from "./touch-target";
 
 /** Toasts are for transient confirmations only and never stay longer than 4 s (§12.4). */
 export const TOAST_DURATION_MS = 4000;
@@ -76,7 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </div>
               <ToastPrimitive.Close
                 aria-label={t("close")}
-                className="rounded-control p-1 text-muted hover:text-text"
+                className={cn("rounded-control p-1 text-muted hover:text-text", touchTarget)}
               >
                 <Icon icon={X} />
               </ToastPrimitive.Close>

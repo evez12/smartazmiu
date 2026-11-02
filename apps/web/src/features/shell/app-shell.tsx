@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CloudOff,
   LogOut,
   Menu as MenuIcon,
   Bookmark,
@@ -14,9 +15,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { Wordmark } from "@/components/brand/wordmark";
+import { StatusPage } from "./status-page";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
@@ -35,10 +37,12 @@ import {
   Tooltip,
 } from "@/components/ui/overlay";
 import { NotificationBell } from "@/features/notifications/bell";
+import { PwaNotices } from "@/features/offline/notices";
 import { FeedbackDialog } from "@/features/feedback/feedback-dialog";
 import { LocaleMenuGroup } from "@/features/shell/locale";
 import { useRestartTour } from "@/features/onboarding/onboarding-tour";
 import { cn } from "@/lib/cn";
+import { isSignOutPending, leaveDevice, subscribeSignOutPending } from "@/lib/offline/sign-out";
 
 import {
   isActive,
@@ -73,6 +77,16 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
   const [sheetOpen, setSheetOpen] = useState(false);
   const signOutForm = useRef<HTMLFormElement>(null);
   const navigation = visibleNavigation(user.permissions);
+  const signOutPending = useSyncExternalStore(
+    subscribeSignOutPending,
+    isSignOutPending,
+    () => false,
+  );
+
+  // The offline data goes first (D-117); offline, the server call is remembered and sent at reconnect.
+  const signOut = async () => {
+    if (await leaveDevice()) signOutForm.current?.submit();
+  };
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -80,6 +94,16 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
     // A cookie (not localStorage) so the server renders the same width and the layout does not jump.
     document.cookie = `${NAV_COOKIE}=${next ? "collapsed" : "expanded"}; path=/; max-age=31536000; samesite=lax`;
   };
+
+  if (signOutPending) {
+    return (
+      <StatusPage
+        icon={CloudOff}
+        title={t("signedOutOfflineTitle")}
+        body={t("signedOutOfflineBody")}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg-subtle">
@@ -90,7 +114,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
         {t("skipToContent")}
       </a>
 
-      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-2 lg:px-4">
+      <header className="sticky top-0 z-40 flex h-[calc(56px+env(safe-area-inset-top))] shrink-0 items-center gap-2 border-b border-border bg-surface pt-[env(safe-area-inset-top)] pr-[max(8px,env(safe-area-inset-right))] pl-[max(8px,env(safe-area-inset-left))] lg:px-4">
         <Button
           variant="tertiary"
           size="icon"
@@ -116,7 +140,7 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
         </Link>
         <div className="flex-1" />
         <NotificationBell />
-        <ProfileMenu user={user} onSignOut={() => signOutForm.current?.requestSubmit()} />
+        <ProfileMenu user={user} onSignOut={() => void signOut()} />
         <form ref={signOutForm} action="/auth/signout" method="post" hidden>
           <input type="hidden" name="csrf" value={csrfToken} />
         </form>
@@ -139,7 +163,10 @@ export function AppShell({ user, csrfToken, initiallyCollapsed, children }: AppS
           tabIndex={-1}
           className="min-w-0 flex-1 outline-none max-lg:pb-[calc(64px+env(safe-area-inset-bottom))]"
         >
-          <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 lg:py-8">{children}</div>
+          <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 lg:py-8">
+            <PwaNotices />
+            {children}
+          </div>
         </main>
       </div>
 

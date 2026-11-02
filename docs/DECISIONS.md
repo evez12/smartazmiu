@@ -144,6 +144,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
   | Added in Sprint 14 | web: jsqr 1.4.0 (QR decoding in a worker where the browser has no BarcodeDetector, D-095; `pnpm audit` reports nothing for it, the two moderate findings are `glob` under `@sentry/nextjs`, already there). |
   | Added in Sprint 15 | web dev: @formatjs/icu-messageformat-parser 3.5.22 (ICU syntax guard for the message catalogues, D-114); already in the tree through next-intl |
+  | Added in Sprint 15, Group B | web: idb 8.0.4 (IndexedDB wrapper for the offline store, published 2026-10-06); web dev: fake-indexeddb 6.2.6 (published 2026-10-16; 6.2.7 was three days old on 2026-11-02 and was skipped). No new rasterizer: the icons are rendered with the Playwright dependency already in the tree (D-117). |
 
 - **Consequences:** later sprints add dependencies to this table when they introduce them.
 
@@ -2598,3 +2599,176 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
     The two unit tests that expected Russian to fall back to Azerbaijani now expect Russian.
 - **Result:** API 519 tests, 94.91 % coverage; web 400 tests; browser suite 76 of 76 with no retries; visual project 6
   of 6 with no retry; lint, formatting and types clean.
+
+## D-117 · 2026-11-02 · PWA offline storage and cache policy (Sprint 15, Group B)
+
+- **Context:** §7 asks for an installable app with an offline cache for the schedule and the last 50 messages per channel.
+  The schedule is rendered on the server, so a service worker cannot see its data, and the HTML of a signed-in page
+  holds user data and a per-request CSP nonce. Product owner's answers (CLAUDE.md, this group's questions): channels
+  only, no direct messages; wiped on sign-out and session end; keyed by user id; never grades, attendance, exports,
+  tokens or `no-store` responses. New answers on 2026-11-02: storing is **opt-in per device**, offline data is usable
+  **only until the session's absolute end**, and an offline sign-out **wipes now and finishes at reconnect**.
+- **Options:** (a) the service worker keeps API responses and signed-in HTML in Cache Storage, network first; (b) the
+  page writes the user's own data into IndexedDB and the worker keeps only public files.
+- **Decision: (b).** Nothing a user owns is ever in Cache Storage.
+  - **Service worker** (`public/sw-core.js`, served as `/sw.js`): cache-first for `/_next/static/*`, `/icons/*` and
+    `/icon.svg`, plus one page, `/offline`, the same for everyone. A failed navigation answers with that page; any
+    other request is not touched. A response with `Cache-Control: no-store` is never kept. The worker does nothing in
+    the development server, where the same address serves changing code, and registers only in production builds.
+    Cache names carry the build id (`sa-shell-<id>`, `sa-static-<id>`); the page asks the worker to store the shell
+    after sign-in, after a deploy and after a language change (the stored shell is in the language of that moment).
+  - **IndexedDB `smartazmiu-offline`**: one `device` record (owner, switch, session end) and `snapshots` keyed
+    `u:<userId>:<kind>:<id>`. A write runs in one transaction that first checks the record (right user, switch on),
+    so a tab that was wiped or whose user changed cannot write again.
+  - **What is stored** (allowlist `lib/offline/policy.ts`): the current and next week in one schedule request (14 days);
+    for course, subject-community, group, faculty, announcement and club channels that are not archived (at most 40)
+    the newest 50 top-level messages. Direct, **support and private-group** channels are treated as direct messages and
+    never stored. A message keeps author name, text, time and mentions; no photo address, reactions, read state or
+    attachment files (names only); the body of a message from a blocked author, a moderated or a deleted message is
+    dropped (D-062). Every response is checked before it is written: a path on the never-stored list (grades,
+    academics, exports, attendance, exams and papers, calculator, administration, reports, privacy, imports, socket
+    tickets, attachments, downloads, `/auth`, object storage) or a `no-store` header refuses the write.
+  - **Opt-in:** off until the user turns on "Bu cihazda oflayn saxla" in the notification settings. Turning it off
+    deletes the data at once. Because everything is wiped at sign-out, the switch is off again after the next sign-in
+    (deliberate: lab computers).
+  - **Wiped** (database, the worker's caches, `sa:offline:*` markers): when the user signs out (before the request is
+    sent), on any `401` from the API, at the session's absolute end (a timer while the page is open, and when the
+    offline page opens, so it also works with no connection), when a different user signs in on this browser, and
+    when the sign-in page loads (a session that ended elsewhere). Tabs hear a wipe through a `BroadcastChannel`.
+  - **Offline sign-out:** the wipe happens at once, the intent is kept in `localStorage` (`sa:signout-pending`, not
+    removed by a wipe) and the shell shows a signed-out page. The existing `/auth/signout` form is posted when the
+    connection returns. Authentication code is unchanged; only the browser calls it later.
+  - **Refresh:** when the switch is turned on, whenever the browser comes back online (everything), every 10 minutes
+    and when the tab becomes visible (a channel only if its copy is older than 10 minutes). A channel that is no
+    longer listed, or answers `403`/`404`, loses its stored copy (§13.2). Windows of channels open in the chat are
+    merged into the stored copy two seconds after they change; a short window never shrinks a fuller copy.
+  - **Queued sends** keep the D-064 queue and `client_msg_id`; there is no second queue and the queue still does not
+    survive a reload. The update banner and the reload it causes respect that (D-118).
+  - **Icons:** `pnpm brand` renders the favicon and the 192, 512, maskable and 180 px icons from `brand.ts` (the same
+    constant the wordmark component uses) and the colours of `tokens.css`; a test fails when the generated colours
+    or sizes drift. No rasterizer was added: it uses the Playwright dependency already in the tree.
+  - **Dependencies (D-014):** `idb` 8.0.4, `fake-indexeddb` 6.2.6 (dev).
+- **Consequences:** the offline page shows the last user's stored data to whoever opens the browser before the session's
+  absolute end (12 h after sign-in), as the signed-in app would; the switch, the end-of-session rule and the wipes are
+  the protection. A phone that signed in yesterday evening sees nothing offline the next morning after 12 h; that was
+  chosen. The sign-in page loads public static files after its wipe and the worker keeps them again, so Cache Storage
+  is "free of user data and of the offline page" after sign-out, not empty. Browser support beyond Chromium
+  (Firefox, Safari) is untested in this group.
+
+## D-118 · 2026-11-02 · PWA headers, updates, install offer and manifest (Sprint 15, Group B)
+
+- **Context:** the product owner approved the header diff before any code was written: no CSP, Permissions-Policy or
+  nginx change (`worker-src 'self'` already existed, `manifest-src` falls back to `default-src 'self'`, `connect-src
+  'self'` covers the worker's fetches, no Permissions-Policy is set today); two small changes in `proxy.ts`.
+- **Decision:**
+  - **Headers:** the proxy matcher also skips `icons/` (static PNGs need neither a session refresh nor a CSP), and
+    `/offline` answers `Cache-Control: no-cache` instead of Next's `no-store` (it holds no user data, and the rule
+    "nothing `no-store` is stored" stays literally true). `/sw.js` is now a route handler that writes the build id
+    into `public/sw-core.js`, answering `Cache-Control: no-cache` (it was `public, max-age=0`: the same meaning); it
+    still carries the page CSP. The cached shell keeps its nonce and CSP header together, so it runs unchanged.
+  - **Update flow:** every build has its own id (`generateBuildId`, `NEXT_PUBLIC_BUILD_ID`, inherited through
+    `BUILD_STAMP` so the build's worker processes agree), so a deploy changes the bytes of `/sw.js`; the page
+    registers with `updateViaCache: "none"` and calls `update()` hourly. A new worker waits (no `skipWaiting` on
+    install). The banner "Yeni versiya var" asks the worker to take over and reloads on `controllerchange`; the button
+    is disabled, with its reason in the text, while a composer (`textarea[data-composer]`) has text or a message waits
+    in the send queue. The first install shows no banner.
+  - **Manifest:** `app/manifest.ts`, per language through the same cookie as the pages (description and `lang`; the
+    name is the brand and stays); `display: standalone`, `theme_color` the light surface, `background_color` the light
+    page colour, both from `tokens.css` through `theme-colours.json`; the browser bar follows the active scheme
+    (`themeColor` with media queries). The push icon in notifications is now the 192 px PNG.
+  - **Install offer:** a non-modal banner from the **second browser session** on (the counter is per session, not per
+    page view), dismissible for good, never inside the installed app, never offline. Chromium gets an install button
+    from `beforeinstallprompt` (kept, the browser's own bar suppressed); Safari on iOS gets the steps.
+  - **Safe area:** the top bar adds the top and side insets (the bottom bar already added the bottom one); the chat
+    height subtracts the top inset.
+  - **Metrics:** worker errors are not reported. There is no endpoint for them and D-080 is not extended; they stay in
+    the browser console (open item).
+  - **Installability:** checked in the browser suite with Chrome's own check (`Page.getInstallabilityErrors` through
+    CDP, no errors) instead of Lighthouse, which would add a dependency; the result is recorded in D-120.
+  - **Found on the way:** the toast's close button was a 24 px target on touch screens (§12.6). It now has the 44 px tap
+    area every other small control has.
+- **Consequences:** a build changes the worker's cache names, so after a deploy the old caches are deleted when the new
+  worker activates and the shell is stored again by the new page. Registering the same address with another query
+  string is how the end-to-end test stands in for "the next deploy".
+
+## D-119 · 2026-11-02 · §13 review of Sprint 15 Group B (D-117, D-118)
+
+- **Context:** the same review as D-076 and D-115: "tested" names the test, "by design" means the code does it but
+  nothing asserts it, "open" means neither.
+- **Decision:**
+  - Tested: a second person on the same browser starts with nothing of the first, both when the first signed out and
+    when the session ended elsewhere (`store.test.ts`, `runtime.test.tsx`, `pwa.spec.ts`; §13.1 stable identity, not the
+    device); one account's key never addresses another's (`policy.test.ts`); nothing is written without a matching,
+    enabled device record, also from a tab that was wiped (`store.test.ts`); direct, support, private-group and
+    archived channels are never requested (`sync.test.ts`); at most 50 messages, newest kept, replies left out
+    (`model.test.ts`, `sync.test.ts`); a channel the user left or lost (`403`/`404`) loses its copy (`sync.test.ts`,
+    §13.2 lost access); a blocked author's, a moderated and a deleted message keep no text (`model.test.ts`, D-062);
+    attachment files are never stored (`model.test.ts`); a `no-store` answer and every never-stored path are refused
+    (`policy.test.ts`, `sync.test.ts`); the worker leaves API, token, socket, object-storage and sign-in requests alone
+    and never keeps `no-store` or failed responses (`service-worker.test.ts`); the shell is shown only when a
+    navigation fails and a missing shell lets the failure through (`service-worker.test.ts`); the schedule and the
+    newest message render offline from one online visit, with the time they were stored, and the stored week equals the
+    online one (`pwa.spec.ts`, §13.6 offline and stale-data refresh); coming back online refreshes the stored copy
+    (`pwa.spec.ts`); sign-out, a `401`, the session's absolute end and a sign-in page load wipe the database, the
+    worker's caches and the markers (`store.test.ts`, `runtime.test.tsx`, `pwa.spec.ts`); an offline sign-out wipes at
+    once and the server session ends at reconnect (`pwa.spec.ts`); a message written offline is delivered once,
+    with the worker active (`pwa.spec.ts`, §13.2 offline compose and duplicate send; the D-064 queue is unchanged);
+    the update banner waits for the user, never shows on the first install and never reloads over unsent text
+    (`pwa.test.tsx`, `pwa.spec.ts`); the install offer comes from the second session and stays dismissed
+    (`pwa.test.tsx`, `pwa.spec.ts`); the manifest, its icons' sizes and the generated colours match the tokens
+    (`brand.test.ts`); Chrome reports no installability error (`pwa.spec.ts`); axe finds nothing serious on the
+    offline page in both themes, on the update banner and on the install offer; 320 px with no sideways scroll and no
+    target under 44 px on the settings page, the install offer, the connection banner and the three offline views
+    (`pwa.spec.ts`, §13.6 overflow); the specimens of the banners and the offline page are in `/design-system` in
+    three languages (`design-system*.visual.spec.ts`).
+  - By design, not asserted: dates on the offline page are Baku dates and "today" is computed when the page opens, so
+    a stored week stays correct across midnight (§13.4); times of messages are the server's `created_at` and cosmetic
+    (§13.2 clock skew); message text goes through the same sanitising renderer as the chat (§13.2 malicious
+    Markdown); the offline page's language is the one the shell was stored in and is stored again when the language
+    changes (the marker includes it); a deleted account's session ends (D-108), so the sign-in page wipes; two tabs: a wipe in one
+    stops the writes of the other.
+  - Open: worker errors are not reported (D-118); Firefox and Safari, and the iOS install steps, were not run; the
+    update path was exercised with a second script address, not with a real second deploy; online-only controls in the
+    running app (a form, the calendar file link) keep their normal error state when the connection drops instead of
+    being disabled with a reason (the offline page has none, and the composer queues); the English and Russian
+    strings are first drafts like those of D-114; the stored copy is not encrypted at rest (it is the user's own data
+    behind the browser profile, and the switch is the control).
+
+## D-120 · 2026-11-02 · What the Group B gate found
+
+- **Context:** `make lint test`, then `make reset && make up && make seed` and the whole browser suite (`--workers=2`,
+  `--retries=0`, seed-data check on) against the Docker stack, then the visual project. Each finding was traced.
+- **Findings:**
+  - **A rate-limit test that could not fail the way it was written** (pre-flight, on `main`, before any Group B change:
+    `test_the_rest_fallback_sends_idempotently_even_without_redis`). The limiter counts in fixed windows
+    (`now // 10`). The test sent 20 messages about 100 ms apart and expected a `429` because "20 sends cannot fit in one
+    window or two", but two windows hold exactly 20: in the failing run the boundary fell between the tenth and the
+    eleventh send (10 + 10), so none was refused. It was not load (the log shows 100 ms per request). It now sends 25,
+    which cannot fit in the two windows a three-second burst spans. The tests that assert a `429` at an exact index
+    (`statuses[19]`, `statuses[10]`, `statuses[30]`) have the same theoretical boundary risk; their windows are an hour
+    or a day, so it is about one chance in a thousand or less per run. Not changed; listed as open.
+  - **Offline persistence missed windows loaded before the switch was on** (found by the full unit suite, not by the file
+    alone: the open-channel test passed alone and failed in the suite). The persisting effect only reacted to later
+    changes of the chat store, so a channel opened before storing was enabled was not stored until the next message.
+    It now stores the current windows once when it starts (`runtime.tsx`, `runtime.test.tsx`).
+  - **Toast close button was a 24 px touch target** (found by the phone test while the "storing is on" toast was up).
+    It has the shared 44 px tap area now (D-118).
+  - **The Cache Storage check after sign-out was too strict** (`pwa.spec.ts`): the sign-in page loads public static
+    files and the worker keeps them again right after the wipe. The test now requires that no shell and no address
+    outside `/_next/static`, `/icons` and `/icon.svg` is cached (D-117, consequence).
+  - **A test that sent the user offline one moment too early:** after a new user signs in the shell is stored a moment
+    later; the test now waits for it. This is also what a user sees if the connection drops within seconds of signing
+    in: the browser's own error page instead of ours.
+  - **Visual project timeout:** the design-system page has 34 sections now, and the one test that photographs all of
+    them in both themes took 35 s against Playwright's 30 s default (the log says "Test timeout of 30000ms exceeded", the
+    other errors are the closed browser that follows). The two spec files set 120 s. The new baselines are sections 31
+    and 32 (and the nested week section 33) in Azerbaijani and 31 and 32 in English and Russian.
+  - **Test setup, not product:** after the machine restarted, `docker compose up -d --wait` started only the
+    infrastructure; the application containers need `--profile app`, which `make up` adds. `make up` is the only way
+    used for the gate.
+- **Installability:** Chrome's own check (`Page.getInstallabilityErrors` in `pwa.spec.ts`) reports no error for the
+  signed-in app on `http://localhost`. Lighthouse was not added (a dependency for the same answer); the check runs in
+  the ordinary browser suite, so it is not a separate, flaky CI job.
+- **Result:** API 519 tests, 94.93 % coverage; web 510 tests (110 new); browser suite 85 of 85 with no retries after a
+  reset and seed, nine of them new (`pwa.spec.ts`); visual project 6 of 6; lint, formatting and types clean.
+- **Not run:** Firefox and Safari; a real second deploy for the update banner (a second script address stands in, D-118).
