@@ -1,6 +1,7 @@
 import base64
 import io
 import uuid
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -161,6 +162,19 @@ async def test_teacher_export_lists_teaching(
     assert sorted(
         (t["subject"]["code"], t["semester"]["year"], t["offering_code"]) for t in teaching
     ) == [("IQT-2102", 2025, "764a1"), ("IQT-2102", 2026, "765a1"), ("IQT-2102", 2026, "765a2")]
+
+
+async def test_export_holds_the_time_onboarding_was_finished(
+    client: AsyncClient, aysel: dict[str, str]
+) -> None:
+    before = (await client.get("/api/v1/me/export", headers=aysel)).json()
+    assert before["account"]["onboarded_at"] is None
+
+    await client.put("/api/v1/me/onboarding", headers=aysel, json={"done": True})
+    after = (await client.get("/api/v1/me/export", headers=aysel)).json()
+
+    stamp = datetime.fromisoformat(after["account"]["onboarded_at"])
+    assert abs(datetime.now(UTC) - stamp) < timedelta(minutes=1)
 
 
 async def test_export_is_rate_limited_and_needs_storage_for_photos(
