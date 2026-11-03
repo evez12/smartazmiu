@@ -74,7 +74,9 @@ async def test_a_ticket_opens_one_socket_once(
     assert (await client.post("/api/v1/ws/ticket")).status_code == 401
 
 
-async def test_ticket_issuing_is_rate_limited(person: MakePerson, client: AsyncClient) -> None:
+async def test_ticket_issuing_is_rate_limited(
+    person: MakePerson, client: AsyncClient, fixed_rate_window: None
+) -> None:
     aysel = await person()
     statuses = [
         (await client.post("/api/v1/ws/ticket", headers=aysel.headers)).status_code

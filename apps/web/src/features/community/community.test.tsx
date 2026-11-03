@@ -122,6 +122,33 @@ describe("feed", () => {
   });
 });
 
+describe("a refused list", () => {
+  const refused = () => json({ error: { code: "auth.forbidden", message: "x" } }, 403);
+
+  it("shows the forbidden state, not the retry button, for the feed", async () => {
+    serve({ "GET /api/v1/feed/posts": refused, "GET /api/v1/community/tags": () => json(TAGS) });
+    wrap(<FeedPage canModerate={false} />);
+
+    expect(
+      await screen.findByRole("heading", { name: /icazəniz yoxdur/ }, RETRY_WAIT),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Yenidən cəhd edin" })).not.toBeInTheDocument();
+  });
+
+  it("shows the forbidden state for the forum questions", async () => {
+    serve({
+      "GET /api/v1/forum/questions": refused,
+      "GET /api/v1/community/tags": () => json(TAGS),
+    });
+    wrap(<QuestionsPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: /icazəniz yoxdur/ }, RETRY_WAIT),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Yenidən cəhd edin" })).not.toBeInTheDocument();
+  });
+});
+
 const question = {
   id: "q-1",
   author: AUTHOR,
