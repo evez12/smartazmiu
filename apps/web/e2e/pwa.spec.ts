@@ -117,11 +117,15 @@ async function offlineDb(page: Page): Promise<OfflineDb> {
   return page.evaluate(async (name) => {
     const known = (await indexedDB.databases()).some((database) => database.name === name);
     if (!known) return null;
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const db = await new Promise<IDBDatabase | null>((resolve, reject) => {
       const request = indexedDB.open(name);
+      // The app deleted it after the check above: opening would create an empty database, so the upgrade is aborted.
+      request.onupgradeneeded = () => request.transaction?.abort();
       request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      request.onerror = () =>
+        request.error?.name === "AbortError" ? resolve(null) : reject(request.error);
     });
+    if (!db) return null;
     const all = <T>(store: string) =>
       new Promise<T[]>((resolve, reject) => {
         const request = db.transaction(store).objectStore(store).getAll();
@@ -259,6 +263,8 @@ test("the app can be installed: manifest, icons, worker script and no installabi
   request,
   browserName,
 }) => {
+  // The first sign-in after the stack has been idle takes well over the default 30 s in WebKit (about 5 s when warm).
+  test.setTimeout(120_000);
   await signIn(page, AYSEL.username, "/");
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",

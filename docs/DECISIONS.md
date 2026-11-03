@@ -3145,6 +3145,18 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   ("connection is back", no stored content). The app reports the shell as stored only after the worker's answer, which
   comes after the assets, so the product is correct; the test now waits until every script and stylesheet named by the
   stored page is in the static cache (`shellScriptsStored`). Passed twice in a row in WebKit after the change.
+- **Two more test-helper defects found by the gate:** `offlineDb` checked `indexedDB.databases()` and then opened the
+  database; when the app deleted it in between (what the test waits for), the open recreated an empty one and the next
+  read failed with "'meta' is not a known object store name" (Firefox). The upgrade is now aborted, so the helper never
+  creates it. The install test had the default 30 s timeout while a first sign-in after idle takes longer in WebKit
+  (about 5 s when warm); it now has 120 s like its siblings.
+- **OPEN, not explained (like D-125): the WebKit service worker stays `installing`.** In about 2 of 16 fresh WebKit
+  contexts on the https stack the registration never leaves `installing` (no active worker, no controller, no caches
+  after 25 s), although `/sw.js` was requested, answered 200 and finished. Firefox: 0 of 16. Any WebKit test that needs
+  the worker can hit it, and it is the cause of an intermittent `signing out deletes Cache Storage…` failure. Not shown
+  to be the self-signed certificate (the script loads); not shown to be the app (the install handler is empty). To
+  establish: run the same probe with a certificate WebKit trusts (the local-CA fallback), and in real iOS Safari
+  (Phase 4). Until then those WebKit results are reported as they come; nothing is retried.
 - **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
   round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
   `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
