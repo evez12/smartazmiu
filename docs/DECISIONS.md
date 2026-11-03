@@ -3090,3 +3090,15 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   gains `cabinet` in its second pattern; `policy.test.ts` checks `/api/v1/cabinet/sync-runs` and `/conflicts`.
 - **Consequences:** no header, CSP or service worker change. The student endpoints under `/me/transcript` were
   already listed.
+
+## D-132 · 2026-11-03 · Dependabot cooldown and the exemption for security fixes
+
+- **Context:** the Dependabot join (D-130) reverted eight bumps that were younger than the ten-day release-age rule
+  of D-014; Dependabot would have proposed them again at once. Separately, running Playwright directly failed in
+  global setup because `POSTGRES_*` was not exported (only `make e2e` exports `.env`).
+- **Decision (product owner, 2026-11-03):** every ecosystem in `.github/dependabot.yml` gets `cooldown:
+  default-days: 10`. **Security fixes are exempt** from the ten days: an advisory reported by `pip-audit`,
+  `pnpm audit` or GitHub may land at once, with a note in `docs/DECISIONS.md` naming the advisory (Dependabot's own
+  security updates already ignore the cooldown). The E2E database helper reads the repository `.env` itself when
+  `POSTGRES_PASSWORD` is not set; variables already set win.
+- **Consequences:** version updates arrive at least ten days after release. No product code changed.

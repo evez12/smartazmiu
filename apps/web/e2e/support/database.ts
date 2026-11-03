@@ -1,16 +1,28 @@
+import path from "node:path";
+
 import { Pool } from "pg";
 import { createClient } from "redis";
 
 /*
  * Direct access to the stack's database, for test hygiene only: removing what a test imported and checking that a
  * full run leaves the sample data as it found it. The product has no delete for imported academic records, so
- * the tests cannot clean up through the UI. `make e2e` exports the connection settings from .env.
+ * the tests cannot clean up through the UI. The connection settings come from .env (exported by `make e2e`, or read here).
  */
 let pool: Pool | undefined;
 
+/** `make e2e` exports `.env`; a direct `playwright test` run reads it here. Variables already set win. */
+function loadRepositoryEnv(): void {
+  try {
+    process.loadEnvFile(path.resolve(process.cwd(), "../../.env"));
+  } catch {
+    // No .env: the error below says what is missing.
+  }
+}
+
 function database(): Pool {
+  if (!process.env.POSTGRES_PASSWORD) loadRepositoryEnv();
   if (!process.env.POSTGRES_PASSWORD) {
-    throw new Error("POSTGRES_* settings are missing; run the suite through `make e2e`.");
+    throw new Error("POSTGRES_* settings are missing; create .env with `make env`.");
   }
   pool ??= new Pool({
     host: "127.0.0.1",
