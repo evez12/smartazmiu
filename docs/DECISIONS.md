@@ -3031,3 +3031,38 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **M4 (Phase 3):** Groups A, B and C of Sprint 15 are accepted and merged; Sprints 12 to 14 were accepted earlier;
   Sprint 11 (video) stays deferred and is excluded from M4 (D-102). "Feature freeze" is ticked. Phase 4 has not been
   started.
+
+## D-129 · 2026-11-03 · Test-only gaps from the "Open" lists of D-076, D-091, D-093, D-101, D-119 and D-120
+
+- **Context:** the queued instruction asked to close every open item that needs only a test, with no change to behaviour,
+  schemas, headers or auth, one commit per gap, on `test/open-gaps-sprint15`. Each item was checked against the tests
+  on `main` first; several had been closed since the review that listed them.
+- **Closed by a new test (this branch):**
+  - `onboarded_at` in `/me/export` (D-076): `test_export_holds_the_time_onboarding_was_finished`.
+  - Scan job retry safety (D-076, §13.5 at-least-once): a version scanned by one run is not scanned by the next, and two
+    runs at the same moment scan it once (`test_a_scan_job_that_runs_twice_scans_a_version_once`,
+    `test_two_scan_jobs_at_the_same_time_scan_a_version_once`). No bug was found; the `SKIP LOCKED` and status check hold.
+  - Deterministic time for the fixed-window rate-limit tests (D-120): the fixture `fixed_rate_window` freezes the limiter
+    clock at the start of a UTC day, which is the start of every window it counts in. It is used by the three tests that
+    assert a `429` at an exact request (`statuses[19]` chat uploads, `statuses[30]` socket tickets, `statuses[10]`
+    reports). The other limit tests assert with a limit of one or a clearly exceeded count and do not depend on a boundary.
+  - The 403 state of the feed and forum lists (D-091): two Vitest cases show the forbidden state and no retry button.
+- **Already closed before this branch (the "Open" text of the old decision is out of date):**
+  - Materials upload (30 per hour) and report (10 per hour) limits and two simultaneous `add_version` calls (D-076):
+    `test_uploads_and_reports_are_rate_limited`, `test_concurrent_versions_get_distinct_numbers`.
+  - The browser test of an infected submission (D-093, D-101): `coursework.spec.ts`, D-110.
+  - Screenshot baselines and specimens of the Sprint 12 and 13 screens (D-093, D-101, D-091): D-109.
+  - ÜOMG settings not remembered (D-101): D-107. Notifications for exams and paper decisions (D-101): D-105. The
+    per-subject exam-mode switch (D-101): D-104.
+- **Not test-only, left open (a test would assert behaviour that does not exist yet):** an idempotency key on
+  `POST /feedback` and the size of the support channel (D-076); the keep-text-without-author rule for feed, forum,
+  assignment and quiz rows when an account is deleted, the exam-integrity enforcement beyond the report reason and blocked
+  terms, blocks in the feed and forum (D-091, D-093); notifications for assignments, edit and delete of assignments,
+  the camera path of the scanner in a headless browser (D-093, D-101); worker error reporting, the update banner with a
+  real second deploy, the Safari run and the iOS steps, native-speaker review of the English and Russian text, the
+  at-rest encryption of the stored copy (D-119); the download of a purged file after storage loss and the load-test
+  scripts `prepare.py up/down` (D-076, D-077), which need a decision on the expected behaviour before they are tested.
+- **Branch state:** `main` has a local `--no-ff` merge of `feat/cabinet-adapter` that is not pushed, because
+  `origin/main` moved (merged Dependabot pull requests #13 to #21: base images, `uv`, compose images, lockfiles) after
+  the gate ran; those bumps were not part of any gate of this work (D-014 pins dependencies exactly). The feature branch
+  itself is on `origin`. The product owner decides how the two lines meet (see `docs/reports/m4-readiness.md`).
