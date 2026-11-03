@@ -86,6 +86,11 @@ class Settings(BaseSettings):
     # Signs the rotating attendance codes shown on a teacher's screen (D-094).
     attendance_secret: str = ""
 
+    # Keys the salted hash that stands for a deleted person in audit entries and the purge ledger (ADR 0005, D-135).
+    # It lives in the environment or secret store, never in the database or its backups: with the pepper kept
+    # elsewhere a restored backup can be matched against the ledger, and a leaked dump cannot be reversed.
+    deletion_pepper: str = ""
+
     # The personal cabinet behind the read-only mirror (D-126). "fake" serves made-up data; "azmiu" is the
     # university's own system and needs its address and key.
     cabinet_provider: Literal["fake", "azmiu"] = "fake"
@@ -99,6 +104,8 @@ class Settings(BaseSettings):
             raise ValueError("TICKET_SECRET must be set in production")
         if self.app_env == "production" and not self.attendance_secret:
             raise ValueError("ATTENDANCE_SECRET must be set in production")
+        if self.app_env == "production" and len(self.deletion_pepper) < 32:
+            raise ValueError("DELETION_PEPPER must be set in production (at least 32 characters)")
         # Made-up grades must never reach real students.
         if self.app_env == "production" and self.cabinet_provider == "fake":
             raise ValueError("CABINET_PROVIDER=fake is not allowed in production")

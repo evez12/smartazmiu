@@ -3237,3 +3237,34 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** first Phase 4 item, not started; needs migrations (nullable `SET NULL` on feed, forum, tip,
   submission, file and attempt authors), an audit retention job, a Keycloak admin credential and a restore-runbook
   step. The real iOS Safari check (D-133) and the other launch-blocking items stay in `docs/reports/m4-readiness.md`.
+
+## D-136 · 2026-11-04 · Account deletion, group A: schema, registry of references, salted-hash audit, purge ledger
+
+- **Context:** implementation of ADR 0005 / D-135 as Sprint 16-prep, "Phase 4, item 1". Group A is the schema and the
+  database part of the purge; the request flow, Keycloak, data handling per decision and the mails follow in groups B to E.
+- **Decision:**
+  - Migration 0039 (reversible; the downgrade refuses while accounts are pending or deleted, or while one of the eight author columns holds NULL): `user_status` gets `pending_deletion` and `deleted`; `users.deleted_at` (request time) and `users.purge_at`
+    (end of the 30 days) with a check that `purge_at` implies `deleted_at`; `audit_logs.actor_hash`; the table
+    `account_deletions` (purge ledger); eight author columns become nullable `SET NULL` (feed posts and comments, forum
+    questions and answers, course tips, assignment submissions and files, quiz attempts). Every reader already tests
+    `status == active`, so the two new statuses are excluded everywhere without a change.
+  - **Registry.** `privacy/deletion.py::REFERENCES` gives each of the 82 columns that point at `users` one handling:
+    personal (row deleted), anonymized (column set to NULL), audit (replaced by a hash) or retained (a DM channel keeps the
+    tombstone as counterpart; the ledger). A test compares the registry with the models and with the database's ON DELETE
+    rules, so a new table that points at users fails the build until someone decides.
+  - **Tombstone.** The `users` row stays with its id; name, e-mail, university id, subject, group, bio, photo, locale and
+    search key are cleared, `dm_policy` is `nobody`, status `deleted`. `university_id` is NULL, so the same number registers
+    again as a new account.
+  - **Audit.** Entries by the person get `actor_id = NULL` and `actor_hash`; entries about the person get target type
+    `deleted_user` and the hash as id; the id inside `details` is replaced by the hash. The hash is HMAC-SHA256 under
+    `DELETION_PEPPER`, which comes from the environment or secret store only, is at least 32 characters in production and
+    is never stored in the database (`pilot.md` section 8). An empty pepper makes the purge fail before it changes anything.
+  - **Ledger.** `account_deletions` keeps the hash, reason (self-service, staff, test cleanup), due date, one timestamp per
+    purge step and the class (never the message) of the last error. `purge_database` is idempotent: it returns at once when
+    its step is done.
+- **Consequences:** the anonymized columns are NULLed explicitly at purge, not left to the foreign key, because the tombstone
+  row is not deleted; the SET NULL rule stays as the safety net. Chat messages of the person are updated one by one
+  (`messages.author_id`, partitioned), which is the heavy part of a purge. Readers of the eight columns must handle NULL
+  (group D reviews the gradebook and quiz result queries, one of which still joins `users` with an inner join).
+- **Not yet done (later groups):** the flow and the job (B), Keycloak (C), objects, DMs' author link beyond the NULL,
+  free-text scrub and the cabinet check (D), mails and UI (E). The audit retention job (3 years) is planned with B.

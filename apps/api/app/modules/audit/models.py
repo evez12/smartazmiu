@@ -61,6 +61,9 @@ class AuditAction(StrEnum):
     CABINET_SYNC_REQUESTED = "cabinet.sync_requested"
     CABINET_VIEWED = "cabinet.viewed"
     CABINET_CONFLICTS_VIEWED = "cabinet.conflicts_viewed"
+    ACCOUNT_DELETION_REQUESTED = "account.deletion_requested"
+    ACCOUNT_DELETION_CANCELLED = "account.deletion_cancelled"
+    ACCOUNT_DELETED = "account.deleted"
 
 
 class AuditLog(Base):
@@ -80,6 +83,8 @@ class AuditLog(Base):
     )
     # NULL when the change came from the system itself (identity provider sync, seed imports).
     actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # Keyed hash of the id of a deleted person who was the actor; set when actor_id is cleared (ADR 0005).
+    actor_hash: Mapped[str | None] = mapped_column(String(64))
     action: Mapped[str] = mapped_column(String(64))
     target_type: Mapped[str | None] = mapped_column(String(32))
     target_id: Mapped[str | None] = mapped_column(String(64))

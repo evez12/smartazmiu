@@ -630,7 +630,9 @@
       },
       "statuses": {
         "active": "Active",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "pending_deletion": "Deletion pending",
+        "deleted": "Deleted"
       },
       "linked": "Has signed in",
       "notLinked": "Has not signed in yet",
@@ -737,7 +739,10 @@
         "cabinet_sync_run": "Cabinet sync ran",
         "cabinet_sync_requested": "Cabinet sync requested",
         "cabinet_viewed": "Cabinet data viewed",
-        "cabinet_conflicts_viewed": "Cabinet discrepancies viewed"
+        "cabinet_conflicts_viewed": "Cabinet discrepancies viewed",
+        "account_deletion_requested": "Account deletion requested",
+        "account_deletion_cancelled": "Account deletion cancelled",
+        "account_deleted": "Account deleted"
       },
       "rolesAdded": "Added: {roles}",
       "rolesRemoved": "Removed: {roles}",

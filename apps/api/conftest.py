@@ -41,6 +41,7 @@ def settings() -> Settings:
         vapid_secret="test-vapid-secret",
         ticket_secret="test-ticket-secret",
         attendance_secret="test-attendance-secret",
+        deletion_pepper="test-deletion-pepper-0123456789abcdef",
     )
     database = settings.database_url.path or ""
     # The suite truncates tables; refuse to run against anything but a dedicated test database.

@@ -57,7 +57,7 @@ class CourseTip(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
     subject_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subjects.id", ondelete="CASCADE"))
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     semester_taken_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("semesters.id"))
     difficulty: Mapped[int] = mapped_column(SmallInteger)
     weekly_hours: Mapped[WeeklyHours] = mapped_column(_enum(WeeklyHours, "tip_weekly_hours"))

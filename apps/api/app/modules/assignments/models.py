@@ -95,8 +95,8 @@ class AssignmentSubmission(Base):
     assignment_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("assignments.id", ondelete="CASCADE"), index=True
     )
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    student_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     status: Mapped[SubmissionStatus] = mapped_column(
         _enum(SubmissionStatus, "submission_status"),
@@ -157,8 +157,8 @@ class AssignmentFile(Base):
     assignment_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("assignments.id", ondelete="SET NULL"), index=True
     )
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    student_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     submission_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("assignment_submissions.id", ondelete="SET NULL")

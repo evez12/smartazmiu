@@ -2382,7 +2382,10 @@
           "cabinet.sync_run",
           "cabinet.sync_requested",
           "cabinet.viewed",
-          "cabinet.conflicts_viewed"
+          "cabinet.conflicts_viewed",
+          "account.deletion_requested",
+          "account.deletion_cancelled",
+          "account.deleted"
         ],
         "title": "AuditAction",
         "type": "string"
@@ -11652,7 +11655,9 @@
       "UserStatus": {
         "enum": [
           "active",
-          "inactive"
+          "inactive",
+          "pending_deletion",
+          "deleted"
         ],
         "title": "UserStatus",
         "type": "string"

@@ -142,6 +142,10 @@ must fail).
   infra`, then `docker compose exec -T postgres pg_restore -U smartazmiu -d smartazmiu --clean --if-exists <
   smartazmiu-….dump`, then `make up` and sign in with a test account. Record how long it took in the pilot
   ticket. The automated nightly backup and the scheduled drill are a later sprint (§8); until then this is manual.
+- **`DELETION_PEPPER`** (ADR 0005): the key of the hash that names a deleted account. Keep a copy in the university
+  secret store, apart from the database dumps, and never change it. A dump does not contain it on purpose: after a
+  restore the deletion ledger is matched against the restored users with it, and the accounts deleted since the dump
+  are purged again (the step of the restore drill is added with the purge flow, group B).
 - **Rollback:** check out the previous release commit and run `make up`. Migrations are reversible
   (`docker compose run --rm migrate alembic downgrade -1`), but a downgrade that drops a table or column runs only
   after a fresh dump and with the product owner's agreement: it removes data.

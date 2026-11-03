@@ -56,6 +56,7 @@ APP_TABLES = {
     "cabinet_semesters",
     "cabinet_appeals",
     "cabinet_conflicts",
+    "account_deletions",
 }
 APP_ENUMS = (
     "user_status",
@@ -92,6 +93,7 @@ APP_ENUMS = (
     "cabinet_sync_trigger",
     "cabinet_sync_outcome",
     "cabinet_appeal_status",
+    "account_deletion_reason",
 )
 
 

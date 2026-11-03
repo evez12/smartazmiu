@@ -112,8 +112,8 @@ class QuizAttempt(Base):
     quiz_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("quizzes.id", ondelete="CASCADE"), index=True
     )
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    student_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     attempt_number: Mapped[int] = mapped_column(SmallInteger)
     status: Mapped[AttemptStatus] = mapped_column(

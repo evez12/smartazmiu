@@ -3662,7 +3662,10 @@ export interface components {
       | "cabinet.sync_run"
       | "cabinet.sync_requested"
       | "cabinet.viewed"
-      | "cabinet.conflicts_viewed";
+      | "cabinet.conflicts_viewed"
+      | "account.deletion_requested"
+      | "account.deletion_cancelled"
+      | "account.deleted";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -7009,7 +7012,7 @@ export interface components {
      * UserStatus
      * @enum {string}
      */
-    UserStatus: "active" | "inactive";
+    UserStatus: "active" | "inactive" | "pending_deletion" | "deleted";
     /** VersionCreateIn */
     VersionCreateIn: {
       /** Copyright Confirmed */

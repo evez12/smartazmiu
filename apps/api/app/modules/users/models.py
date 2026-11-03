@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -14,6 +24,10 @@ AZ_COLLATION = "az-x-icu"
 class UserStatus(StrEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
+    PENDING_DELETION = "pending_deletion"
+    """Asked for deletion: cannot sign in, hidden from others, recoverable until ``purge_at`` (ADR 0005)."""
+    DELETED = "deleted"
+    """Tombstone left by the purge: only the id remains."""
 
 
 class PersonType(StrEnum):
@@ -55,7 +69,11 @@ class RoleCode(StrEnum):
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("locale IN ('az', 'en', 'ru')", name="locale_supported"),)
+    __table_args__ = (
+        CheckConstraint("locale IN ('az', 'en', 'ru')", name="locale_supported"),
+        CheckConstraint("purge_at IS NULL OR deleted_at IS NOT NULL", name="deletion_timestamps"),
+        Index("ix_users_purge_at", "purge_at", postgresql_where=text("purge_at IS NOT NULL")),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
     # Stable subject from the identity provider; e-mail and names may change. NULL until an imported
@@ -100,6 +118,9 @@ class User(Base):
     roles_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Finished or dismissed the first-run tour (D-072); stored so it does not return on another device.
     onboarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When the person asked for deletion and when the grace period ends (ADR 0005); both NULL for a live account.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    purge_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Optimistic concurrency for profile edits (§4.2); photo changes do not bump it.
     profile_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -507,7 +507,7 @@ class CommunityService:
         accepted = question.accepted_answer_id
         return QuestionDetailOut(
             id=str(question.id),
-            author=_author(people.get(question.author_id)),
+            author=_author(people.get(question.author_id) if question.author_id else None),
             title=question.title,
             body=question.body,
             tags=tags[question.id],
