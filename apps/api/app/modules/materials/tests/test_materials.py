@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.core.db import Database
@@ -364,6 +364,46 @@ async def test_scan_waits_out_outages_and_rejects_wrong_content(
     assert (await MaterialScanner(db, storage, FakeScanner()).scan_pending()).rejected == 1
     await db.refresh(fake_version)
     assert fake_version.scan_status.value == "failed"
+
+
+async def test_a_scan_job_that_runs_twice_scans_a_version_once(
+    client: AsyncClient,
+    db: AsyncSession,
+    people: dict[str, Person],
+    statistika: Statistika,
+    storage: MemoryStorage,
+) -> None:
+    """At-least-once delivery (§13.5): the queue may start the same job again."""
+    leyla = people["leyla"]
+    await create(client, leyla, await upload(client, storage, leyla, statistika))
+    scanner = FakeScanner()
+
+    first = await MaterialScanner(db, storage, scanner).scan_pending()
+    second = await MaterialScanner(db, storage, scanner).scan_pending()
+
+    assert (first.clean, second.clean, second.rejected, second.waiting) == (1, 0, 0, 0)
+    assert scanner.scanned == 1
+
+
+async def test_two_scan_jobs_at_the_same_time_scan_a_version_once(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    people: dict[str, Person],
+    statistika: Statistika,
+    storage: MemoryStorage,
+) -> None:
+    leyla = people["leyla"]
+    await create(client, leyla, await upload(client, storage, leyla, statistika))
+    scanner = FakeScanner()
+
+    async def job() -> int:
+        async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+            return (await MaterialScanner(session, storage, scanner).scan_pending()).clean
+
+    cleaned = await asyncio.gather(job(), job())
+
+    assert sum(cleaned) == 1
+    assert scanner.scanned == 1
 
 
 async def test_reports_and_hiding(
