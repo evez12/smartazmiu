@@ -3150,6 +3150,16 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   read failed with "'meta' is not a known object store name" (Firefox). The upgrade is now aborted, so the helper never
   creates it. The install test had the default 30 s timeout while a first sign-in after idle takes longer in WebKit
   (about 5 s when warm); it now has 120 s like its siblings.
+- **Found by the http gate on this branch (two functional failures, no app code changed):**
+  - `ERR_CONNECTION_RESET` on the first request of the first test right after `make reset && make up && make seed`;
+    nginx's log starts with the next request, so the reset happened between the host and the container (Docker Desktop's
+    port forwarding in the first seconds). The Playwright global setup now waits until `/healthz` answers 200 (60 s
+    limit); it is a readiness check, not a retry. Not seen on the three earlier from-scratch gates of 2026-11-03.
+  - `onboarding.spec.ts` closed the tour and navigated at once. The tour hides on click (`onMutate`) and saves with
+    `PUT /me/onboarding` in the background; a navigation that starts before the save lands aborts it, so the tour
+    returns on the next page. The test now waits for the save. **Open, app side (not fixed here):** a person who
+    closes the tour and leaves the page within the save time sees it again; the proposed fix is `keepalive: true` on
+    that request or keeping the page until it settles.
 - **OPEN, not explained (like D-125): the WebKit service worker stays `installing`.** In about 2 of 16 fresh WebKit
   contexts on the https stack the registration never leaves `installing` (no active worker, no controller, no caches
   after 25 s), although `/sw.js` was requested, answered 200 and finished. Firefox: 0 of 16. Any WebKit test that needs
