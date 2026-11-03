@@ -630,7 +630,9 @@
       },
       "statuses": {
         "active": "Aktiv",
-        "inactive": "Deaktiv"
+        "inactive": "Deaktiv",
+        "pending_deletion": "Silinmə gözlənilir",
+        "deleted": "Silinib"
       },
       "linked": "Daxil olub",
       "notLinked": "Hələ daxil olmayıb",
@@ -737,7 +739,10 @@
         "cabinet_sync_run": "Kabinet sinxronizasiyası icra edildi",
         "cabinet_sync_requested": "Kabinet sinxronizasiyası istənildi",
         "cabinet_viewed": "Kabinet məlumatına baxıldı",
-        "cabinet_conflicts_viewed": "Kabinet fərqlərinə baxıldı"
+        "cabinet_conflicts_viewed": "Kabinet fərqlərinə baxıldı",
+        "account_deletion_requested": "Hesabın silinməsi istənildi",
+        "account_deletion_cancelled": "Hesabın silinməsi ləğv edildi",
+        "account_deleted": "Hesab silindi"
       },
       "rolesAdded": "Əlavə: {roles}",
       "rolesRemoved": "Silinən: {roles}",

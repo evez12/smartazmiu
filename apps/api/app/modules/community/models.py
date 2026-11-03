@@ -35,7 +35,7 @@ class FeedPost(Base):
         Index("ix_feed_posts_created_at", "created_at", "id"),
     )
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -71,7 +71,7 @@ class FeedComment(Base):
     post_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("feed_posts.id", ondelete="CASCADE"), index=True
     )
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     body: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -104,7 +104,7 @@ class ForumQuestion(Base):
         Index("ix_forum_questions_created_at", "created_at", "id"),
     )
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid7)
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200))
     body: Mapped[str] = mapped_column(Text)
     accepted_answer_id: Mapped[uuid.UUID | None] = mapped_column()
@@ -141,7 +141,7 @@ class ForumAnswer(Base):
     question_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("forum_questions.id", ondelete="CASCADE"), index=True
     )
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     body: Mapped[str] = mapped_column(Text)
     teacher_verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     verified_by: Mapped[uuid.UUID | None] = mapped_column(

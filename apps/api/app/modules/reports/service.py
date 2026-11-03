@@ -422,7 +422,7 @@ class ReportService:
                 found_tip = tips.get(report.target_id)
                 if found_tip is not None:
                     tip, subject_name = found_tip
-                    reported = _person(people.get(tip.author_id))
+                    reported = _person(people.get(tip.author_id) if tip.author_id else None)
                     tip_out = ReportedTipOut(
                         id=str(tip.id),
                         subject_name=subject_name,

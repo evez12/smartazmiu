@@ -23,6 +23,7 @@ def test_production_flag_follows_app_env() -> None:
         cabinet_provider="azmiu",
         cabinet_api_url="https://cabinet.example",
         cabinet_api_key="key",
+        deletion_pepper="p" * 32,
     )
     assert production.is_production
     assert not Settings(app_env="development").is_production

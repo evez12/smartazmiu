@@ -630,7 +630,9 @@
       },
       "statuses": {
         "active": "Активен",
-        "inactive": "Неактивен"
+        "inactive": "Неактивен",
+        "pending_deletion": "Ожидает удаления",
+        "deleted": "Удалён"
       },
       "linked": "Входил в систему",
       "notLinked": "Ещё не входил",
@@ -737,7 +739,10 @@
         "cabinet_sync_run": "Синхронизация кабинета выполнена",
         "cabinet_sync_requested": "Синхронизация кабинета запрошена",
         "cabinet_viewed": "Данные кабинета просмотрены",
-        "cabinet_conflicts_viewed": "Расхождения кабинета просмотрены"
+        "cabinet_conflicts_viewed": "Расхождения кабинета просмотрены",
+        "account_deletion_requested": "Запрошено удаление учётной записи",
+        "account_deletion_cancelled": "Удаление учётной записи отменено",
+        "account_deleted": "Учётная запись удалена"
       },
       "rolesAdded": "Добавлено: {roles}",
       "rolesRemoved": "Удалено: {roles}",
