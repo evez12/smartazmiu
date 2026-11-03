@@ -17,7 +17,13 @@ export default defineConfig({
   snapshotPathTemplate: "{testDir}/__screenshots__/{testFileName}/{arg}{ext}",
   expect: { toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: "disabled" } },
   // The app follows Accept-Language when no language was chosen; the specs are written in Azerbaijani.
-  use: { baseURL, locale: "az-AZ", trace: "retain-on-failure" },
+  use: {
+    baseURL,
+    locale: "az-AZ",
+    trace: "retain-on-failure",
+    // Only the local https stack (make up-tls) has a self-signed certificate (D-133).
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === "1",
+  },
   projects: [
     {
       name: "functional",

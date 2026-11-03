@@ -8,11 +8,20 @@ import { undersizedTargets } from "./support/touch-targets";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 // WebKit does not send the app's Secure state cookie back over plain http://localhost, so the sign-in callback
-// ends in `signin_expired` and no test can reach a signed-in page. It needs a TLS front for the local stack (D-128).
+// ends in `signin_expired` and no test can reach a signed-in page. `make up-tls` gives it https (D-128, D-133).
 test.skip(
-  ({ browserName }) => browserName === "webkit",
-  "WebKit cannot complete the sign-in over plain HTTP on localhost (D-128)",
+  ({ browserName, baseURL }) => browserName === "webkit" && !baseURL?.startsWith("https:"),
+  "WebKit cannot complete the sign-in over plain HTTP on localhost; use make up-tls (D-128)",
 );
+// In the WebKit build Playwright ships, `PushManager.getSubscription()` on an active worker blocks the page's main
+// thread (a heartbeat inside the page stops), and the notification settings page and the chat menu call it on mount.
+// The offline specs never use push, so WebKit gets an answer of "no subscription" (D-133).
+test.beforeEach(async ({ context, browserName }) => {
+  if (browserName !== "webkit") return;
+  await context.addInitScript(() => {
+    PushManager.prototype.getSubscription = () => Promise.resolve(null);
+  });
+});
 const FIREFOX_OFFLINE =
   "Playwright's offline mode does not reach the service worker's own requests in Firefox (D-128)";
 // The service worker registers only in a production build (the development server serves changing code under

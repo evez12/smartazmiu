@@ -3102,3 +3102,29 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   security updates already ignore the cooldown). The E2E database helper reads the repository `.env` itself when
   `POSTGRES_PASSWORD` is not set; variables already set win.
 - **Consequences:** version updates arrive at least ten days after release. No product code changed.
+
+## D-133 · 2026-11-03 · Local HTTPS for WebKit and Firefox (`make up-tls`), dev and CI only
+
+- **Context:** WebKit does not send the app's `Secure` cookies back over `http://localhost` (D-128). The product owner
+  approved a local HTTPS front with changes: committed config, a guard against switching without a reset, and proof
+  in WebKit and Firefox before merging. No change to production nginx or compose, the realm file, cookies, the CSP
+  code or authentication.
+- **Decision:** `nginx.conf` has no `include`, so a server snippet cannot be added without editing it. Instead a
+  second nginx container (`docker-compose.tls.yml`, `infra/nginx/tls.conf`) ends TLS on :443 and proxies to the
+  stack's nginx on :80, which is unchanged. The certificate is a 30-day self-signed one from `make tls-cert`
+  (`openssl`, `infra/tls/`, gitignored). `make up-tls` sets `APP_PUBLIC_URL=https://localhost` and refuses to run while
+  the Postgres or Keycloak volume exists unless `RESET_OK=1`, because Keycloak keeps the redirect URIs of its first
+  start. `down` and `reset` gained `--remove-orphans` so the extra container is removed. `make e2e-pwa-browsers` runs
+  `pwa.spec.ts` in WebKit and Firefox with `E2E_IGNORE_HTTPS_ERRORS=1`.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **Findings:**
+  - Chromium cannot sign in on the https stack: the app sends HSTS with `includeSubDomains` for `localhost`, which
+    covers every port, so Chromium upgrades the `http://localhost:8080` Keycloak hop to https and it times out.
+    Chromium keeps using the http stack. Keycloak over https would be the fix and is an authentication change.
+  - In the WebKit build Playwright ships, `PushManager.getSubscription()` on an active worker blocks the page's main
+    thread (a heartbeat inside the page stops). The notification settings page and the chat menu call it on mount. The
+    offline specs never use push, so `pwa.spec.ts` replaces it with an answer of "no subscription" in WebKit only.
+- **Result:** see the report of the same day; one WebKit test is not explained yet and the branch is not merged.
