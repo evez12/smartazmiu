@@ -37,6 +37,19 @@ about dates. "Decision" means an entry in `docs/DECISIONS.md`.
 
 Nothing was retried. The skips are in the spec with their reasons (D-128).
 
+### Gate after joining Dependabot (2026-11-03)
+
+`make reset`, `make up`, `make seed`, then, on the merged tree with the one kept bump (Prometheus v3.15.1, D-130):
+
+| Check | Result |
+|---|---|
+| `pip-audit`, `pnpm audit --audit-level high` | No finding; two moderate findings (`glob`, `minimatch` under `@sentry/nextjs`) were there before |
+| `make lint test` | Green. API 570 tests, 95 % coverage; web 572 tests |
+| `make visual` | 6 of 6 |
+| Functional E2E, production build, `--workers=2 --retries=0`, seed check on | 91 of 91 |
+| `pwa.spec.ts`, Chromium | 9 of 9 |
+| After the offline-store change (D-131) and the merge of the test-gap branch | `make lint test` green: API 573 tests, 95 %; web 574 tests |
+
 ## 3. Everything still open
 
 "Blocks launch" is judged against §7 (non-functional) and §14 (security) of the spec.
@@ -57,7 +70,7 @@ Nothing was retried. The skips are in the spec with their reasons (D-128).
 | Download of a purged file after storage loss untested; load-test `prepare.py up/down` untested | D-076, D-077 | No |
 | The launch load target (3,000 sockets, 200 messages per second, homepage 500 requests per second) has not been run; 1,000 sockets at 50 messages per second passed on the compose stack | D-082, roadmap Phase 4 | **Yes**: the load test is a Phase 4 launch item |
 | Phase 4 items (load test, penetration test, backup and restore drill, production infra, data import, guide recruitment, content, accessibility audit) | roadmap Phase 4 | **Yes**, they are the exit criteria of M5 |
-| `origin/main` has merged Dependabot pull requests #13 to #21 that no gate of this work covers; local `main` holds the unpushed merge of `feat/cabinet-adapter` | D-014, D-129 | No, but the two lines must be joined and gated before anything else lands |
+| Dependabot #13 to #21 joined with Group C and gated; eight of nine bumps were reverted because the releases were under ten days old, and Dependabot will propose them again | D-014, D-130 | No |
 | D-125 first-navigation stall, cause not established | D-125 | No; record a Chromium net-log if it recurs |
 | Provisional decisions awaiting the product owner | none this time | The ask-first questions of Group C were answered (CLAUDE.md and one question on 2026-11-03) |
 | Bugs found by the test-gap work | none | The scan-job and concurrency tests passed; no `xfail` was needed |
@@ -79,7 +92,7 @@ is not ticked.
 - [ ] **Copy reviewed for tone and terminology.** Azerbaijani copy reviewed in the closeouts; English and Russian are first drafts (D-114); not ticked.
 - [ ] **Screenshots of changed screens attached to the PR.** Not applicable as worded: work is merged as branches without PRs; the visual baselines in the repository take that place for specimens. Application screens have no screenshots beyond the specimens; not ticked.
 
-## 5. Branches waiting for review
+## 5. Branches
 
-- `feat/cabinet-adapter`: on `origin`, merged into local `main` with `--no-ff`, **local `main` not pushed**.
-- `test/open-gaps-sprint15`: the test-only gap closures (D-129) and this report; on `origin`, not merged.
+- `feat/cabinet-adapter` and `test/open-gaps-sprint15`: merged into `main` with `--no-ff` and pushed.
+- `docs/adr-account-deletion`: ADR 0005 "Account deletion" (proposed, not accepted); on `origin`, not merged.
