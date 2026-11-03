@@ -3048,3 +3048,12 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** Dependabot will propose the reverted bumps again; they can be accepted once ten days old and gated.
   The D-014 table has a row for what landed. `pip-audit` reports nothing; `pnpm audit --audit-level high` reports nothing
   at high (the two moderate findings, `glob` and `minimatch` under `@sentry/nextjs`, were there before).
+
+## D-131 · 2026-11-03 · `/api/v1/cabinet` joins the never-stored list of the offline policy
+
+- **Context:** D-127 left the diff to the product owner (D-124): the staff cabinet endpoints answer `no-store` and the
+  writer takes only schedule and channel kinds, so nothing was stored, but the second line of defence did not name them.
+- **Decision (product owner, 2026-11-03): approved as written.** `NEVER_STORED` in `apps/web/src/lib/offline/policy.ts`
+  gains `cabinet` in its second pattern; `policy.test.ts` checks `/api/v1/cabinet/sync-runs` and `/conflicts`.
+- **Consequences:** no header, CSP or service worker change. The student endpoints under `/me/transcript` were
+  already listed.

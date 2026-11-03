@@ -56,6 +56,8 @@ describe("data that is never stored", () => {
     "/api/v1/exams/papers/3/download",
     "/api/v1/gpa/rules",
     "/api/v1/admin/users",
+    "/api/v1/cabinet/sync-runs",
+    "/api/v1/cabinet/conflicts",
     "/api/v1/reports/queue",
     "/api/v1/privacy/consents",
     "/api/v1/chat/ws-ticket",
