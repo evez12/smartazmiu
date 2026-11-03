@@ -3202,3 +3202,13 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   always runs the database part, and then reports the collected errors; the Mailpit helper uses `127.0.0.1`.
   `TestAccounts.deleteAll` continues after a failed Keycloak call instead of leaving the later accounts. Test-only; no
   app change. Residue from earlier failed runs still needs a `make reset`.
+- **Side effect on WebKit (measured, handled in the test):** with nothing listening on `::1`, the WebKit build Playwright
+  ships on Windows waits for the IPv6 refusal before it falls back to IPv4: about 0.23 s per request (2 s for the first)
+  in the page, against 8 ms in Firefox, which tries both families at once like Chromium. The first offline download
+  (about twenty requests) then outlasted the 5 s default of `toBeChecked`, and five WebKit tests failed at the switch.
+  `enableOfflineStorage` now waits up to 30 s for it. Nothing in the product changes; it is a property of that browser
+  build on `localhost` and does not reach users.
+- **Gate on this branch (2026-11-03):** `make reset`, `make up`, `make seed`, then the functional suite with `--workers=2
+  --retries=0` and the seed check, then `pwa.spec.ts` in Chromium, twice in a row: 91 of 91 and 9 of 9 both times. On the
+  https stack, `make e2e-pwa-browsers`: WebKit 8 passed, 1 skipped (installability check is Chromium-only); Firefox 8
+  passed, 1 skipped (same). The WebKit worker that stays `installing` (D-133) did not appear in that run.

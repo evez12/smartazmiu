@@ -245,7 +245,9 @@ async function enableOfflineStorage(page: Page) {
   const toggle = page.getByRole("switch", { name: "Bu cihazda oflayn saxla" });
   await expect(toggle).not.toBeChecked();
   await toggle.click();
-  await expect(toggle).toBeChecked();
+  // The switch turns on when the first download is done. WebKit on Windows adds about 0.2 s to every new connection to
+  // localhost while nothing listens on ::1 (D-134), so the 5 s default is too short for it.
+  await expect(toggle).toBeChecked({ timeout: 30_000 });
   await expect(page.getByText(/^Son yenilənmə: /)).toBeVisible({ timeout: 30_000 });
   await expect
     .poll(async () => (await cacheNames(page)).some((name) => name.startsWith("sa-shell-")), {
