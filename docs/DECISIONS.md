@@ -2891,6 +2891,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
   code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
   record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.
+- **Update 2026-11-03 (D-134):** requests that the browser registered and nginx never saw are what D-134 measured on the IPv6
+  loopback of Docker Desktop (about 0.5 % of new connections to `::1` dropped, none over `127.0.0.1`). It is the probable
+  cause of this stall and of the connection resets of the gate runs on this branch; earlier green gates may have passed
+  despite it. **Not proven for D-125:** no run has shown the stall with the loopback bound to IPv4.
 
 ## D-126 · 2026-11-03 · Personal cabinet mirror (Sprint 15, Group C)
 
@@ -3134,6 +3138,8 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   so the app would say "the connection is back"; a cookie-driven `onLine` stands in for what a browser reports when the
   connection drops. And the worker's own requests in Firefox do not carry the context's `Accept-Language`, so its
   stored offline page came in English; the `NEXT_LOCALE` cookie (D-113) fixes the language.
+- **What the Firefox offline tests prove:** `navigator.onLine` is driven by a cookie shim there, so they prove the offline
+  UI and the service worker's fallback page, not the browser's own `onLine` detection.
 - **WebKit freeze (open item, Phase 4):** in the WebKit build Playwright ships, `PushManager.getSubscription()` on an
   active worker blocks the page's main thread (a heartbeat inside the page stops). The app calls it on mount (the
   notification settings page, the chat menu). `pwa.spec.ts` replaces it with "no subscription" in WebKit only; the
@@ -3172,3 +3178,27 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
   and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
 - **Numbers:** see the gate result in the report of 2026-11-03.
+
+## D-134 · 2026-11-03 · Host ports bind to IPv4 loopback by default (`BIND_ADDR`), and the test cleanup no longer depends on other services
+
+- **Context:** the http gate on `chore/local-tls` failed with `ERR_CONNECTION_RESET`, `ECONNRESET` and timeouts that never
+  reached nginx. Without any browser, 3000 new connections in parallel (32 threads) showed: `127.0.0.1` 0 failures,
+  `::1` 26 timeouts, `localhost` (tries `::1` first) 13 to 20. Docker Desktop's IPv6 loopback forwarding on this box drops
+  a share of new connections.
+- **Decision (product owner, 2026-11-03):** every published host port in `docker-compose.yml` uses
+  `${BIND_ADDR:-127.0.0.1}` (database, both Redis instances, storage, ClamAV, Keycloak, Mailpit); nginx uses
+  `${NGINX_BIND_ADDR:-${BIND_ADDR:-127.0.0.1}}`, and so does the https front of `docker-compose.tls.yml`. Monitoring was
+  loopback-bound already (D-080). The pilot server sets `NGINX_BIND_ADDR=0.0.0.0` and nothing else
+  (`docs/runbooks/pilot.md`, section 7). Side benefit: the infrastructure ports are no longer reachable from the LAN.
+- **Measured after the change** (same test): `127.0.0.1` 3000 of 3000 answered in 3.9 s; `localhost` 3000 of 3000 answered,
+  but the sequential Python client waited about 2 s per connection on the refused `::1` first (191 s in all; curl takes
+  0.2 s per request and Node `fetch` about 12 ms, because they try both families at once, as browsers do); `::1` is
+  refused for all 3000 (nothing listens there any more), which is the intended effect.
+- **Status of D-125:** linked as the probable cause, not proven (see D-125).
+- **Cleanup defect found on the way:** after the failed runs `users (registry)` was 57 → 59 and three course offerings,
+  groups and teachers were left. `TestRecords.removeAll` called Mailpit (`localhost:8025`) and Redis first and outside
+  any `try`, so when one of those calls was reset the whole database cleanup was skipped, contrary to D-045 (records go
+  also when a test fails or times out). `removeAll` now runs the mail and rate-limit steps with their errors collected,
+  always runs the database part, and then reports the collected errors; the Mailpit helper uses `127.0.0.1`.
+  `TestAccounts.deleteAll` continues after a failed Keycloak call instead of leaving the later accounts. Test-only; no
+  app change. Residue from earlier failed runs still needs a `make reset`.

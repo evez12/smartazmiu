@@ -96,10 +96,18 @@ export class TestAccounts {
     return account;
   }
 
+  /** Deletes every account the test created; one failed call does not leave the later accounts behind. */
   async deleteAll(): Promise<void> {
+    const problems: unknown[] = [];
     for (const id of this.ids.splice(0)) {
-      await keycloakAdmin(`/users/${id}`, { method: "DELETE" });
+      try {
+        await keycloakAdmin(`/users/${id}`, { method: "DELETE" });
+      } catch (error) {
+        problems.push(error);
+      }
     }
+    if (problems.length)
+      throw new AggregateError(problems, "Test accounts: deleting in Keycloak failed");
   }
 }
 

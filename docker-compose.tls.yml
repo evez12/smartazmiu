@@ -5,7 +5,7 @@ services:
     profiles: ["app"]
     image: nginx:1.30.6-alpine
     ports:
-      - "${HTTPS_PORT:-443}:443"
+      - "${NGINX_BIND_ADDR:-${BIND_ADDR:-127.0.0.1}}:${HTTPS_PORT:-443}:443"
     volumes:
       - ./infra/nginx/tls.conf:/etc/nginx/nginx.conf:ro
       - ./infra/tls/localhost.crt:/etc/nginx/tls/localhost.crt:ro
