@@ -3221,3 +3221,19 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   --retries=0` and the seed check, then `pwa.spec.ts` in Chromium, twice in a row: 91 of 91 and 9 of 9 both times. On the
   https stack, `make e2e-pwa-browsers`: WebKit 8 passed, 1 skipped (installability check is Chromium-only); Firefox 8
   passed, 1 skipped (same). The WebKit worker that stays `installing` (D-133) did not appear in that run.
+
+## D-135 · 2026-11-04 · Account deletion: ADR 0005 accepted with the product owner's twelve decisions
+
+- **Context:** ADR 0005 collected what account deletion must do (§5.4, §13.2, D-046, D-091, D-093, D-108, D-112, D-126)
+  and ended with twelve decisions that touch personal data, grades, authentication and hard deletion, so they were
+  the product owner's.
+- **Options:** for each decision the ADR's proposal against one or two alternatives (shown in the review).
+- **Decision:** the proposal was chosen every time: 30-day recoverable grace period; anonymous tombstone row; other side
+  keeps DMs with "Silinmiş istifadəçi"; submissions and attempts anonymized, score kept; SmartAzMİU removes the
+  Keycloak account through the admin API; all own free text cleared; refuse with a hand-over message when duties exist;
+  audit kept 3 years with a salted hash of the id; self-service plus `accounts.delete` for staff; backup retention
+  35 days with re-deletion after a restore; cabinet mirror deleted with the account; e-mails at request and completion
+  with legal review of the text.
+- **Consequences:** first Phase 4 item, not started; needs migrations (nullable `SET NULL` on feed, forum, tip,
+  submission, file and attempt authors), an audit retention job, a Keycloak admin credential and a restore-runbook
+  step. The real iOS Safari check (D-133) and the other launch-blocking items stay in `docs/reports/m4-readiness.md`.
