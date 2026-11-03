@@ -142,6 +142,7 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   | Added in Sprint 2 | API: openpyxl 3.1.5, python-multipart 0.0.32, tzdata 2026.5, boto3 1.43.118, pillow 13.0.0; API dev: types-openpyxl 3.1.5.20261017, boto3-stubs[s3] 1.43.118; web: @tanstack/react-query 5.104.5 |
   | Added in Sprint 5 | web: zustand 5.0.15 (chat client state, §4), @tanstack/react-virtual 3.14.19 (message list); the newest releases at least ten days old on 2026-10-26 (D-064). The API imports asyncpg 0.32.0 directly for `LISTEN` (already pinned). |
   | Added in Sprint 6 | image `clamav/clamav:1.4.3` (attachment scanning, D-068); web: react-markdown 10.1.0, remark-gfm 4.0.1, remark-math 6.0.0, rehype-sanitize 6.0.0, rehype-katex 7.0.1, katex 0.18.11 (also forced on rehype-katex and remark-math through a pnpm override: releases before 0.18.2 let prototype pollution bypass `trust`, GHSA-238p-pmpm-9mq7; 0.19.1 was three days old), web dev: @types/hast 3.0.5, @types/mdast 4.0.4 (D-069); image `grafana/k6:1.3.0` (chat load test, D-073); API: prometheus-client 0.26.0, images `prom/prometheus:v3.15.0`, `grafana/grafana:13.2.4` (metrics and dashboard, D-080). |
+  | Updated 2026-11-03 | image `prom/prometheus:v3.15.1` (Dependabot #16, release 13 days old; the other eight bumps of #13 to #21 were reverted, D-130). |
   | Added in Sprint 14 | web: jsqr 1.4.0 (QR decoding in a worker where the browser has no BarcodeDetector, D-095; `pnpm audit` reports nothing for it, the two moderate findings are `glob` under `@sentry/nextjs`, already there). |
   | Added in Sprint 15 | web dev: @formatjs/icu-messageformat-parser 3.5.22 (ICU syntax guard for the message catalogues, D-114); already in the tree through next-intl |
   | Added in Sprint 15, Group B | web: idb 8.0.4 (IndexedDB wrapper for the offline store, published 2026-10-06); web dev: fake-indexeddb 6.2.6 (published 2026-10-16; 6.2.7 was three days old on 2026-11-02 and was skipped). No new rasterizer: the icons are rendered with the Playwright dependency already in the tree (D-117). |
@@ -3031,3 +3032,19 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **M4 (Phase 3):** Groups A, B and C of Sprint 15 are accepted and merged; Sprints 12 to 14 were accepted earlier;
   Sprint 11 (video) stays deferred and is excluded from M4 (D-102). "Feature freeze" is ticked. Phase 4 has not been
   started.
+
+## D-130 · 2026-11-03 · Dependabot pull requests #13 to #21 joined with the Group C merge
+
+- **Context:** `origin/main` held nine merged Dependabot pull requests that no gate had covered; local `main` held the
+  Group C merge. The product owner asked to merge (no rebase, no force-push), check each bump against the D-014 holds and
+  gate the result before pushing.
+- **Holds checked:** TypeScript `<6.1`, ESLint 9.x, `arq==0.28.0` with `redis[hiredis]==5.3.1` (D-048) and the katex
+  override were not touched by any bump (no web package changed). The ten-day release-age rule was broken by all but one:
+  on 2026-11-03 the releases were 4 to 9 days old (boto3 and boto3-stubs 1.43.122, pydantic 2.14.2, pydantic-settings
+  2.16.2, tzdata 2026.6, mypy 2.4.1, pytest 9.2.0, pytest-asyncio 1.4.1, ruff 0.17.3, uv 0.13.6, `python:3.12.16`,
+  `node:24.22.2`, `redis:7.4.12`, `seaweedfs:4.50`, `grafana:13.3.0`, setup-uv v10.3.3).
+- **Decision:** merge `origin/main`, then revert the lockfile, `pyproject.toml`, both Dockerfiles, the CI workflow and the
+  redis, seaweedfs and grafana images to their pre-merge pins. Only `prom/prometheus:v3.15.1` stays (13 days old).
+- **Consequences:** Dependabot will propose the reverted bumps again; they can be accepted once ten days old and gated.
+  The D-014 table has a row for what landed. `pip-audit` reports nothing; `pnpm audit --audit-level high` reports nothing
+  at high (the two moderate findings, `glob` and `minimatch` under `@sentry/nextjs`, were there before).
