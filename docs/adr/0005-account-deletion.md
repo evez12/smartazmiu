@@ -1,7 +1,7 @@
 # ADR 0005 — Account deletion
 
-- Status: proposed (2026-11-03), not accepted. Nothing in this document is implemented; no code, migration or
-  setting changes with it.
+- Status: accepted (2026-11-04) with the product owner's twelve decisions below. Nothing in this document is
+  implemented yet; no code, migration or setting changes with it. Implementation waits for the product owner's go-ahead.
 - Related: §5.4 (retention, compliance), §13.2 ("Account deleted"), §14; DECISIONS D-038, D-040, D-046, D-062, D-091,
   D-093, D-108, D-112, D-113, D-126
 - Planned as the first Phase 4 item. Phase 4 has not started.
@@ -111,34 +111,30 @@ grace period; Keycloak or storage is down; the person signs in again during the 
 registers again afterwards (it must get a new account, not the old id); an offline-cached copy of channels on the
 person's device is wiped at sign-out (D-117); the audit trail keeps no name.
 
-## Decisions the product owner must make
+## Decisions (product owner, 2026-11-04)
 
-1. **Grace period and reversal.** §5.4 gives 30 days for DMs only. Is the whole account recoverable for 30 days (the
-   proposal: yes, sign in again cancels it), or is the account removed at once and only DM text waits 30 days?
-2. **Tombstone or hard delete of the `users` row.** The proposal keeps an anonymous row so that SET NULL and historic
-   audit work. Hard deletion of the row itself (after every reference is NULL) is cleaner but is irreversible and loses
-   the guarantee that an id is never reused. Which?
-3. **DMs.** Are the person's sent DM messages deleted for both sides after 30 days, or does the other participant keep
-   them with the author shown as "Silinmiş istifadəçi" (as for channel messages)? §5.4 says "kept until the user
-   deletes" and does not say what the other person keeps.
-4. **Assignment submissions, files and quiz attempts (D-093).** These carry grades. Options: delete them with the
-   account (current behaviour, loses the teacher's gradebook rows), or anonymize them (the teacher keeps the score, the
-   student is "Silinmiş istifadəçi"), as D-108 did for attendance. Anything touching grades is yours to decide.
-5. **Keycloak.** Is the identity-provider account removed by SmartAzMİU through the admin API (needs an admin
-   credential for the service), or does the university's identity team remove it, with SmartAzMİU only revoking
-   sessions? This is an authentication change.
-6. **Scrub depth.** Which free text of the person is cleared rather than kept: their own feedback and report texts,
-   past-paper titles and notes (D-108 left this open), material and forum titles, event registrations? And do
-   moderation records that name the person as a target keep the id or lose it?
-7. **Staff, teacher and curator duties.** Refuse deletion until duties are handed over, or release them
-   automatically and notify the faculty office?
-8. **Audit retention.** `audit_logs` has no retention rule in the spec. How long are entries kept, and may an entry about
-   a deleted person keep a hash of the id for that time?
-9. **Who may delete whom.** Self-service only, or also staff on behalf of a departed student, and who holds the new
-   permission?
-10. **Backups.** A deleted person remains in database backups until they expire. Is a stated backup retention (and no
-    restore of a deleted account) acceptable under the Law, or is a re-deletion step after any restore required?
-11. **Cabinet.** Confirm that the cabinet mirror is deleted with the account and that the registry, not SmartAzMİU, is
-    the record of the person's grades (D-126).
-12. **Notice.** What does the person see and receive (an e-mail at request and at completion, the exact Azerbaijani
-    text, English and Russian later), and is a legal wording from the university required?
+All twelve follow the proposal above. Changes to a choice need a new decision in `docs/DECISIONS.md`.
+
+1. **Grace period.** The whole account is recoverable for 30 days; signing in again cancels the request. Everything is
+   purged at day 30.
+2. **Users row.** Kept as an anonymous tombstone (identifying fields cleared, id never reused).
+3. **DMs.** The other participant keeps the messages; the author is shown as "Silinmiş istifadəçi" (as for channel
+   messages). The author link is cut at day 30.
+4. **Submissions, files and quiz attempts.** Anonymized: the teacher keeps the score, the student becomes
+   "Silinmiş istifadəçi"; uploaded files and free text are removed. Needs `student_id` to become nullable `SET NULL`.
+5. **Keycloak.** SmartAzMİU removes the account through the admin API with a scoped service credential, after the
+   database step has committed; failures are retried. This is an authentication change and is built only with the
+   product owner's go-ahead.
+6. **Scrub depth.** All of the person's own free text is cleared (bio, own feedback and report texts, past-paper
+   titles and notes, mentor text). Moderation records keep only the tombstone id.
+7. **Duties.** Deletion is refused with a plain message naming what to hand over (sole teacher, curator, only
+   moderator).
+8. **Audit.** `audit_logs` entries are kept 3 years; an entry about a deleted person holds the user id as a salted
+   hash, never a name or e-mail. A retention job for audit logs is part of the build.
+9. **Who deletes.** Self-service, and staff holding a new `accounts.delete` permission (registrar or administrator
+   role) for departed users, with a reason, audited.
+10. **Backups.** Backup retention is stated as 35 days; the restore runbook re-applies the purge of every deleted id
+    after a restore.
+11. **Cabinet.** The mirror is deleted with the account; the registry remains the record of grades.
+12. **Notice.** An e-mail at request and at completion, in Azerbaijani (English and Russian later); the wording gets a
+    legal review before launch.
