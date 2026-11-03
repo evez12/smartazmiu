@@ -3179,6 +3179,12 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
 - **Numbers:** see the gate result in the report of 2026-11-03.
 
+- **Update (2026-11-03): the local-CA experiment could not be run here.** A local CA and a leaf signed by it verify with
+  `openssl`, but the WebKit build Playwright ships on Windows ignores `SSL_CERT_FILE` and `CURL_CA_BUNDLE` and rejects
+  the leaf ("SSL peer certificate or SSH remote key was not OK"); trusting it would mean adding the CA to the Windows
+  certificate store, which was not done without the product owner's approval. So whether the "installing" stall
+  follows the self-signed certificate is still unknown. The throwaway CA files were deleted.
+
 ## D-134 · 2026-11-03 · Host ports bind to IPv4 loopback by default (`BIND_ADDR`), and the test cleanup no longer depends on other services
 
 - **Context:** the http gate on `chore/local-tls` failed with `ERR_CONNECTION_RESET`, `ECONNRESET` and timeouts that never
