@@ -24,6 +24,8 @@ from app.modules.academics.models import (
 from app.modules.academics.service import AcademicsService
 from app.modules.audit.models import AuditAction, AuditLog
 from app.modules.audit.service import record_audit
+from app.modules.cabinet.models import CabinetStudent
+from app.modules.cabinet.service import CabinetReadService
 from app.modules.feedback.models import Feedback
 from app.modules.privacy.service import ConsentService
 from app.modules.users.models import Role, User, UserRole
@@ -67,6 +69,7 @@ class DataExportService:
                 "contact_visibility": user.contact_visibility,
             },
             "academic": await self._academic(user.id),
+            "cabinet": await self._cabinet(user.id),
             "consents": [
                 {
                     "purpose": record.purpose,
@@ -175,6 +178,26 @@ class DataExportService:
                 }
                 for offering_code, subject, semester in teaching
             ],
+        }
+
+    async def _cabinet(self, user_id: uuid.UUID) -> dict[str, Any] | None:
+        """The mirror of the personal cabinet, as stored (D-126). None when the cabinet knows no such student."""
+        student = await self.session.get(CabinetStudent, user_id)
+        if student is None:
+            return None
+        reader = CabinetReadService(self.session)
+        transcript = await reader.transcript(user_id)
+        appeals = await reader.appeals(user_id)
+        return {
+            "specialty": student.specialty_name,
+            "credits_earned": student.credits_earned,
+            "cumulative_average": float(student.cumulative_average)
+            if student.cumulative_average is not None
+            else None,
+            "synced_at": student.synced_at.isoformat(),
+            # Courses where the registry and the cabinet disagree show the registry result, as on screen.
+            "semesters": [semester.model_dump(mode="json") for semester in transcript.semesters],
+            "appeals": [appeal.model_dump(mode="json") for appeal in appeals.items],
         }
 
     async def _audit(self, user_id: uuid.UUID) -> list[dict[str, Any]]:

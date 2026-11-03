@@ -80,7 +80,9 @@
       "quizCards": "Quizzes: list",
       "quizAttempt": "Quiz: questions and result",
       "offlineNotices": "Offline mode: notices and installation",
-      "offlinePage": "Offline page"
+      "offlinePage": "Offline page",
+      "transcript": "Transcript: overview, courses and appeals",
+      "cabinetStaff": "Cabinet sync: runs and discrepancies"
     },
     "colors": {
       "surfaces": "Backgrounds and surfaces",
@@ -299,7 +301,9 @@
       "attendance": "Attendance",
       "exams": "Exams",
       "gpa": "ÜOMG",
-      "examSlots": "Exam schedule management"
+      "examSlots": "Exam schedule management",
+      "transcript": "Transcript",
+      "cabinet": "Cabinet sync"
     },
     "saved": "Saved",
     "signedOutOfflineTitle": "You have signed out",
@@ -729,7 +733,11 @@
         "exam_slot_edited": "Exam time changed",
         "exam_slot_deleted": "Exam time deleted",
         "exam_mode_changed": "Exam mode of a subject changed",
-        "past_paper_reviewed": "Past exam paper reviewed"
+        "past_paper_reviewed": "Past exam paper reviewed",
+        "cabinet_sync_run": "Cabinet sync ran",
+        "cabinet_sync_requested": "Cabinet sync requested",
+        "cabinet_viewed": "Cabinet data viewed",
+        "cabinet_conflicts_viewed": "Cabinet discrepancies viewed"
       },
       "rolesAdded": "Added: {roles}",
       "rolesRemoved": "Removed: {roles}",
@@ -2673,6 +2681,95 @@
     },
     "network": {
       "reason": "This is not available without an internet connection."
+    }
+  },
+  "cabinet": {
+    "transcript": {
+      "title": "Transcript",
+      "description": "Your academic record copied from the personal cabinet. It is updated overnight and is read-only.",
+      "error": "Could not load the transcript. Try again in a moment.",
+      "retry": "Try again",
+      "empty": "The personal cabinet has no record for you. If it has one, it will appear here after the next overnight sync.",
+      "emptyUnavailable": "There is no data yet because the personal cabinet could not be reached.",
+      "summaryTitle": "Overview",
+      "summaryDescription": "The figures are as shown in the personal cabinet.",
+      "specialty": "Specialty",
+      "creditsEarned": "Credits earned",
+      "cumulativeAverage": "Cumulative average",
+      "differsHelp": "For {count, plural, one {# course} other {# courses}} the registry and the cabinet hold different scores. The registry score is shown. Contact the dean's office to clarify.",
+      "semesterName": "{year} {term}",
+      "semesterFigures": "Semester average: {average} · Credits: {earned}/{attempted}",
+      "subject": "Course",
+      "credits": "Credits",
+      "score": "Score",
+      "status": "Status",
+      "passed": "Passed",
+      "failed": "Not passed",
+      "differs": "Discrepancy",
+      "appealsTitle": "Appeals",
+      "appealsDescription": "The status of your appeals against exam results.",
+      "appealsEmpty": "You have no appeals.",
+      "reference": "Number",
+      "submittedOn": "Submitted",
+      "decidedOn": "Decision",
+      "appealStatus": {
+        "submitted": "Submitted",
+        "under_review": "Under review",
+        "upheld": "Upheld",
+        "rejected": "Rejected"
+      }
+    },
+    "source": {
+      "unavailableTitle": "Source unavailable",
+      "unavailable": "The personal cabinet could not be reached. The data below is from the last successful sync: {time}.",
+      "unavailableNever": "The personal cabinet could not be reached and no data has been copied yet.",
+      "neverSynced": "Nothing has been copied from the personal cabinet yet. The sync runs overnight.",
+      "lastSynced": "Last sync: {time}"
+    },
+    "gpaCard": {
+      "title": "Figure in the personal cabinet",
+      "description": "The cumulative average calculated by the cabinet itself. The calculator does not depend on it.",
+      "credits": "Credits earned: {n}",
+      "differs": "For {count, plural, one {# course} other {# courses}} the registry and the cabinet hold different scores.",
+      "open": "Open the transcript"
+    },
+    "admin": {
+      "title": "Cabinet sync",
+      "description": "The overnight copy of grades, transcripts and appeals from the personal cabinet.",
+      "error": "Could not load the data. Try again in a moment.",
+      "retry": "Try again",
+      "runsTitle": "Recent syncs",
+      "runsDescription": "Only outcomes and counts are shown.",
+      "runsEmpty": "No sync has run yet.",
+      "start": "Sync now",
+      "requested": "The sync is queued. Its result will appear in the list in a few minutes.",
+      "requestFailed": "Could not start the sync. Try again in a moment.",
+      "trigger": {
+        "nightly": "Overnight",
+        "manual": "Manual"
+      },
+      "outcome": {
+        "succeeded": "Succeeded",
+        "failed": "Failed"
+      },
+      "errorUnavailable": "The source did not answer",
+      "errorInternal": "Internal error",
+      "columns": {
+        "time": "Time",
+        "trigger": "Started",
+        "outcome": "Outcome",
+        "synced": "Students copied",
+        "notFound": "Not found",
+        "mismatched": "Mismatched answers",
+        "conflicts": "Discrepancies",
+        "universityId": "University ID",
+        "subject": "Course code",
+        "semester": "Semester",
+        "detected": "Detected"
+      },
+      "conflictsTitle": "Discrepancies between the registry and the cabinet",
+      "conflictsDescription": "Only the university ID and course code are shown, never scores. Correct the registry; the discrepancy disappears at the next sync.",
+      "conflictsEmpty": "No discrepancies found."
     }
   }
 }

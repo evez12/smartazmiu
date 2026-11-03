@@ -46,6 +46,8 @@ describe("channels that may be stored", () => {
 describe("data that is never stored", () => {
   it.each([
     "/api/v1/me/grades",
+    "/api/v1/me/transcript",
+    "/api/v1/me/transcript/appeals",
     "/api/v1/me/academics",
     "/api/v1/me/export",
     "/api/v1/me/push-subscriptions",

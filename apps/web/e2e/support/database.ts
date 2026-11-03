@@ -56,6 +56,9 @@ const SEED_TABLES: Record<string, string> = {
   "notifications (chat)": "SELECT count(*) FROM notifications WHERE category = 'chat'",
   "message_attachments (sent)":
     "SELECT count(*) FROM message_attachments WHERE message_id IS NOT NULL",
+  // The cabinet mirror of throwaway accounts (D-126). Seeded students are mirrored by the first sync and stay.
+  "cabinet_students (e2e accounts)":
+    "SELECT count(*) FROM cabinet_students s JOIN users u ON u.id = s.user_id WHERE u.email LIKE 'e2e-%'",
   // Materials are test data in every run (D-071); one left behind is a cleanup gap.
   materials: "SELECT count(*) FROM materials",
   material_reports: "SELECT count(*) FROM material_reports",
@@ -353,6 +356,19 @@ export class TestRecords {
       ]);
       // Groups, teachers and timetable entries (with their changes) cascade from the offering.
       await client.query("DELETE FROM course_offerings WHERE code = ANY($1)", [this.offerings]);
+      // The cabinet mirror of the people leaving the registry (D-126); the next sync would drop it as well.
+      for (const table of [
+        "cabinet_conflicts",
+        "cabinet_appeals",
+        "cabinet_semesters",
+        "cabinet_grades",
+        "cabinet_students",
+      ]) {
+        await client.query(
+          `DELETE FROM ${table} WHERE user_id IN (SELECT id FROM users WHERE email = ANY($1))`,
+          [this.people],
+        );
+      }
       // The account row stays like every mirrored e2e- account (D-040, D-046); it leaves the registry.
       await client.query(
         `UPDATE users SET university_id = NULL, academic_group_id = NULL, person_type = NULL

@@ -14,6 +14,7 @@ SYNC_AUDIENCES = "sync_audiences"
 PROVISION_CHANNELS = "provision_channels"
 SCAN_ATTACHMENTS = "scan_attachments"
 SYNC_GUIDES = "sync_guides"
+SYNC_CABINET = "sync_cabinet"
 
 
 class JobQueue(Protocol):
@@ -27,15 +28,17 @@ class JobQueue(Protocol):
 
     async def sync_guides(self) -> None: ...
 
+    async def sync_cabinet(self, triggered_by: str) -> None: ...
+
 
 class ArqQueue:
     def __init__(self, redis_url: str) -> None:
         # Connects on first use, so the API starts even while Redis is down.
         self.redis = ArqRedis.from_url(redis_url)
 
-    async def _enqueue(self, function: str) -> None:
+    async def _enqueue(self, function: str, *args: str, job_id: str | None = None) -> None:
         try:
-            await self.redis.enqueue_job(function)
+            await self.redis.enqueue_job(function, *args, _job_id=job_id)
         except (RedisError, OSError) as exc:
             logger.warning("job_enqueue_failed", function=function, error=type(exc).__name__)
 
@@ -53,6 +56,10 @@ class ArqQueue:
 
     async def sync_guides(self) -> None:
         await self._enqueue(SYNC_GUIDES)
+
+    async def sync_cabinet(self, triggered_by: str) -> None:
+        # One manual run waits in the queue at a time, however often the button is pressed.
+        await self._enqueue(SYNC_CABINET, triggered_by, job_id=f"{SYNC_CABINET}:manual")
 
     async def close(self) -> None:
         await self.redis.aclose()

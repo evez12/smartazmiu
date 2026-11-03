@@ -24,6 +24,8 @@ from app.modules.announcements.router import router as announcements_router
 from app.modules.assignments.router import router as assignments_router
 from app.modules.attendance.router import router as attendance_router
 from app.modules.audiences.router import router as audiences_router
+from app.modules.cabinet.router import staff_router as cabinet_staff_router
+from app.modules.cabinet.router import student_router as cabinet_student_router
 from app.modules.campus.router import router as campus_router
 from app.modules.chat.hub import Hub
 from app.modules.chat.policy import NoExamWindows
@@ -148,6 +150,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(attendance_router, prefix=API_PREFIX)
     app.include_router(exams_router, prefix=API_PREFIX)
     app.include_router(grades_router, prefix=API_PREFIX)
+    app.include_router(cabinet_student_router, prefix=API_PREFIX)
+    app.include_router(cabinet_staff_router, prefix=API_PREFIX)
     app.include_router(chat_router, prefix=API_PREFIX)
     app.include_router(reports_router, prefix=API_PREFIX)
     app.include_router(materials_router, prefix=API_PREFIX)

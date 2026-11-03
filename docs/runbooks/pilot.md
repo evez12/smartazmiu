@@ -221,6 +221,17 @@ the purge job deletes the object within 30 minutes (D-068, D-071). Do: find the 
 repeatedly, or the signature is not a test file (EICAR), tell university IT the account and time so the person's
 device can be checked, and consider revoking the session (above). Never download or forward the file.
 
+### Cabinet sync failing
+
+`smartazmiu_cabinet_sync_consecutive_failures >= 2`: the nightly mirror of grades, transcripts and appeals failed
+twice. A failed run changes nothing, so students keep seeing the last good data, with a notice "Mənbə əlçatan deyil"
+and the time of the last successful sync. Open the staff page "Kabinet sinxronizasiyası" (permission
+`cabinet.manage`): the failed runs show `cabinet.unavailable` when the source did not answer, `internal` for a bug
+(Sentry has the stack trace; the worker log line is `cabinet_sync_failed`). Check that the source is reachable from
+the worker and that `CABINET_API_URL` / `CABINET_API_KEY` are set (never print them), then press "İndi sinxronlaşdır".
+The same page lists courses where the registry and the cabinet disagree, by university ID and subject code only; staff
+settle those in the registry import, and the conflict disappears with the next run. P3, P2 during the exam session.
+
 ## 11. After the pilot
 
 At the end of Sprint 7, a pilot review: metrics against M2, top feedback themes, incidents, and the decisions

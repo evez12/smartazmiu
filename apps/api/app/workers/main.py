@@ -1,5 +1,6 @@
 """ARQ worker: ``arq app.workers.main.WorkerSettings`` (Docker service ``worker``, ``make dev-worker``)."""
 
+import uuid
 from datetime import timedelta
 from typing import Any, ClassVar
 
@@ -16,6 +17,7 @@ from app.core.jobs import (
     PROVISION_CHANNELS,
     SCAN_ATTACHMENTS,
     SYNC_AUDIENCES,
+    SYNC_CABINET,
     SYNC_GUIDES,
 )
 from app.core.logging import configure_logging
@@ -23,6 +25,9 @@ from app.core.observability import init_sentry
 from app.core.storage import S3Storage
 from app.modules.announcements import service as announcements
 from app.modules.assignments.scanner import SubmissionScanner
+from app.modules.cabinet.models import SyncOutcome, SyncTrigger
+from app.modules.cabinet.provider import build_provider
+from app.modules.cabinet.sync import CabinetSync
 from app.modules.chat import consistency, mentions, partitions
 from app.modules.chat.attachments import AttachmentScanner
 from app.modules.chat.bus import ChatBus, channel_topic, user_topic
@@ -72,6 +77,8 @@ async def startup(ctx: dict[str, Any]) -> None:
         else None
     )
     ctx["database"] = database
+    # Refuses to start when the settings name a provider that cannot run (D-126).
+    ctx["cabinet"] = build_provider(settings)
     ctx["http"] = http
     # Instance B: chat pub/sub (D-053).
     ctx["cache_redis"] = Redis.from_url(str(settings.redis_url), decode_responses=True)
@@ -151,6 +158,18 @@ async def sync_guides(ctx: dict[str, Any]) -> int:
         # Revoked guides leave the community on the next provisioning run; run it now.
         await provision_channels(ctx)
     return report.revoked + report.invited
+
+
+async def sync_cabinet(ctx: dict[str, Any], triggered_by: str | None = None) -> int:
+    """Mirrors grades, transcript and appeals from the personal cabinet; all or nothing (D-126, §13.5).
+    A failed run is recorded, not retried here: the next nightly run or a staff request tries again."""
+    database: Database = ctx["database"]
+    async with database.sessionmaker() as session:
+        run = await CabinetSync(session, ctx["cabinet"]).run(
+            SyncTrigger.MANUAL if triggered_by else SyncTrigger.NIGHTLY,
+            uuid.UUID(triggered_by) if triggered_by else None,
+        )
+    return run.students_synced if run and run.outcome is SyncOutcome.SUCCEEDED else 0
 
 
 async def expire_mentor_requests(ctx: dict[str, Any]) -> int:
@@ -262,6 +281,7 @@ class WorkerSettings:
         provision_channels,
         scan_attachments,
         sync_guides,
+        sync_cabinet,
     ]
     # The safety net for wake-ups lost while Redis was unreachable, and for retries that come due.
     cron_jobs: ClassVar = [
@@ -275,6 +295,8 @@ class WorkerSettings:
         cron(finalize_quiz_attempts),
         # Imports wake the guide check; the nightly run catches corrections made any other way.
         cron(sync_guides, name=f"{SYNC_GUIDES}_cron", hour={21}, minute={30}),
+        # 02:40 in Baku, after the nightly registry imports; the manual button runs it any time.
+        cron(sync_cabinet, name=f"{SYNC_CABINET}_cron", hour={22}, minute={40}),
         cron(expire_mentor_requests, minute=set(range(0, 60, 10))),
         cron(notify_advice_posts, minute=set(range(5, 60, 15))),
         cron(purge_attachments, minute={5, 35}),

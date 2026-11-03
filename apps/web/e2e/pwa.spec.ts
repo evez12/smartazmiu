@@ -7,6 +7,14 @@ import { hydrated, password, signIn, test } from "./support/auth";
 import { undersizedTargets } from "./support/touch-targets";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
+// WebKit does not send the app's Secure state cookie back over plain http://localhost, so the sign-in callback
+// ends in `signin_expired` and no test can reach a signed-in page. It needs a TLS front for the local stack (D-128).
+test.skip(
+  ({ browserName }) => browserName === "webkit",
+  "WebKit cannot complete the sign-in over plain HTTP on localhost (D-128)",
+);
+const FIREFOX_OFFLINE =
+  "Playwright's offline mode does not reach the service worker's own requests in Firefox (D-128)";
 // The service worker registers only in a production build (the development server serves changing code under
 // one address), so these specs need `make up` and `E2E_BASE_URL=http://localhost` (like the upload specs, D-068).
 test.skip(
@@ -153,6 +161,7 @@ async function weekClasses(page: Page): Promise<string[]> {
 test("the app can be installed: manifest, icons, worker script and no installability error", async ({
   page,
   request,
+  browserName,
 }) => {
   await signIn(page, AYSEL.username, "/");
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
@@ -191,7 +200,11 @@ test("the app can be installed: manifest, icons, worker script and no installabi
   await hydrated(page);
   expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
 
-  // Chrome's own installability check (what Lighthouse reports as "installable").
+  // Chrome's own installability check (what Lighthouse reports as "installable"); a Chromium-only protocol.
+  test.skip(
+    browserName !== "chromium",
+    "The installability check uses the Chrome DevTools protocol",
+  );
   const client = await page.context().newCDPSession(page);
   const { installabilityErrors } = await client.send("Page.getInstallabilityErrors");
   expect(installabilityErrors).toEqual([]);
@@ -201,6 +214,7 @@ test("the schedule and the newest channel messages stay readable offline, and co
   page,
   records,
 }) => {
+  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
   test.setTimeout(240_000);
   const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email]);
   await signIn(page, AYSEL.username, "/chat");
@@ -285,6 +299,7 @@ test("a session that ended without signing out is cleaned at the sign-in page, a
   page,
   accounts,
 }) => {
+  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
   test.setTimeout(180_000);
   await signIn(page, AYSEL.username, "/");
   await enableOfflineStorage(page);
@@ -320,6 +335,7 @@ test("a session that ended without signing out is cleaned at the sign-in page, a
 test("signing out without a connection deletes the data at once and ends the session when it returns", async ({
   page,
 }) => {
+  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
   test.setTimeout(180_000);
   await signIn(page, AYSEL.username, "/");
   await enableOfflineStorage(page);
@@ -452,6 +468,7 @@ test.describe("on a phone", () => {
   test("the offline switch, the offline page and the install offer fit 320 px with 44 px targets", async ({
     page,
   }) => {
+    test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
     test.setTimeout(180_000);
     await signIn(page, AYSEL.username, "/");
     await enableOfflineStorage(page);

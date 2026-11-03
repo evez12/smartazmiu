@@ -2890,3 +2890,144 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
   code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
   record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.
+
+## D-126 · 2026-11-03 · Personal cabinet mirror (Sprint 15, Group C)
+
+- **Context:** the roadmap asks for a read-only mirror of the university's personal cabinet (grades, transcript, appeals
+  status). No cabinet API is known (D-010), so the work is built against a fake provider and contract tests. Grades are
+  personal data (§5.4), so the product owner decided the open points; points 1 to 4 were already answered in CLAUDE.md
+  (Sprint 15 ask-first list) and were not asked again, point 5 was asked on 2026-11-03.
+- **Product owner decisions:**
+  1. Nightly sync into a mirror in our database, no live read. Idempotent, at-least-once safe.
+  2. Matching by `university_id` only, never by e-mail (D-029 stays the rule for sign-in).
+  3. Fields: grades, transcript, appeals status; read-only, never written back.
+  4. No real data exists: fake provider and contract tests only.
+  5. When the mirror and the registry (`enrollments.grade`) disagree, the student sees the **registry** value with a
+     neutral "Fərq var" tag on that course, never the mirror value. Staff see counts and identifiers only (university ID
+     and subject code per conflict), no grade value from either source.
+- **Decision (module `cabinet`, migration `0038`):**
+  - **Provider seam.** `CabinetProvider` has `grades`, `transcript`, `appeals`, each taking a university ID and returning
+    typed results that carry the ID they answer for. Typed errors: `CabinetUnavailableError`, `CabinetNotFoundError`,
+    `CabinetMismatchError`. `FakeCabinetProvider` derives a stable, realistic record (the sample data's finished terms,
+    about one result in twenty failed, some appeals) from any eight-digit student ID, so seeded and throwaway accounts
+    work without a fixture. `CabinetProviderContract` (`cabinet/tests/contract.py`) is the suite every provider passes.
+  - **Settings.** `CABINET_PROVIDER` is `fake` (default) or `azmiu`; `CABINET_API_URL` and `CABINET_API_KEY` come from the
+    environment only (`.env.example` lists them without values, they are never logged or sent to the browser).
+    Production refuses to start with `azmiu` and no URL or key, and refuses `fake` (made-up grades must not reach real
+    students). `azmiu` has no implementation yet: the worker raises `CabinetNotAvailableYetError` at start-up. The
+    implementation lands behind the same interface when the API is described.
+  - **Sync (`sync_cabinet`, ARQ).** Nightly at 02:40 Baku (22:40 UTC) and on request of staff (`POST /cabinet/sync-runs`,
+    permission `cabinet.manage` for staff and admin, 6 per hour, one queued manual run at a time). The run reads the
+    active students with a university ID, asks the provider (8 parallel requests), and writes only when every answer
+    is in: one transaction, guarded by a Postgres advisory lock, as a diff by natural keys (unchanged rows are not
+    touched). An unavailable source records a failed run (`cabinet.unavailable`) and changes no mirror row (§13.5);
+    a bug records `internal` and is raised to Sentry. A person the cabinet does not know leaves the mirror; an answer
+    about another ID (mismatch) is never stored and keeps whatever was mirrored before; accounts that stopped being
+    active students leave the mirror. A second run while one writes is skipped.
+  - **Tables.** `cabinet_students`, `cabinet_grades`, `cabinet_semesters`, `cabinet_appeals`, `cabinet_conflicts`
+    (cascade with the user, so deleting an account purges the mirror), `cabinet_sync_runs` (counts and an error code,
+    nothing personal). A conflict stores the course only.
+  - **Endpoints.** Student: `GET /me/transcript` and `GET /me/transcript/appeals`, filtered by the requester id in SQL,
+    no parameter names another person (a test asks for routes that would), `Cache-Control: no-store`, 60 reads per five
+    minutes. The path starts with `/me/transcript`, so the offline policy of D-117 already refuses it. Each read writes
+    an audit entry `cabinet.viewed` with the kind only, which also appears in the student's own export. Staff:
+    `GET /cabinet/sync-runs` (outcomes and counts), `GET /cabinet/conflicts` (university ID, subject code, term; audited
+    as `cabinet.conflicts_viewed` with a count), `POST /cabinet/sync-runs` (audited as `cabinet.sync_requested`). Every
+    sync run is audited as `cabinet.sync_run` with counts and no value.
+  - **Export (D-036).** `/me/export` gains a `cabinet` section: the student's own summary, semesters with courses (the
+    registry value where it differs, as on screen) and appeals.
+  - **Metrics (D-080), read from the run log at scrape time:** `smartazmiu_cabinet_sync_runs{outcome}`,
+    `..._last_duration_seconds`, `..._last_success_timestamp_seconds`, `..._consecutive_failures`,
+    `smartazmiu_cabinet_conflicts`. The alert `CabinetSyncFailing` fires at two failures in a row and links to
+    `docs/runbooks/pilot.md#cabinet-sync-failing`.
+  - **Web.** `/transcript` (all signed-in roles; an outsider gets the empty state), a card beside the ÜOMG calculator
+    that shows the cabinet's own cumulative figure with its sync time (the calculator itself still counts the registry
+    results under D-100 and D-106, the card never feeds the simulator), and `/admin/cabinet` for staff. States:
+    loading, empty, error with retry, forbidden, "Mənbə əlçatan deyil" with the time of the last good copy, and "not
+    synced yet". The staff trigger is a `Button network="required"` and is switched off offline (D-122). Strings are in
+    az, en and ru; the glossary terms are Transkript, Transcript, Академическая справка.
+- **Alternatives rejected:** a live read on request (needs the real API, adds an outage to every screen); showing both
+  values (exposes the unreconciled mirror value to the student and invites disputes before staff have looked); keeping
+  conflict values for staff (new grade exposure).
+- **Consequences:** the first real provider needs the cabinet's API description; the mirror keeps seeded students'
+  rows after an E2E run (only throwaway accounts are cleaned and checked, `cabinet_students (e2e accounts)`).
+
+## D-127 · 2026-11-03 · §13 edge-case review of the cabinet mirror (D-126)
+
+- **Context:** the review the Group C prompt asks for, in the format of D-076: "tested" names the test, "by design" means
+  the code does it without a test, "open" means neither.
+- **Decision:**
+  - **§13.1 identity and roles.** Tested: only registry students with a university ID are asked for
+    (`test_teachers_and_people_without_a_university_id_are_not_synced`, `test_an_email_alone_never_matches_a_record`);
+    an answer about another ID is never stored and keeps the old copy
+    (`test_an_answer_about_someone_else_is_never_stored`, `test_a_mismatch_keeps_what_was_mirrored_before`); an inactive
+    student and a person the cabinet forgot leave the mirror; registry and mirror disagreeing is a recorded conflict, the
+    registry wins and the registry row is unchanged (`test_a_different_grade_in_the_registry_is_a_conflict_and_the_registry_wins`,
+    `test_the_registry_value_is_shown_and_the_mirror_value_is_not`); a fixed registry grade clears the conflict.
+  - **§13.2 duplicates and retries.** Tested: a second run with the same answers changes no row id; a changed score is
+    updated in place; two simultaneous runs end in one state and a run waits out one that is writing
+    (`test_concurrent_runs_end_in_the_same_state`, `test_a_run_waits_out_another_run_that_is_writing`).
+  - **§13.4 time.** The nightly run is 02:40 in Baku; times on screen are Baku times (`4 Noyabr 2026, 02:40` in the
+    unit and E2E tests).
+  - **§13.5 outages.** Tested: an outage records a failed run and changes nothing, also half-way through
+    (`test_an_outage_changes_nothing_and_is_recorded`, `test_an_outage_half_way_through_leaves_no_partial_mirror`); the
+    student keeps the last copy and is told when it is from (`test_a_failed_run_keeps_the_data_and_says_the_source_is_unavailable`,
+    `cabinet.test.tsx`); a bug is recorded and raised. By design: the API serves the mirror from Postgres, so a cabinet
+    outage never makes a screen fail; Redis B down skips the read limit (the shared rate-limit behaviour).
+  - **§13.6 UI.** Tested in `cabinet.test.tsx`: loading, empty, error with retry, 403, source unavailable (with and
+    without data), never synced, the "Fərq var" tag, the staff page without a score column. `cabinet.spec.ts`: the full
+    path with a throwaway student through the real worker, an outsider, 320 px in az and ru with 44 px targets, axe in
+    light mode. The specimens (`/design-system`) add the transcript and staff views with baselines.
+  - **§14 and §5.4 privacy.** Tested: other students' data unreachable (own-data test with two students, no route that
+    names a person returns anything), `Cache-Control: no-store`, the 60-read limit and the 6-per-hour sync limit, audit
+    entries without values, the export holds only the requester's mirror, staff payloads contain no `score` or `grade`,
+    metrics contain no person, the offline policy and the service worker refuse `/api/v1/me/transcript` and its
+    appeals path. Credentials are read from the environment only; production refuses `azmiu` without them and `fake`.
+  - **Skipped, by design:** moderation, chat and notification paths never touch the mirror (no code path); no push or
+    e-mail is sent for a grade or an appeal decision (not in the spec).
+  - **Open:** (1) `/api/v1/cabinet/*` (staff) is not in the `NEVER_STORED` list of the offline policy. The writer takes only
+    the schedule and channel kinds and these endpoints answer `no-store`, so nothing is stored today; adding the path to
+    the list is a cache-policy change and is left for the product owner as an exact diff (D-124):
+    `/^\/api\/v1\/(attendance|exams|gpa|uomg|admin|reports|moderation|privacy|imports|audit)/` becomes
+    `/^\/api\/v1\/(attendance|exams|gpa|uomg|admin|reports|moderation|privacy|imports|audit|cabinet)/` in
+    `apps/web/src/lib/offline/policy.ts`, with a matching case in `policy.test.ts`. (2) The real provider and its
+    contract run. (3) A visual check of the specimens in dark mode at 1440 px is covered by the baselines only after
+    `make visual-update` has been run and reviewed.
+
+## D-128 · 2026-11-03 · Group C gate result, cross-browser findings and M4 status
+
+- **Gate (stack built from scratch: `make reset`, `make up`, `make seed`):**
+  - `make lint test`: green. API 570 tests, 95 % coverage in total, 99 % in `app.modules.cabinet`; web 570 tests (58 files).
+  - `make visual`: 6 of 6 after `make visual-update` recorded the new specimens (transcript and cabinet sync views, az in
+    both themes at 1440 and 320 px, en and ru in the same set). Every dark baseline of the old sections changed by one
+    pixel row. Cause (checked by comparing an old and a new image): the dark column is laid out after the light column,
+    which is taller by the two new sections, so the dark sections start on another sub-pixel offset. No light baseline
+    changed and nothing in the old sections changed visually.
+  - Whole functional suite against the Docker production build, `--workers=2 --retries=0`, seed-data check on: **91 of
+    91** on the last run. The two earlier runs found, and the commits after them fixed: (1) the "Transkripti aç" link
+    of the calculator card was 79 × 17 px, below 44 px on a phone (found by `touch-targets.spec.ts`; it is a `TextLink`
+    now); (2) three locators of the new `cabinet.spec.ts` matched two nodes (a course code that is also in the appeals
+    table, a toast and its live region) and the helper that signs in reads Azerbaijani labels, so the Russian pass
+    chooses its language after signing in.
+  - **`pwa.spec.ts` per engine** (projects `pwa-webkit` and `pwa-firefox`, added in `playwright.config.ts`, they run only
+    this spec): **Chromium 9 of 9. Firefox 4 passed, 5 skipped. WebKit 0 passed, 9 skipped.** No failure was retried;
+    the skips are in the spec with their reason, and the causes were established by probes, not assumed:
+    - **WebKit:** sign-in cannot complete against the plain-HTTP local stack. Keycloak authenticates and redirects to
+      `/auth/callback`, which ends in `signin_expired`: WebKit does not send the app's `Secure` state cookie back over
+      `http://localhost` (Chromium and Firefox do). No test can reach a signed-in page. Running it needs TLS in front of the
+      stack, which is an nginx and header change and therefore a diff for the product owner first (CLAUDE.md, D-124).
+    - **Firefox, offline tests (4 skipped):** Playwright's `setOffline` does not apply to requests the service worker
+      itself makes in Firefox. A probe with a worker that calls `fetch()` returned the live page in Firefox and the
+      worker's own fallback in Chromium and WebKit; a worker that answers from its own code is reached offline in all
+      three. So the offline page cannot be provoked in Firefox with this tool; the install, update, install-offer and
+      queued-message tests pass there.
+    - **Firefox, installability (1 test, partly skipped):** the check uses the Chrome DevTools protocol, which only
+      Chromium has; the manifest, icons and worker script assertions before it run in Firefox.
+  - **D-125 stall:** not seen in the three full functional runs of this gate;
+    no net-log was needed. The status of D-125 is unchanged: cause not established.
+- **Open items from the gate (none blocks M4):** the Safari/WebKit run of `pwa.spec.ts` and the Firefox offline path
+  need an HTTPS front for the local stack and a way to take the network away from a worker (a stopped nginx, for
+  example); the iOS install steps (D-124); the exact `NEVER_STORED` diff of D-127; the real cabinet provider.
+- **M4 (Phase 3):** Groups A, B and C of Sprint 15 are accepted and merged; Sprints 12 to 14 were accepted earlier;
+  Sprint 11 (video) stays deferred and is excluded from M4 (D-102). "Feature freeze" is ticked. Phase 4 has not been
+  started.

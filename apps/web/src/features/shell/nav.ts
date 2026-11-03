@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardCheck,
+  FileText,
   FileUp,
   Calculator,
   GraduationCap,
@@ -18,6 +19,7 @@ import {
   Map as MapIcon,
   Newspaper,
   QrCode,
+  RefreshCw,
   Flag,
   ScrollText,
   UserRound,
@@ -46,6 +48,7 @@ export type NavItem = {
     | "attendance"
     | "exams"
     | "gpa"
+    | "transcript"
     | "examSlots"
     | "forum"
     | "map"
@@ -57,6 +60,7 @@ export type NavItem = {
     | "users"
     | "reports"
     | "feedback"
+    | "cabinet"
     | "audit";
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (§12.6: Ana səhifə, Cədvəl, Çat, Bildirişlər, Profil). */
@@ -86,6 +90,7 @@ export const NAVIGATION: NavSection[] = [
       { href: "/attendance", labelKey: "attendance", icon: QrCode, inTabBar: false },
       { href: "/exams", labelKey: "exams", icon: GraduationCap, inTabBar: false },
       { href: "/gpa", labelKey: "gpa", icon: Calculator, inTabBar: false },
+      { href: "/transcript", labelKey: "transcript", icon: FileText, inTabBar: false },
       { href: "/map", labelKey: "map", icon: MapIcon, inTabBar: false },
       { href: "/announcements", labelKey: "announcements", icon: Megaphone, inTabBar: false },
       { href: "/events", labelKey: "events", icon: CalendarCheck, inTabBar: false },
@@ -123,6 +128,13 @@ export const NAVIGATION: NavSection[] = [
         icon: MessageSquareText,
         inTabBar: false,
         permission: "admin.feedback.read",
+      },
+      {
+        href: "/admin/cabinet",
+        labelKey: "cabinet",
+        icon: RefreshCw,
+        inTabBar: false,
+        permission: "cabinet.manage",
       },
       {
         href: "/exams/slots",

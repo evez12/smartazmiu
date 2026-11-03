@@ -50,6 +50,12 @@ APP_TABLES = {
     "material_versions",
     "material_reports",
     "feedback",
+    "cabinet_sync_runs",
+    "cabinet_students",
+    "cabinet_grades",
+    "cabinet_semesters",
+    "cabinet_appeals",
+    "cabinet_conflicts",
 }
 APP_ENUMS = (
     "user_status",
@@ -83,6 +89,9 @@ APP_ENUMS = (
     "material_report_status",
     "feedback_category",
     "feedback_status",
+    "cabinet_sync_trigger",
+    "cabinet_sync_outcome",
+    "cabinet_appeal_status",
 )
 
 
@@ -119,6 +128,7 @@ async def test_migrations_are_reversible(settings: Settings, engine: AsyncEngine
             "admin.feedback.read",
             "admin.feedback.handle",
             "chat.moderate",
+            "cabinet.manage",
         ):
             holders = await connection.scalars(
                 text(

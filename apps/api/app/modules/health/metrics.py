@@ -31,6 +31,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import AppError
+from app.modules.cabinet.models import CabinetConflict, CabinetSyncRun, SyncOutcome
 from app.modules.chat.models import MessageAttachment, ScanStatus
 from app.modules.materials.models import MaterialVersion
 
@@ -75,12 +76,24 @@ def counting_send(transport: str) -> Iterator[None]:
 
 
 @dataclass(frozen=True, slots=True)
+class CabinetFigures:
+    """From the sync's own run log; no student, subject or grade is involved (D-126)."""
+
+    runs: dict[str, float]
+    last_duration_seconds: float | None
+    last_success_timestamp: float | None
+    consecutive_failures: float
+    conflicts: float
+
+
+@dataclass(frozen=True, slots=True)
 class Snapshot:
     queue_depth: float | None
     queue_lag_seconds: float | None
     scans_pending: dict[str, float]
     scans_deferred: dict[str, float]
     scans_rejected: dict[tuple[str, str], float]
+    cabinet: CabinetFigures | None = None
 
 
 class SnapshotCollector(Collector):
@@ -121,6 +134,41 @@ class SnapshotCollector(Collector):
         for (kind, status), value in s.scans_rejected.items():
             rejected.add_metric([kind, status], value)
         yield rejected
+        if s.cabinet is not None:
+            yield from self._cabinet(s.cabinet)
+
+    @staticmethod
+    def _cabinet(figures: CabinetFigures) -> Iterable[Metric]:
+        runs = GaugeMetricFamily(
+            "smartazmiu_cabinet_sync_runs",
+            "Personal cabinet sync runs since the start, by outcome",
+            labels=["outcome"],
+        )
+        for outcome, value in figures.runs.items():
+            runs.add_metric([outcome], value)
+        yield runs
+        if figures.last_duration_seconds is not None:
+            yield GaugeMetricFamily(
+                "smartazmiu_cabinet_sync_last_duration_seconds",
+                "How long the latest cabinet sync run took",
+                value=figures.last_duration_seconds,
+            )
+        if figures.last_success_timestamp is not None:
+            yield GaugeMetricFamily(
+                "smartazmiu_cabinet_sync_last_success_timestamp_seconds",
+                "When the latest successful cabinet sync run finished",
+                value=figures.last_success_timestamp,
+            )
+        yield GaugeMetricFamily(
+            "smartazmiu_cabinet_sync_consecutive_failures",
+            "Failed cabinet sync runs since the last successful one",
+            value=figures.consecutive_failures,
+        )
+        yield GaugeMetricFamily(
+            "smartazmiu_cabinet_conflicts",
+            "Courses where the registry and the cabinet mirror disagree",
+            value=figures.conflicts,
+        )
 
 
 async def queue_figures(redis: Redis) -> tuple[float | None, float | None]:
@@ -170,6 +218,38 @@ async def scan_figures(
     return pending, deferred, rejected
 
 
+async def cabinet_figures(session: AsyncSession) -> CabinetFigures:
+    counts = dict(
+        (
+            await session.execute(
+                select(CabinetSyncRun.outcome, func.count()).group_by(CabinetSyncRun.outcome)
+            )
+        ).all()
+    )
+    latest = await session.scalar(
+        select(CabinetSyncRun).order_by(CabinetSyncRun.finished_at.desc()).limit(1)
+    )
+    last_success = await session.scalar(
+        select(func.max(CabinetSyncRun.finished_at)).where(
+            CabinetSyncRun.outcome == SyncOutcome.SUCCEEDED
+        )
+    )
+    failing = select(func.count()).where(CabinetSyncRun.outcome == SyncOutcome.FAILED)
+    if last_success is not None:
+        failing = failing.where(CabinetSyncRun.finished_at > last_success)
+    return CabinetFigures(
+        runs={outcome.value: float(counts.get(outcome, 0)) for outcome in SyncOutcome},
+        last_duration_seconds=(latest.finished_at - latest.started_at).total_seconds()
+        if latest
+        else None,
+        last_success_timestamp=last_success.timestamp() if last_success else None,
+        consecutive_failures=float(await session.scalar(failing) or 0),
+        conflicts=float(
+            await session.scalar(select(func.count()).select_from(CabinetConflict)) or 0
+        ),
+    )
+
+
 def process_registry() -> CollectorRegistry:
     if not os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
         return REGISTRY
@@ -195,12 +275,14 @@ async def metrics(request: Request) -> Response:
     pending: dict[str, float] = {}
     deferred: dict[str, float] = {}
     rejected: dict[tuple[str, str], float] = {}
+    cabinet: CabinetFigures | None = None
     try:
         async with state.database.sessionmaker() as session:
             pending, deferred, rejected = await scan_figures(session)
+            cabinet = await cabinet_figures(session)
     except (SQLAlchemyError, OSError) as exc:
         logger.warning("metrics_database_unavailable", error=type(exc).__name__)
     snapshot = CollectorRegistry()
-    snapshot.register(SnapshotCollector(Snapshot(depth, lag, pending, deferred, rejected)))
+    snapshot.register(SnapshotCollector(Snapshot(depth, lag, pending, deferred, rejected, cabinet)))
     body = generate_latest(process_registry()) + generate_latest(snapshot)
     return Response(body, media_type=CONTENT_TYPE_LATEST)

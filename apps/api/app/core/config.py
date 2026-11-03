@@ -86,6 +86,12 @@ class Settings(BaseSettings):
     # Signs the rotating attendance codes shown on a teacher's screen (D-094).
     attendance_secret: str = ""
 
+    # The personal cabinet behind the read-only mirror (D-126). "fake" serves made-up data; "azmiu" is the
+    # university's own system and needs its address and key.
+    cabinet_provider: Literal["fake", "azmiu"] = "fake"
+    cabinet_api_url: str = ""
+    cabinet_api_key: str = ""
+
     @model_validator(mode="after")
     def production_secrets(self) -> "Settings":
         # An empty signing key would make ticket codes forgeable; development falls back to .env values.
@@ -93,6 +99,17 @@ class Settings(BaseSettings):
             raise ValueError("TICKET_SECRET must be set in production")
         if self.app_env == "production" and not self.attendance_secret:
             raise ValueError("ATTENDANCE_SECRET must be set in production")
+        # Made-up grades must never reach real students.
+        if self.app_env == "production" and self.cabinet_provider == "fake":
+            raise ValueError("CABINET_PROVIDER=fake is not allowed in production")
+        if (
+            self.app_env == "production"
+            and self.cabinet_provider == "azmiu"
+            and not (self.cabinet_api_url and self.cabinet_api_key)
+        ):
+            raise ValueError(
+                "CABINET_API_URL and CABINET_API_KEY must be set for CABINET_PROVIDER=azmiu"
+            )
         return self
 
     @property

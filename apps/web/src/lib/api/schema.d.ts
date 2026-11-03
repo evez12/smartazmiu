@@ -571,6 +571,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/cabinet/conflicts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Courses where the registry and the cabinet mirror disagree, without any grade */
+    get: operations["listCabinetConflicts"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/cabinet/sync-runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recent personal cabinet sync runs: outcome and counts only */
+    get: operations["listCabinetSyncRuns"];
+    put?: never;
+    /** Start a personal cabinet sync now */
+    post: operations["requestCabinetSync"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/campus/buildings": {
     parameters: {
       query?: never;
@@ -2139,6 +2174,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/transcript": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** My transcript from the personal cabinet mirror */
+    get: operations["readMyTranscript"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/transcript/appeals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The status of my appeals, from the personal cabinet mirror */
+    get: operations["listMyAppeals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/mentor-requests": {
     parameters: {
       query?: never;
@@ -2950,6 +3019,37 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    /** AppealListOut */
+    AppealListOut: {
+      /** Items */
+      items: components["schemas"]["AppealOut"][];
+      source: components["schemas"]["SourceOut"];
+    };
+    /** AppealOut */
+    AppealOut: {
+      /** Decided On */
+      decided_on: string | null;
+      /** Reference */
+      reference: string;
+      semester_term: components["schemas"]["SemesterTerm"];
+      /** Semester Year */
+      semester_year: number;
+      status: components["schemas"]["AppealStatus"];
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Name */
+      subject_name: string | null;
+      /**
+       * Submitted On
+       * Format: date
+       */
+      submitted_on: string;
+    };
+    /**
+     * AppealStatus
+     * @enum {string}
+     */
+    AppealStatus: "submitted" | "under_review" | "upheld" | "rejected";
     /**
      * AssignableRole
      * @description Global roles an administrator may grant; `guest` is never assigned (§2).
@@ -3558,7 +3658,11 @@ export interface components {
       | "exam_slot.edited"
       | "exam_slot.deleted"
       | "exam_mode.changed"
-      | "past_paper.reviewed";
+      | "past_paper.reviewed"
+      | "cabinet.sync_run"
+      | "cabinet.sync_requested"
+      | "cabinet.viewed"
+      | "cabinet.conflicts_viewed";
     /** AuditEntryOut */
     AuditEntryOut: {
       action: components["schemas"]["AuditAction"];
@@ -3667,6 +3771,20 @@ export interface components {
       code: string;
       /** Name */
       name: string;
+    };
+    /** CabinetStudentOut */
+    CabinetStudentOut: {
+      /** Credits Earned */
+      credits_earned: number;
+      /** Cumulative Average */
+      cumulative_average: number | null;
+      /** Specialty Name */
+      specialty_name: string;
+      /**
+       * Synced At
+       * Format: date-time
+       */
+      synced_at: string;
     };
     /** CategoryChannels */
     CategoryChannels: {
@@ -3862,6 +3980,29 @@ export interface components {
       items: components["schemas"]["CommentOut"][];
       /** Next Cursor */
       next_cursor?: string | null;
+    };
+    /** ConflictListOut */
+    ConflictListOut: {
+      /** Items */
+      items: components["schemas"]["ConflictOut"][];
+    };
+    /**
+     * ConflictOut
+     * @description Which course differs for whom. Neither grade is included (D-126).
+     */
+    ConflictOut: {
+      /**
+       * Detected At
+       * Format: date-time
+       */
+      detected_at: string;
+      semester_term: components["schemas"]["SemesterTerm"];
+      /** Semester Year */
+      semester_year: number;
+      /** Subject Code */
+      subject_code: string;
+      /** University Id */
+      university_id: string;
     };
     /**
      * ConsentPurpose
@@ -6440,6 +6581,21 @@ export interface components {
       /** Notices */
       notices: "chat.channel_mention_not_allowed"[];
     };
+    /**
+     * SourceOut
+     * @description Whether the cabinet data is current. ``unavailable`` means the latest run failed: the figures shown are
+     *     from the last successful one, at ``last_synced_at``.
+     */
+    SourceOut: {
+      /** Last Synced At */
+      last_synced_at: string | null;
+      state: components["schemas"]["SourceState"];
+    };
+    /**
+     * SourceState
+     * @enum {string}
+     */
+    SourceState: "ok" | "unavailable" | "never_synced";
     /** StudentOut */
     StudentOut: {
       /** Display Name */
@@ -6560,6 +6716,57 @@ export interface components {
       /** Submitted At */
       submitted_at: string | null;
     };
+    /**
+     * SyncOutcome
+     * @enum {string}
+     */
+    SyncOutcome: "succeeded" | "failed";
+    /**
+     * SyncRequestedOut
+     * @description The run is queued; its result appears in the list of runs.
+     */
+    SyncRequestedOut: {
+      /** Queued */
+      queued: boolean;
+    };
+    /** SyncRunListOut */
+    SyncRunListOut: {
+      /** Items */
+      items: components["schemas"]["SyncRunOut"][];
+      source: components["schemas"]["SourceOut"];
+    };
+    /** SyncRunOut */
+    SyncRunOut: {
+      /** Conflicts */
+      conflicts: number;
+      /** Error Code */
+      error_code: string | null;
+      /**
+       * Finished At
+       * Format: date-time
+       */
+      finished_at: string;
+      /** Id */
+      id: string;
+      outcome: components["schemas"]["SyncOutcome"];
+      /**
+       * Started At
+       * Format: date-time
+       */
+      started_at: string;
+      /** Students Mismatched */
+      students_mismatched: number;
+      /** Students Not Found */
+      students_not_found: number;
+      /** Students Synced */
+      students_synced: number;
+      trigger: components["schemas"]["SyncTrigger"];
+    };
+    /**
+     * SyncTrigger
+     * @enum {string}
+     */
+    SyncTrigger: "nightly" | "manual";
     /** TagListOut */
     TagListOut: {
       /** Items */
@@ -6756,6 +6963,42 @@ export interface components {
       name: string;
       /** Slug */
       slug: string;
+    };
+    /** TranscriptCourseOut */
+    TranscriptCourseOut: {
+      /** Credits */
+      credits: number;
+      /** Differs */
+      differs: boolean;
+      /** Passed */
+      passed: boolean;
+      /** Score */
+      score: number;
+      /** Subject Code */
+      subject_code: string;
+      /** Subject Name */
+      subject_name: string;
+    };
+    /** TranscriptOut */
+    TranscriptOut: {
+      /** Semesters */
+      semesters: components["schemas"]["TranscriptSemesterOut"][];
+      source: components["schemas"]["SourceOut"];
+      student: components["schemas"]["CabinetStudentOut"] | null;
+    };
+    /** TranscriptSemesterOut */
+    TranscriptSemesterOut: {
+      /** Average */
+      average: number | null;
+      /** Courses */
+      courses: components["schemas"]["TranscriptCourseOut"][];
+      /** Credits Attempted */
+      credits_attempted: number | null;
+      /** Credits Earned */
+      credits_earned: number | null;
+      semester_term: components["schemas"]["SemesterTerm"];
+      /** Semester Year */
+      semester_year: number;
     };
     /** UnreadCountOut */
     UnreadCountOut: {
@@ -9478,6 +9721,201 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AudienceOptionsOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listCabinetConflicts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConflictListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listCabinetSyncRuns: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SyncRunListOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  requestCabinetSync: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SyncRequestedOut"];
         };
       };
       /** @description Missing, expired or invalid access token */
@@ -17116,6 +17554,136 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["TicketsOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  readMyTranscript: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TranscriptOut"];
+        };
+      };
+      /** @description Missing, expired or invalid access token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Authenticated but not allowed */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Conflicts with existing data */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Request validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listMyAppeals: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AppealListOut"];
         };
       };
       /** @description Missing, expired or invalid access token */

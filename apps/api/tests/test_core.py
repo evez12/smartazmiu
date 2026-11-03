@@ -18,7 +18,13 @@ from app.modules import load_models
 
 
 def test_production_flag_follows_app_env() -> None:
-    assert Settings(app_env="production").is_production
+    production = Settings(
+        app_env="production",
+        cabinet_provider="azmiu",
+        cabinet_api_url="https://cabinet.example",
+        cabinet_api_key="key",
+    )
+    assert production.is_production
     assert not Settings(app_env="development").is_production
 
 
