@@ -1,20 +1,97 @@
 import { randomBytes } from "node:crypto";
 
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Locator, type Page } from "@playwright/test";
+import { type BrowserContext, expect, type Locator, type Page } from "@playwright/test";
 
 import { hydrated, password, signIn, test } from "./support/auth";
+import { startFront, stopFront, stopsFront } from "./support/stack";
 import { undersizedTargets } from "./support/touch-targets";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
 // WebKit does not send the app's Secure state cookie back over plain http://localhost, so the sign-in callback
-// ends in `signin_expired` and no test can reach a signed-in page. It needs a TLS front for the local stack (D-128).
+// ends in `signin_expired` and no test can reach a signed-in page. `make up-tls` gives it https (D-128, D-133).
 test.skip(
-  ({ browserName }) => browserName === "webkit",
-  "WebKit cannot complete the sign-in over plain HTTP on localhost (D-128)",
+  ({ browserName, baseURL }) => browserName === "webkit" && !baseURL?.startsWith("https:"),
+  "WebKit cannot complete the sign-in over plain HTTP on localhost; use make up-tls (D-128)",
 );
+// In the WebKit build Playwright ships, `PushManager.getSubscription()` on an active worker blocks the page's main
+// thread (a heartbeat inside the page stops), and the notification settings page and the chat menu call it on mount.
+// The offline specs never use push, so WebKit gets an answer of "no subscription" (D-133).
+test.beforeEach(async ({ context, browserName }) => {
+  if (browserName !== "webkit") return;
+  await context.addInitScript(() => {
+    PushManager.prototype.getSubscription = () => Promise.resolve(null);
+  });
+});
 const FIREFOX_OFFLINE =
-  "Playwright's offline mode does not reach the service worker's own requests in Firefox (D-128)";
+  "Playwright's offline mode does not reach the service worker's own requests in Firefox; run make e2e-pwa-browsers (D-128, D-133)";
+
+// The tests that follow take the network away and give it back: they run one after the other in one worker (not
+// `serial`, which would skip the rest after a failure), and a failed test must
+// never leave the https front stopped.
+test.describe.configure({ mode: "default" });
+test.afterEach(() => {
+  if (stopsFront) startFront();
+});
+
+const OFFLINE_FLAG = "e2e_offline";
+
+/** See the hook below: Firefox in front-stop mode needs the language cookie, also after a test cleared cookies. */
+async function keepLanguage(context: BrowserContext): Promise<void> {
+  if (!(stopsFront && test.info().project.name === "pwa-firefox")) return;
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "az", url: "https://localhost" }]);
+}
+
+// Firefox, front-stop mode: a stopped front fails every request, but the machine's network is still up, so
+// `navigator.onLine` would stay true and the app would think the connection is back. A real browser reports offline
+// when the connection drops; this answers the same from a cookie that `setNetwork` sets (D-133).
+test.beforeEach(async ({ context }) => {
+  if (!(stopsFront && test.info().project.name === "pwa-firefox")) return;
+  // The worker's own requests in Firefox do not carry the context's Accept-Language, so its stored offline page would
+  // come in English; the language cookie (D-113) makes it Azerbaijani like the pages.
+  await keepLanguage(context);
+  await context.addInitScript((flag) => {
+    Object.defineProperty(Navigator.prototype, "onLine", {
+      configurable: true,
+      get: () => !document.cookie.split("; ").includes(`${flag}=1`),
+    });
+  }, OFFLINE_FLAG);
+});
+
+/**
+ * Takes the network away or gives it back. Firefox ignores Playwright's offline switch for the service worker's own
+ * requests (D-128), so there the TLS front of the https stack is stopped: the connection itself fails and the worker
+ * serves its offline page (a stopped nginx behind the front would answer 502, an HTTP response) (D-133).
+ */
+async function setNetwork(page: Page, online: boolean): Promise<void> {
+  if (!(stopsFront && test.info().project.name === "pwa-firefox")) {
+    await page.context().setOffline(!online);
+    return;
+  }
+  const cookie = { name: OFFLINE_FLAG, url: "https://localhost" };
+  if (online) {
+    startFront();
+    await page.context().addCookies([{ ...cookie, value: "0" }]);
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+    return;
+  }
+  stopFront();
+  await page.context().addCookies([{ ...cookie, value: "1" }]);
+  await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+  // Proves the connection really fails (a network error), not an HTTP error answer.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          fetch(`/network-probe?${Date.now()}`, { cache: "no-store" }).then(
+            () => "answered",
+            (error: Error) => error.name,
+          ),
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe("TypeError");
+}
 // The service worker registers only in a production build (the development server serves changing code under
 // one address), so these specs need `make up` and `E2E_BASE_URL=http://localhost` (like the upload specs, D-068).
 test.skip(
@@ -40,11 +117,15 @@ async function offlineDb(page: Page): Promise<OfflineDb> {
   return page.evaluate(async (name) => {
     const known = (await indexedDB.databases()).some((database) => database.name === name);
     if (!known) return null;
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const db = await new Promise<IDBDatabase | null>((resolve, reject) => {
       const request = indexedDB.open(name);
+      // The app deleted it after the check above: opening would create an empty database, so the upgrade is aborted.
+      request.onupgradeneeded = () => request.transaction?.abort();
       request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      request.onerror = () =>
+        request.error?.name === "AbortError" ? resolve(null) : reject(request.error);
     });
+    if (!db) return null;
     const all = <T>(store: string) =>
       new Promise<T[]>((resolve, reject) => {
         const request = db.transaction(store).objectStore(store).getAll();
@@ -65,6 +146,25 @@ async function cacheNames(page: Page): Promise<string[]> {
 }
 
 /** Every address held in the worker's caches, with the cache it is in. */
+/** True when every script and stylesheet the stored offline page names is in the static cache. */
+async function shellScriptsStored(page: Page): Promise<boolean> {
+  return page.evaluate(async () => {
+    const names = await caches.keys();
+    const shell = names.find((n) => n.startsWith("sa-shell-"));
+    const assets = names.find((n) => n.startsWith("sa-static-"));
+    if (!shell || !assets) return false;
+    const html = await (await (await caches.open(shell)).match("/offline"))?.text();
+    if (!html) return false;
+    const wanted = [...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+\.(?:js|css))"/g)].map(
+      (match) => match[1] ?? "",
+    );
+    const stored = new Set(
+      (await (await caches.open(assets)).keys()).map((request) => new URL(request.url).pathname),
+    );
+    return wanted.length > 0 && wanted.every((path) => stored.has(path));
+  });
+}
+
 async function cachedUrls(page: Page): Promise<{ cache: string; path: string }[]> {
   return page.evaluate(async () => {
     const found: { cache: string; path: string }[] = [];
@@ -145,7 +245,9 @@ async function enableOfflineStorage(page: Page) {
   const toggle = page.getByRole("switch", { name: "Bu cihazda oflayn saxla" });
   await expect(toggle).not.toBeChecked();
   await toggle.click();
-  await expect(toggle).toBeChecked();
+  // The switch turns on when the first download is done. WebKit on Windows adds about 0.2 s to every new connection to
+  // localhost while nothing listens on ::1 (D-134), so the 5 s default is too short for it.
+  await expect(toggle).toBeChecked({ timeout: 30_000 });
   await expect(page.getByText(/^Son yenilənmə: /)).toBeVisible({ timeout: 30_000 });
   await expect
     .poll(async () => (await cacheNames(page)).some((name) => name.startsWith("sa-shell-")), {
@@ -163,6 +265,8 @@ test("the app can be installed: manifest, icons, worker script and no installabi
   request,
   browserName,
 }) => {
+  // The first sign-in after the stack has been idle takes well over the default 30 s in WebKit (about 5 s when warm).
+  test.setTimeout(120_000);
   await signIn(page, AYSEL.username, "/");
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -214,7 +318,7 @@ test("the schedule and the newest channel messages stay readable offline, and co
   page,
   records,
 }) => {
-  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
+  test.skip(test.info().project.name === "pwa-firefox" && !stopsFront, FIREFOX_OFFLINE);
   test.setTimeout(240_000);
   const marker = records.chatMessages(randomBytes(6).toString("hex"), [AYSEL.email]);
   await signIn(page, AYSEL.username, "/chat");
@@ -242,7 +346,7 @@ test("the schedule and the newest channel messages stay readable offline, and co
   );
   const savedBefore = stored.snapshots.find((snapshot) => snapshot.kind === "schedule")!.savedAt;
 
-  await page.context().setOffline(true);
+  await setNetwork(page, false);
   await page.goto("/schedule");
   await hydrated(page);
   await expect(page.getByRole("heading", { level: 1, name: "Oflayn rejim" })).toBeVisible();
@@ -264,7 +368,7 @@ test("the schedule and the newest channel messages stay readable offline, and co
     await expectNoSeriousViolations(page, `offline page, ${scheme}`);
   }
 
-  await page.context().setOffline(false);
+  await setNetwork(page, true);
   await expect(page.getByText("Bağlantı bərpa olundu")).toBeVisible();
   await page.getByRole("link", { name: "Tətbiqə qayıdın" }).click();
   await hydrated(page);
@@ -299,7 +403,7 @@ test("a session that ended without signing out is cleaned at the sign-in page, a
   page,
   accounts,
 }) => {
-  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
+  test.skip(test.info().project.name === "pwa-firefox" && !stopsFront, FIREFOX_OFFLINE);
   test.setTimeout(180_000);
   await signIn(page, AYSEL.username, "/");
   await enableOfflineStorage(page);
@@ -307,6 +411,7 @@ test("a session that ended without signing out is cleaned at the sign-in page, a
 
   // The session ends on the server's side (expiry, revocation): the cookies are gone, the device is not told.
   await page.context().clearCookies();
+  await keepLanguage(page.context());
   await page.goto("/login");
   await expect.poll(() => offlineDb(page), { timeout: 15_000 }).toBeNull();
   await expectOnlyPublicFilesCached(page);
@@ -325,22 +430,25 @@ test("a session that ended without signing out is cleaned at the sign-in page, a
       timeout: 30_000,
     })
     .toBe(true);
-  await page.context().setOffline(true);
+  // The worker stores the page first and its scripts and styles after it; going offline before they are there serves
+  // a page that cannot start (seen in WebKit, which is slower than Chromium here).
+  await expect.poll(() => shellScriptsStored(page), { timeout: 30_000 }).toBe(true);
+  await setNetwork(page, false);
   await page.goto("/schedule");
   await hydrated(page);
   await expect(page.getByText(/Oflayn saxlama bu cihazda aktiv deyil/)).toBeVisible();
-  await page.context().setOffline(false);
+  await setNetwork(page, true);
 });
 
 test("signing out without a connection deletes the data at once and ends the session when it returns", async ({
   page,
 }) => {
-  test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
+  test.skip(test.info().project.name === "pwa-firefox" && !stopsFront, FIREFOX_OFFLINE);
   test.setTimeout(180_000);
   await signIn(page, AYSEL.username, "/");
   await enableOfflineStorage(page);
 
-  await page.context().setOffline(true);
+  await setNetwork(page, false);
   await page.goto("/schedule");
   await hydrated(page);
   await page.getByRole("button", { name: "Çıxış edin" }).click();
@@ -348,7 +456,7 @@ test("signing out without a connection deletes the data at once and ends the ses
   expect(await offlineDb(page)).toBeNull();
   expect(await cacheNames(page)).toEqual([]);
 
-  await page.context().setOffline(false);
+  await setNetwork(page, true);
   await page.goto("/");
   await expect(page).toHaveURL(/\/login\?status=signed_out/, { timeout: 30_000 });
   // The server session is really over: the app no longer opens.
@@ -448,11 +556,11 @@ test("a message written offline is delivered once when the connection returns, w
   await openFirstCourse(page);
   await page.evaluate(() => navigator.serviceWorker.ready);
 
-  await page.context().setOffline(true);
+  await setNetwork(page, false);
   await expect(page.getByText("İnternet bağlantısı yoxdur")).toBeVisible();
   await send(page, `Bağlantı yox idi, bunu sonra göndərin. ${marker}`);
   await expect(messageLog(page).getByText("Bağlantı bərpa olunanda göndəriləcək")).toBeVisible();
-  await page.context().setOffline(false);
+  await setNetwork(page, true);
 
   await expect(messageLog(page).getByText(marker)).toHaveCount(1, { timeout: 30_000 });
   await expect(messageLog(page).getByText("Bağlantı bərpa olunanda göndəriləcək")).toHaveCount(0);
@@ -468,7 +576,7 @@ test.describe("on a phone", () => {
   test("the offline switch, the offline page and the install offer fit 320 px with 44 px targets", async ({
     page,
   }) => {
-    test.skip(test.info().project.name === "pwa-firefox", FIREFOX_OFFLINE);
+    test.skip(test.info().project.name === "pwa-firefox" && !stopsFront, FIREFOX_OFFLINE);
     test.setTimeout(180_000);
     await signIn(page, AYSEL.username, "/");
     await enableOfflineStorage(page);
@@ -492,7 +600,7 @@ test.describe("on a phone", () => {
     await expect(offer).toBeVisible();
     expect(await undersizedTargets(page), "install offer").toEqual([]);
 
-    await page.context().setOffline(true);
+    await setNetwork(page, false);
     await expect(page.getByText("İnternet bağlantısı yoxdur")).toBeVisible();
     expect(await undersizedTargets(page), "connection banner").toEqual([]);
 
@@ -514,6 +622,6 @@ test.describe("on a phone", () => {
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
     expect(await undersizedTargets(page), "offline history").toEqual([]);
-    await page.context().setOffline(false);
+    await setNetwork(page, true);
   });
 });

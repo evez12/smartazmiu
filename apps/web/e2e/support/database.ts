@@ -241,9 +241,30 @@ export class TestRecords {
     );
   }
 
+  /**
+   * Removes what the test created. The mail and rate-limit steps call other services (Mailpit, Redis) and may fail;
+   * the database part must not depend on them (D-045: records go also when a test fails or times out), so it always
+   * runs and the other failures are reported after it.
+   */
   async removeAll(): Promise<void> {
-    await removeMail(this.mailboxes.splice(0));
-    for (const { rule, emails } of this.limited.splice(0)) await this.resetLimit(rule, emails);
+    const problems: unknown[] = [];
+    const attempt = async (step: () => Promise<void>) => {
+      try {
+        await step();
+      } catch (error) {
+        problems.push(error);
+      }
+    };
+    await attempt(() => removeMail(this.mailboxes.splice(0)));
+    for (const { rule, emails } of this.limited.splice(0)) {
+      await attempt(() => this.resetLimit(rule, emails));
+    }
+    await this.removeFromDatabase();
+    if (problems.length)
+      throw new AggregateError(problems, "Test records: cleanup outside the database failed");
+  }
+
+  private async removeFromDatabase(): Promise<void> {
     const client = await database().connect();
     try {
       await client.query("BEGIN");
@@ -427,7 +448,8 @@ function testCode(code: string): string {
   return code;
 }
 
-const mailpitUrl = `http://localhost:${process.env.MAILPIT_UI_PORT ?? 8025}`;
+// 127.0.0.1, not localhost: the helper runs on the host and must not depend on the IPv6 loopback (D-134).
+const mailpitUrl = `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8025}`;
 
 type MailSummary = { ID: string; Subject: string; To: { Address: string }[] };
 

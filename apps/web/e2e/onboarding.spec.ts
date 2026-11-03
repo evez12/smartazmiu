@@ -1,9 +1,23 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { openPage, password, signIn, test } from "./support/auth";
 
 test.skip(!password, "KEYCLOAK_TEST_USER_PASSWORD is not set");
+
+/**
+ * The tour hides at once and saves in the background; a navigation that starts before the save lands aborts it and the
+ * tour returns. Waits for the save, as a user who stays on the page does.
+ */
+async function closeTour(page: Page, tour: Locator): Promise<void> {
+  const saved = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/v1/me/onboarding") && response.request().method() === "PUT",
+  );
+  await tour.getByRole("button", { name: "Tanışlığı bağlayın" }).click();
+  await expect(tour).toHaveCount(0);
+  await saved;
+}
 
 /*
  * Sprint 6 onboarding: a new account sees the tour on the dashboard, can step through it, and once closed it
@@ -33,8 +47,7 @@ test("a new student steps through the tour, closes it and brings it back", async
 
   await tour.getByRole("button", { name: "Növbəti" }).click();
   await expect(tour.getByRole("heading", { name: "Fənn və qrup kanalları" })).toBeVisible();
-  await tour.getByRole("button", { name: "Tanışlığı bağlayın" }).click();
-  await expect(tour).toHaveCount(0);
+  await closeTour(page, tour);
   await openPage(page, "/");
   await expect(page.getByRole("heading", { level: 1, name: "Ana səhifə" })).toBeVisible();
   await expect(tour).toHaveCount(0);
@@ -45,8 +58,7 @@ test("a new student steps through the tour, closes it and brings it back", async
   await expect(tour).toContainText("Addım 1 / 5");
 
   // The profile menu brings it back too, from any page.
-  await tour.getByRole("button", { name: "Tanışlığı bağlayın" }).click();
-  await expect(tour).toHaveCount(0);
+  await closeTour(page, tour);
   await openPage(page, "/schedule");
   await page.getByRole("button", { name: /Profil menyusu/ }).click();
   await page.getByRole("menuitem", { name: "Tanışlıq turunu yenidən göstərin" }).click();

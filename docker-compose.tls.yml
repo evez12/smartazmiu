@@ -1,0 +1,21 @@
+# Local HTTPS for the browsers that refuse Secure cookies on plain http://localhost (D-128). Development and CI
+# only: `make up-tls` adds this file; the production deployment never reads it. The stack's nginx is unchanged.
+services:
+  tls:
+    profiles: ["app"]
+    image: nginx:1.30.6-alpine
+    ports:
+      - "${NGINX_BIND_ADDR:-${BIND_ADDR:-127.0.0.1}}:${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./infra/nginx/tls.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/tls/localhost.crt:/etc/nginx/tls/localhost.crt:ro
+      - ./infra/tls/localhost.key:/etc/nginx/tls/localhost.key:ro
+    depends_on:
+      nginx:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "443"]
+      interval: 10s
+      timeout: 3s
+      retries: 10

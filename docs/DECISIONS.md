@@ -2891,6 +2891,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
   code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
   record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.
+- **Update 2026-11-03 (D-134):** requests that the browser registered and nginx never saw are what D-134 measured on the IPv6
+  loopback of Docker Desktop (about 0.5 % of new connections to `::1` dropped, none over `127.0.0.1`). It is the probable
+  cause of this stall and of the connection resets of the gate runs on this branch; earlier green gates may have passed
+  despite it. **Not proven for D-125:** no run has shown the stall with the loopback bound to IPv4.
 
 ## D-126 · 2026-11-03 · Personal cabinet mirror (Sprint 15, Group C)
 
@@ -3102,3 +3106,109 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   security updates already ignore the cooldown). The E2E database helper reads the repository `.env` itself when
   `POSTGRES_PASSWORD` is not set; variables already set win.
 - **Consequences:** version updates arrive at least ten days after release. No product code changed.
+
+## D-133 · 2026-11-03 · Local HTTPS for WebKit and Firefox (`make up-tls`), dev and CI only
+
+- **Context:** WebKit does not send the app's `Secure` cookies back over `http://localhost` (D-128). The product owner
+  approved a local HTTPS front with changes: committed config, a guard against switching without a reset, and proof
+  in WebKit and Firefox before merging. No change to production nginx or compose, the realm file, cookies, the CSP
+  code or authentication.
+- **Decision:** `nginx.conf` has no `include`, so a server snippet cannot be added without editing it. Instead a
+  second nginx container (`docker-compose.tls.yml`, `infra/nginx/tls.conf`) ends TLS on :443 and proxies to the
+  stack's nginx on :80, which is unchanged. The certificate is a 30-day self-signed one from `make tls-cert`
+  (`openssl`, `infra/tls/`, gitignored). `make up-tls` sets `APP_PUBLIC_URL=https://localhost` and refuses to run while
+  the Postgres or Keycloak volume exists unless `RESET_OK=1`, because Keycloak keeps the redirect URIs of its first
+  start. `down` and `reset` gained `--remove-orphans` so the extra container is removed. `make e2e-pwa-browsers` runs
+  `pwa.spec.ts` in WebKit and Firefox with `E2E_IGNORE_HTTPS_ERRORS=1`.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **HSTS (product owner, 2026-11-03):** the app sends HSTS once it sees https, and for `localhost` that covers every
+  port, so Chromium upgraded the `http://localhost:8080` Keycloak hop to https and timed out. Keycloak is not changed:
+  the TLS front removes the header (`proxy_hide_header Strict-Transport-Security`, dev and CI only; the app's headers are
+  unchanged). A developer whose browser cached an entry clears it at `chrome://net-internals/#hsts` ("Delete domain
+  security policies", `localhost`). Chromium was tried once on the https stack after that: sign-in did not work
+  (8 of 9 cases of `pwa.spec.ts` timed out on `page.evaluate`), so Chromium stays on the http stack; no further work.
+- **Firefox offline:** Playwright's offline switch does not reach the service worker's requests in Firefox (D-128), so
+  in `make e2e-pwa-browsers` (`E2E_STOP_STACK=1`) the TLS front is stopped and started again (same compose files as
+  `up-tls`; in `afterEach`, the tests run in one worker). The front, not the stack's nginx: a stopped nginx behind it
+  would answer 502, an HTTP response. Each test asserts that a `fetch` then fails with a network error. Two more
+  Firefox-only test shims were needed: a stopped front leaves `navigator.onLine` true (the machine's network is up),
+  so the app would say "the connection is back"; a cookie-driven `onLine` stands in for what a browser reports when the
+  connection drops. And the worker's own requests in Firefox do not carry the context's `Accept-Language`, so its
+  stored offline page came in English; the `NEXT_LOCALE` cookie (D-113) fixes the language.
+- **What the Firefox offline tests prove:** `navigator.onLine` is driven by a cookie shim there, so they prove the offline
+  UI and the service worker's fallback page, not the browser's own `onLine` detection.
+- **WebKit freeze (open item, Phase 4):** in the WebKit build Playwright ships, `PushManager.getSubscription()` on an
+  active worker blocks the page's main thread (a heartbeat inside the page stops). The app calls it on mount (the
+  notification settings page, the chat menu). `pwa.spec.ts` replaces it with "no subscription" in WebKit only; the
+  offline specs never use push. **Open:** verify in real iOS Safari (Phase 4). Proposed app fix, not made here: call it
+  lazily, only where the push state is shown, and with a timeout.
+- **WebKit test that failed (explained, not a flake):** "a session that ended without signing out…" went offline as soon as
+  `/offline` was in the cache. The worker stores the page first and its scripts and styles after it, so the test could
+  go offline before the scripts were stored, and the page then showed its server-rendered text without starting
+  ("connection is back", no stored content). The app reports the shell as stored only after the worker's answer, which
+  comes after the assets, so the product is correct; the test now waits until every script and stylesheet named by the
+  stored page is in the static cache (`shellScriptsStored`). Passed twice in a row in WebKit after the change.
+- **Two more test-helper defects found by the gate:** `offlineDb` checked `indexedDB.databases()` and then opened the
+  database; when the app deleted it in between (what the test waits for), the open recreated an empty one and the next
+  read failed with "'meta' is not a known object store name" (Firefox). The upgrade is now aborted, so the helper never
+  creates it. The install test had the default 30 s timeout while a first sign-in after idle takes longer in WebKit
+  (about 5 s when warm); it now has 120 s like its siblings.
+- **Found by the http gate on this branch (two functional failures, no app code changed):**
+  - `ERR_CONNECTION_RESET` on the first request of the first test right after `make reset && make up && make seed`;
+    nginx's log starts with the next request, so the reset happened between the host and the container (Docker Desktop's
+    port forwarding in the first seconds). The Playwright global setup now waits until `/healthz` answers 200 (60 s
+    limit); it is a readiness check, not a retry. Not seen on the three earlier from-scratch gates of 2026-11-03.
+  - `onboarding.spec.ts` closed the tour and navigated at once. The tour hides on click (`onMutate`) and saves with
+    `PUT /me/onboarding` in the background; a navigation that starts before the save lands aborts it, so the tour
+    returns on the next page. The test now waits for the save. **Open, app side (not fixed here):** a person who
+    closes the tour and leaves the page within the save time sees it again; the proposed fix is `keepalive: true` on
+    that request or keeping the page until it settles.
+- **OPEN, not explained (like D-125): the WebKit service worker stays `installing`.** In about 2 of 16 fresh WebKit
+  contexts on the https stack the registration never leaves `installing` (no active worker, no controller, no caches
+  after 25 s), although `/sw.js` was requested, answered 200 and finished. Firefox: 0 of 16. Any WebKit test that needs
+  the worker can hit it, and it is the cause of an intermittent `signing out deletes Cache Storage…` failure. Not shown
+  to be the self-signed certificate (the script loads); not shown to be the app (the install handler is empty). To
+  establish: run the same probe with a certificate WebKit trusts (the local-CA fallback), and in real iOS Safari
+  (Phase 4). Until then those WebKit results are reported as they come; nothing is retried.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **Numbers:** see the gate result in the report of 2026-11-03.
+
+## D-134 · 2026-11-03 · Host ports bind to IPv4 loopback by default (`BIND_ADDR`), and the test cleanup no longer depends on other services
+
+- **Context:** the http gate on `chore/local-tls` failed with `ERR_CONNECTION_RESET`, `ECONNRESET` and timeouts that never
+  reached nginx. Without any browser, 3000 new connections in parallel (32 threads) showed: `127.0.0.1` 0 failures,
+  `::1` 26 timeouts, `localhost` (tries `::1` first) 13 to 20. Docker Desktop's IPv6 loopback forwarding on this box drops
+  a share of new connections.
+- **Decision (product owner, 2026-11-03):** every published host port in `docker-compose.yml` uses
+  `${BIND_ADDR:-127.0.0.1}` (database, both Redis instances, storage, ClamAV, Keycloak, Mailpit); nginx uses
+  `${NGINX_BIND_ADDR:-${BIND_ADDR:-127.0.0.1}}`, and so does the https front of `docker-compose.tls.yml`. Monitoring was
+  loopback-bound already (D-080). The pilot server sets `NGINX_BIND_ADDR=0.0.0.0` and nothing else
+  (`docs/runbooks/pilot.md`, section 7). Side benefit: the infrastructure ports are no longer reachable from the LAN.
+- **Measured after the change** (same test): `127.0.0.1` 3000 of 3000 answered in 3.9 s; `localhost` 3000 of 3000 answered,
+  but the sequential Python client waited about 2 s per connection on the refused `::1` first (191 s in all; curl takes
+  0.2 s per request and Node `fetch` about 12 ms, because they try both families at once, as browsers do); `::1` is
+  refused for all 3000 (nothing listens there any more), which is the intended effect.
+- **Status of D-125:** linked as the probable cause, not proven (see D-125).
+- **Cleanup defect found on the way:** after the failed runs `users (registry)` was 57 → 59 and three course offerings,
+  groups and teachers were left. `TestRecords.removeAll` called Mailpit (`localhost:8025`) and Redis first and outside
+  any `try`, so when one of those calls was reset the whole database cleanup was skipped, contrary to D-045 (records go
+  also when a test fails or times out). `removeAll` now runs the mail and rate-limit steps with their errors collected,
+  always runs the database part, and then reports the collected errors; the Mailpit helper uses `127.0.0.1`.
+  `TestAccounts.deleteAll` continues after a failed Keycloak call instead of leaving the later accounts. Test-only; no
+  app change. Residue from earlier failed runs still needs a `make reset`.
+- **Side effect on WebKit (measured, handled in the test):** with nothing listening on `::1`, the WebKit build Playwright
+  ships on Windows waits for the IPv6 refusal before it falls back to IPv4: about 0.23 s per request (2 s for the first)
+  in the page, against 8 ms in Firefox, which tries both families at once like Chromium. The first offline download
+  (about twenty requests) then outlasted the 5 s default of `toBeChecked`, and five WebKit tests failed at the switch.
+  `enableOfflineStorage` now waits up to 30 s for it. Nothing in the product changes; it is a property of that browser
+  build on `localhost` and does not reach users.
+- **Gate on this branch (2026-11-03):** `make reset`, `make up`, `make seed`, then the functional suite with `--workers=2
+  --retries=0` and the seed check, then `pwa.spec.ts` in Chromium, twice in a row: 91 of 91 and 9 of 9 both times. On the
+  https stack, `make e2e-pwa-browsers`: WebKit 8 passed, 1 skipped (installability check is Chromium-only); Firefox 8
+  passed, 1 skipped (same). The WebKit worker that stays `installing` (D-133) did not appear in that run.

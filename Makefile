@@ -85,11 +85,37 @@ monitoring: .env ## Start the stack with Prometheus (:9090) and Grafana (:3001, 
 
 .PHONY: down
 down: ## Stop all containers
-	$(COMPOSE) --profile app --profile monitoring down
+	$(COMPOSE) --profile app --profile monitoring down --remove-orphans
 
 .PHONY: reset
 reset: ## Stop all containers and delete their volumes
-	$(COMPOSE) --profile app --profile monitoring down --volumes
+	$(COMPOSE) --profile app --profile monitoring down --volumes --remove-orphans
+
+# --- Local HTTPS (development and CI only; D-133) ------------------------------
+# WebKit does not send Secure cookies back over http://localhost, so its sign-in and the PWA checks need https. A second
+# nginx (infra/nginx/tls.conf) ends TLS on :443 in front of the stack's own nginx. Keycloak takes its redirect URIs from
+# APP_PUBLIC_URL only when its database is created, so switching between http and https needs `make reset`.
+COMPOSE_TLS := $(COMPOSE) -f docker-compose.yml -f docker-compose.tls.yml
+TLS_DIR := infra/tls
+
+.PHONY: tls-cert
+tls-cert: ## Generate a 30-day self-signed certificate for localhost in infra/tls (not committed)
+	@mkdir -p $(TLS_DIR)
+	MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=localhost" \
+		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+		-keyout $(TLS_DIR)/localhost.key -out $(TLS_DIR)/localhost.crt
+
+.PHONY: up-tls
+up-tls: .env ## Start the full stack at https://localhost; needs `make reset` first (RESET_OK=1 if that was done)
+	@if [ "$(RESET_OK)" != "1" ] && { docker volume inspect smartazmiu_postgres-data >/dev/null 2>&1 \
+		|| docker volume inspect smartazmiu_keycloak-data >/dev/null 2>&1; }; then \
+		echo "up-tls refused: the stack has data, and Keycloak keeps the redirect URIs of its first start." >&2; \
+		echo "Run 'make reset' (deletes all local data), then 'make up-tls'; or set RESET_OK=1 if the data is already https." >&2; \
+		exit 1; \
+	fi
+	@[ -f $(TLS_DIR)/localhost.crt ] || $(MAKE) tls-cert
+	APP_PUBLIC_URL=https://localhost $(COMPOSE_TLS) --profile app up -d --build --wait
+	@echo "Stack is running at https://localhost (self-signed certificate)"
 
 .PHONY: logs
 logs: ## Follow container logs
@@ -179,6 +205,11 @@ test-web: ## Run frontend unit tests
 .PHONY: e2e
 e2e: seed ## Run Playwright functional and accessibility tests (starts the dev server if needed)
 	$(PNPM) exec playwright test --project=functional
+
+.PHONY: e2e-pwa-browsers
+e2e-pwa-browsers: ## pwa.spec.ts in WebKit and Firefox against the https stack (make up-tls)
+	E2E_BASE_URL=https://localhost E2E_IGNORE_HTTPS_ERRORS=1 E2E_STOP_STACK=1 \
+		$(PNPM) exec playwright test --project=pwa-webkit --project=pwa-firefox --workers=1 --retries=0
 
 # Screenshot baselines exist only for the pinned Linux image (DECISIONS D-007). The container keeps its own
 # node_modules and .next so it never touches the host's Windows builds.
