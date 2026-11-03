@@ -3120,11 +3120,33 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
   `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
   and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
-- **Findings:**
-  - Chromium cannot sign in on the https stack: the app sends HSTS with `includeSubDomains` for `localhost`, which
-    covers every port, so Chromium upgrades the `http://localhost:8080` Keycloak hop to https and it times out.
-    Chromium keeps using the http stack. Keycloak over https would be the fix and is an authentication change.
-  - In the WebKit build Playwright ships, `PushManager.getSubscription()` on an active worker blocks the page's main
-    thread (a heartbeat inside the page stops). The notification settings page and the chat menu call it on mount. The
-    offline specs never use push, so `pwa.spec.ts` replaces it with an answer of "no subscription" in WebKit only.
-- **Result:** see the report of the same day; one WebKit test is not explained yet and the branch is not merged.
+- **HSTS (product owner, 2026-11-03):** the app sends HSTS once it sees https, and for `localhost` that covers every
+  port, so Chromium upgraded the `http://localhost:8080` Keycloak hop to https and timed out. Keycloak is not changed:
+  the TLS front removes the header (`proxy_hide_header Strict-Transport-Security`, dev and CI only; the app's headers are
+  unchanged). A developer whose browser cached an entry clears it at `chrome://net-internals/#hsts` ("Delete domain
+  security policies", `localhost`). Chromium was tried once on the https stack after that: sign-in did not work
+  (8 of 9 cases of `pwa.spec.ts` timed out on `page.evaluate`), so Chromium stays on the http stack; no further work.
+- **Firefox offline:** Playwright's offline switch does not reach the service worker's requests in Firefox (D-128), so
+  in `make e2e-pwa-browsers` (`E2E_STOP_STACK=1`) the TLS front is stopped and started again (same compose files as
+  `up-tls`; in `afterEach`, the tests run in one worker). The front, not the stack's nginx: a stopped nginx behind it
+  would answer 502, an HTTP response. Each test asserts that a `fetch` then fails with a network error. Two more
+  Firefox-only test shims were needed: a stopped front leaves `navigator.onLine` true (the machine's network is up),
+  so the app would say "the connection is back"; a cookie-driven `onLine` stands in for what a browser reports when the
+  connection drops. And the worker's own requests in Firefox do not carry the context's `Accept-Language`, so its
+  stored offline page came in English; the `NEXT_LOCALE` cookie (D-113) fixes the language.
+- **WebKit freeze (open item, Phase 4):** in the WebKit build Playwright ships, `PushManager.getSubscription()` on an
+  active worker blocks the page's main thread (a heartbeat inside the page stops). The app calls it on mount (the
+  notification settings page, the chat menu). `pwa.spec.ts` replaces it with "no subscription" in WebKit only; the
+  offline specs never use push. **Open:** verify in real iOS Safari (Phase 4). Proposed app fix, not made here: call it
+  lazily, only where the push state is shown, and with a timeout.
+- **WebKit test that failed (explained, not a flake):** "a session that ended without signing out…" went offline as soon as
+  `/offline` was in the cache. The worker stores the page first and its scripts and styles after it, so the test could
+  go offline before the scripts were stored, and the page then showed its server-rendered text without starting
+  ("connection is back", no stored content). The app reports the shell as stored only after the worker's answer, which
+  comes after the assets, so the product is correct; the test now waits until every script and stylesheet named by the
+  stored page is in the static cache (`shellScriptsStored`). Passed twice in a row in WebKit after the change.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **Numbers:** see the gate result in the report of 2026-11-03.

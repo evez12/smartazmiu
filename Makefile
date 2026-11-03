@@ -208,7 +208,7 @@ e2e: seed ## Run Playwright functional and accessibility tests (starts the dev s
 
 .PHONY: e2e-pwa-browsers
 e2e-pwa-browsers: ## pwa.spec.ts in WebKit and Firefox against the https stack (make up-tls)
-	E2E_BASE_URL=https://localhost E2E_IGNORE_HTTPS_ERRORS=1 \
+	E2E_BASE_URL=https://localhost E2E_IGNORE_HTTPS_ERRORS=1 E2E_STOP_STACK=1 \
 		$(PNPM) exec playwright test --project=pwa-webkit --project=pwa-firefox --workers=1 --retries=0
 
 # Screenshot baselines exist only for the pinned Linux image (DECISIONS D-007). The container keeps its own
