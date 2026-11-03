@@ -160,7 +160,11 @@ def test_types_are_checked_by_name_reported_type_and_content() -> None:
 
 
 async def test_presign_checks_type_size_membership_and_rate(
-    client: AsyncClient, db: AsyncSession, person: MakePerson, channel: MakeChannel
+    client: AsyncClient,
+    db: AsyncSession,
+    person: MakePerson,
+    channel: MakeChannel,
+    fixed_rate_window: None,
 ) -> None:
     aysel = await person()
     room = await channel(aysel)

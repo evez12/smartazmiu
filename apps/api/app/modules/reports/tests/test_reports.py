@@ -89,7 +89,7 @@ async def test_a_person_reports_a_target_once_and_only_what_they_can_see(
 
 
 async def test_report_creation_is_rate_limited(
-    client: AsyncClient, person: MakePerson, channel: MakeChannel
+    client: AsyncClient, person: MakePerson, channel: MakeChannel, fixed_rate_window: None
 ) -> None:
     aysel = await person()
     others = [await person("Ramin", f"Əliyev{n}") for n in range(11)]
