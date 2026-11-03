@@ -3184,6 +3184,9 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   the leaf ("SSL peer certificate or SSH remote key was not OK"); trusting it would mean adding the CA to the Windows
   certificate store, which was not done without the product owner's approval. So whether the "installing" stall
   follows the self-signed certificate is still unknown. The throwaway CA files were deleted.
+- **Decision (product owner, 2026-11-03):** no CA is added to the system certificate store. The two WebKit questions, the
+  worker that stays `installing` and the `PushManager.getSubscription()` freeze, are left to the real iOS Safari check
+  in Phase 4; until then they stay open and the test shims stay as recorded.
 
 ## D-134 · 2026-11-03 · Host ports bind to IPv4 loopback by default (`BIND_ADDR`), and the test cleanup no longer depends on other services
 

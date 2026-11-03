@@ -21,59 +21,59 @@ about dates. "Decision" means an entry in `docs/DECISIONS.md`.
 | Sprint 15, i18n EN + RU, locale switcher | Done; texts are first drafts awaiting a native speaker | D-113 to D-116, `i18n.spec.ts` |
 | Feature freeze | Ticked in the roadmap | D-128 |
 
-## 2. Gate results (Group C closeout, stack built from scratch)
+## 2. Gate results
 
-`make reset`, `make up`, `make seed`, then:
+Everything below was run from a stack built from scratch (`make reset`, `make up`, `make seed`) unless it says
+otherwise. Nothing was retried; a failure was either explained and fixed, or recorded as open.
 
-| Check | Result |
-|---|---|
-| `make lint test` | Green. API 570 tests, 95 % total coverage, 99 % in the cabinet module. Web 570 tests (58 files) |
-| `make visual` | 6 of 6 after new specimens were recorded (`make visual-update`); old dark baselines moved by one pixel row (sub-pixel layout offset, D-128) |
-| Functional E2E, production build, `--workers=2 --retries=0`, seed-data check on | **91 of 91** on the last run. Two earlier runs found a 44 px touch-target defect and test locator problems; fixed and re-run (D-128) |
-| `pwa.spec.ts` Chromium | 9 of 9 |
-| `pwa.spec.ts` Firefox | 4 passed, 5 skipped. Playwright's offline mode does not reach the worker's own requests in Firefox; the installability check is Chromium-only |
-| `pwa.spec.ts` WebKit | 0 passed, 9 skipped. Sign-in cannot complete over plain HTTP (the app's `Secure` state cookie is not sent to `http://localhost`) |
-| D-125 stall | Not seen in three full runs; cause still not established |
-
-Nothing was retried. The skips are in the spec with their reasons (D-128).
-
-### Gate after joining Dependabot (2026-11-03)
-
-`make reset`, `make up`, `make seed`, then, on the merged tree with the one kept bump (Prometheus v3.15.1, D-130):
+### Final gate (2026-11-03, `main` after the merge of `chore/local-tls`)
 
 | Check | Result |
 |---|---|
+| `make lint test` on `main` | Green. API 573 tests, 95 % coverage, 99 % in the cabinet module; web 574 tests (58 files) |
+| GitHub Actions for the pushed `main` | All 8 jobs green: API, web, OpenAPI drift, dependency audit, image builds, visual regression, full-stack E2E and accessibility. The run of the merge commit itself was cancelled by the next push a minute later, not failed |
+| Http stack, functional E2E, production build, `--workers=2 --retries=0`, seed check on | **91 of 91, twice in a row** (two runs, each after `make reset`) |
+| Http stack, `pwa.spec.ts` in Chromium | **9 of 9, twice in a row** |
+| Https stack (`make up-tls`), `pwa.spec.ts` in WebKit | **8 passed, 1 skipped** (the installability check uses Chrome's DevTools protocol) |
+| Https stack, `pwa.spec.ts` in Firefox | **8 passed, 1 skipped** (same). Offline is driven by stopping the TLS front, with a cookie shim for `navigator.onLine` (D-133) |
+| Https stack, chat over `wss://`, presigned upload, sign-in | Pass in WebKit and Firefox (D-133) |
+| `make visual` | 6 of 6 (last run before the Dependabot join; no UI code changed since) |
 | `pip-audit`, `pnpm audit --audit-level high` | No finding; two moderate findings (`glob`, `minimatch` under `@sentry/nextjs`) were there before |
-| `make lint test` | Green. API 570 tests, 95 % coverage; web 572 tests |
-| `make visual` | 6 of 6 |
-| Functional E2E, production build, `--workers=2 --retries=0`, seed check on | 91 of 91 |
-| `pwa.spec.ts`, Chromium | 9 of 9 |
-| After the offline-store change (D-131) and the merge of the test-gap branch | `make lint test` green: API 573 tests, 95 %; web 574 tests |
+
+What the gate found and fixed on the way (D-130 to D-134): a Dependabot join that broke the ten-day rule, host ports on
+the flaky IPv6 loopback of Docker Desktop (now IPv4, configurable), test cleanup that depended on other services, an
+onboarding save race in the test, and WebKit timing. The records-cleanup path has its own test (`records-cleanup.spec.ts`).
 
 ## 3. Everything still open
 
-"Blocks launch" is judged against §7 (non-functional) and §14 (security) of the spec.
+"Blocks launch" is judged against §7 (non-functional) and §14 (security) of the spec. The first block is the list the
+product owner asked for; the second keeps the older items that are still open.
 
 | Item | Reference | Blocks launch? |
 |---|---|---|
+| **Account deletion** is not built (design only, ADR 0005 is proposed and unmerged until its 12 decisions are answered); feed, forum, assignment and quiz rows delete with the account, chat keeps text without an author | ADR 0005, D-091, D-093, D-108, D-112 | **Yes** (§5.4 right to deletion). First Phase 4 item |
+| **Real iOS Safari check**: `PushManager.getSubscription()` freezes the page in the WebKit build used for tests (the app calls it on mount; proposed fix: call it lazily with a timeout), and the WebKit service worker sometimes stays `installing` (about 2 of 16 fresh contexts, cause unknown: not shown to be the self-signed certificate, which could not be tested without trusting a CA in the system store) | D-133 | **Yes** if iOS is supported (§7): both must be checked on a real device in Phase 4 |
+| **Onboarding save race**: the tour hides at once and saves in the background; leaving the page within the save time shows it again (proposed fix: `keepalive` or wait for the save) | D-133 | No |
+| **Service-worker error reporting** | D-118, D-119 | No |
+| **Update banner** with a real second deploy | D-118, D-119 | No |
+| **Native-speaker review** of the English and Russian texts (first drafts, formal register) | D-114 | No for M4; **yes** before the languages are announced |
+| **Dependabot**: eight of nine bumps of #13 to #21 were reverted (releases under ten days old). A ten-day cooldown is now configured, so they come back at the right age; security fixes are exempt | D-014, D-130, D-132 | No |
+| **Keycloak login theme in English and Russian** stays Azerbaijani only | D-113 | No for M4; yes before the languages are announced |
 | Real cabinet provider; the cabinet's API is unknown | D-010, D-126 | **Yes**, if grades must show real data. With no real provider, production refuses to start (`fake` is refused, `azmiu` has no implementation) |
 | Audit entry on every transcript read grows the audit log | D-126 | No; revisit with real volumes |
-| `NEVER_STORED` lacks `/api/v1/cabinet` (staff endpoints; they answer `no-store` and the worker never stores them). Diff in D-127 | D-124, D-127 | No; needs the product owner's decision (cache policy) |
-| Safari/WebKit and Firefox-offline runs of the PWA spec need an HTTPS front for the local stack and a way to take the network from a worker | D-128 | No for M4; **yes** before launch if iOS is supported (§7) |
-| iOS install steps | D-124 | Yes if iOS is supported |
-| Service-worker error reporting; update banner with a real second deploy; at-rest encryption of the stored copy | D-118, D-119 | No (the stored copy is the user's own data behind the browser profile; switch is the control) |
-| Native-speaker review of English and Russian text | D-114 | No for M4; yes before the languages are announced |
-| Account deletion is not built; foreign keys of feed, forum, assignment and quiz rows delete with the account, chat keeps text without an author | D-091, D-093, D-108, D-112 | **Yes** (§5.4 right to deletion) |
+| iOS install steps (manual check) | D-124 | Yes if iOS is supported |
+| At-rest encryption of the stored offline copy | D-119 | No (the stored copy is the user's own data behind the browser profile; the switch is the control) |
 | Exam-integrity enforcement beyond the report reason and blocked terms; blocks not applied in feed and forum | D-091 | No |
 | No notification when an assignment opens or is graded; assignments and quizzes cannot be edited or deleted | D-093 | No (not in the spec) |
 | No idempotency key on `POST /feedback` | D-076 | No (rate limit bounds it) |
 | Download of a purged file after storage loss untested; load-test `prepare.py up/down` untested | D-076, D-077 | No |
 | The launch load target (3,000 sockets, 200 messages per second, homepage 500 requests per second) has not been run; 1,000 sockets at 50 messages per second passed on the compose stack | D-082, roadmap Phase 4 | **Yes**: the load test is a Phase 4 launch item |
 | Phase 4 items (load test, penetration test, backup and restore drill, production infra, data import, guide recruitment, content, accessibility audit) | roadmap Phase 4 | **Yes**, they are the exit criteria of M5 |
-| Dependabot #13 to #21 joined with Group C and gated; eight of nine bumps were reverted because the releases were under ten days old, and Dependabot will propose them again | D-014, D-130 | No |
-| D-125 first-navigation stall, cause not established | D-125 | No; record a Chromium net-log if it recurs |
-| Provisional decisions awaiting the product owner | none this time | The ask-first questions of Group C were answered (CLAUDE.md and one question on 2026-11-03) |
-| Bugs found by the test-gap work | none | The scan-job and concurrency tests passed; no `xfail` was needed |
+| First-navigation stalls and connection resets: probable cause is the IPv6 loopback of Docker Desktop (about 0.5 % of new connections dropped), fixed for development by binding to IPv4. Not proven for D-125; earlier green gates may have passed despite it | D-125, D-134 | No |
+| Pilot server must set `NGINX_BIND_ADDR=0.0.0.0` (nginx only); everything else stays on loopback | D-134, `docs/runbooks/pilot.md` | **Yes**, a deployment step: without it the site is not reachable from the network |
+
+Closed since the last version of this report: `NEVER_STORED` now lists `/api/v1/cabinet` (D-131); WebKit and Firefox
+offline runs have an https front (D-133); the Dependabot divergence is joined and gated (D-130).
 
 ## 4. §12.9 visual QA checklist
 
@@ -94,5 +94,5 @@ is not ticked.
 
 ## 5. Branches
 
-- `feat/cabinet-adapter` and `test/open-gaps-sprint15`: merged into `main` with `--no-ff` and pushed.
-- `docs/adr-account-deletion`: ADR 0005 "Account deletion" (proposed, not accepted); on `origin`, not merged.
+- Merged into `main` and pushed: `feat/cabinet-adapter`, `test/open-gaps-sprint15`, `chore/dependabot-cooldown`, `chore/local-tls`, `test/records-cleanup`, `docs/m4-final`.
+- `docs/adr-account-deletion`: ADR 0005 "Account deletion" (proposed, not accepted); on `origin`, not merged. It waits for the product owner's 12 decisions.
