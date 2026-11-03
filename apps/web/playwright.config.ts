@@ -24,6 +24,9 @@ export default defineConfig({
       testIgnore: /\.visual\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] },
     },
+    // The service worker and the offline store behave differently per engine; only that spec runs here (D-124).
+    { name: "pwa-webkit", testMatch: /pwa\.spec\.ts$/, use: { ...devices["Desktop Safari"] } },
+    { name: "pwa-firefox", testMatch: /pwa\.spec\.ts$/, use: { ...devices["Desktop Firefox"] } },
     {
       name: "visual",
       testMatch: /\.visual\.spec\.ts$/,
