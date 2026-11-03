@@ -449,28 +449,29 @@ function testCode(code: string): string {
 }
 
 // 127.0.0.1, not localhost: the helper runs on the host and must not depend on the IPv6 loopback (D-134).
-const mailpitUrl = `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8025}`;
+// Read on every call, so a test can point the helper at a closed port (records-cleanup.spec.ts).
+const mailpitUrl = () => `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8025}`;
 
 type MailSummary = { ID: string; Subject: string; To: { Address: string }[] };
 
 /** Messages Mailpit caught for an address (newest first). */
 export async function mailFor(address: string): Promise<MailSummary[]> {
   const response = await fetch(
-    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
+    `${mailpitUrl()}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
   );
   if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
   return ((await response.json()) as { messages: MailSummary[] }).messages;
 }
 
 export async function mailText(id: string): Promise<string> {
-  const response = await fetch(`${mailpitUrl}/api/v1/message/${id}`);
+  const response = await fetch(`${mailpitUrl()}/api/v1/message/${id}`);
   return ((await response.json()) as { Text: string }).Text;
 }
 
 async function removeMail(addresses: string[]): Promise<void> {
   const ids = (await Promise.all(addresses.map(mailFor))).flat().map((message) => message.ID);
   if (!ids.length) return;
-  await fetch(`${mailpitUrl}/api/v1/messages`, {
+  await fetch(`${mailpitUrl()}/api/v1/messages`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ IDs: ids }),
