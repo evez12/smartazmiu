@@ -52,7 +52,7 @@ product owner asked for; the second keeps the older items that are still open.
 | Item | Reference | Blocks launch? |
 |---|---|---|
 | **Account deletion** is not built (design only, ADR 0005 is proposed and unmerged until its 12 decisions are answered); feed, forum, assignment and quiz rows delete with the account, chat keeps text without an author | ADR 0005, D-091, D-093, D-108, D-112 | **Yes** (§5.4 right to deletion). First Phase 4 item |
-| **Real iOS Safari check**: `PushManager.getSubscription()` freezes the page in the WebKit build used for tests (the app calls it on mount; proposed fix: call it lazily with a timeout), and the WebKit service worker sometimes stays `installing` (about 2 of 16 fresh contexts, cause unknown: not shown to be the self-signed certificate, which could not be tested without trusting a CA in the system store) | D-133 | **Yes** if iOS is supported (§7): both must be checked on a real device in Phase 4 |
+| **Real iOS Safari check**: `PushManager.getSubscription()` freezes the page in the WebKit build used for tests (the app calls it on mount; proposed fix: call it lazily with a timeout), and the WebKit service worker sometimes stays `installing` (about 2 of 16 fresh contexts, cause unknown: not shown to be the self-signed certificate, which could not be tested without trusting a CA in the system store) | D-133 | **Yes**: iOS Safari is supported (product owner, 2026-11-04); both must be checked on a real device in Phase 4 |
 | **Onboarding save race**: the tour hides at once and saves in the background; leaving the page within the save time shows it again (proposed fix: `keepalive` or wait for the save) | D-133 | No |
 | **Service-worker error reporting** | D-118, D-119 | No |
 | **Update banner** with a real second deploy | D-118, D-119 | No |
@@ -61,7 +61,7 @@ product owner asked for; the second keeps the older items that are still open.
 | **Keycloak login theme in English and Russian** stays Azerbaijani only | D-113 | No for M4; yes before the languages are announced |
 | Real cabinet provider; the cabinet's API is unknown | D-010, D-126 | **Yes**, if grades must show real data. With no real provider, production refuses to start (`fake` is refused, `azmiu` has no implementation) |
 | Audit entry on every transcript read grows the audit log | D-126 | No; revisit with real volumes |
-| iOS install steps (manual check) | D-124 | Yes if iOS is supported |
+| iOS install steps (manual check) | D-124 | **Yes** (iOS Safari is supported) |
 | At-rest encryption of the stored offline copy | D-119 | No (the stored copy is the user's own data behind the browser profile; the switch is the control) |
 | Exam-integrity enforcement beyond the report reason and blocked terms; blocks not applied in feed and forum | D-091 | No |
 | No notification when an assignment opens or is graded; assignments and quizzes cannot be edited or deleted | D-093 | No (not in the spec) |
