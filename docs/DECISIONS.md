@@ -2891,6 +2891,10 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   100 runs of this file under two workers, and it did not reproduce in 480 later runs. It is not a defect found in the
   code of this branch and nothing was changed for it. No retry is added (`--retries=0` stays). If it appears again,
   record a Chromium net-log (`--log-net-log`) for the failing navigation before anything else. Open item for Phase 4.
+- **Update 2026-11-03 (D-134):** requests that the browser registered and nginx never saw are what D-134 measured on the IPv6
+  loopback of Docker Desktop (about 0.5 % of new connections to `::1` dropped, none over `127.0.0.1`). It is the probable
+  cause of this stall and of the connection resets of the gate runs on this branch; earlier green gates may have passed
+  despite it. **Not proven for D-125:** no run has shown the stall with the loopback bound to IPv4.
 
 ## D-126 · 2026-11-03 · Personal cabinet mirror (Sprint 15, Group C)
 
@@ -3033,6 +3037,39 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
   Sprint 11 (video) stays deferred and is excluded from M4 (D-102). "Feature freeze" is ticked. Phase 4 has not been
   started.
 
+## D-129 · 2026-11-03 · Test-only gaps from the "Open" lists of D-076, D-091, D-093, D-101, D-119 and D-120
+
+- **Context:** the queued instruction asked to close every open item that needs only a test, with no change to behaviour,
+  schemas, headers or auth, one commit per gap, on `test/open-gaps-sprint15`. Each item was checked against the tests
+  on `main` first; several had been closed since the review that listed them.
+- **Closed by a new test (this branch):**
+  - `onboarded_at` in `/me/export` (D-076): `test_export_holds_the_time_onboarding_was_finished`.
+  - Scan job retry safety (D-076, §13.5 at-least-once): a version scanned by one run is not scanned by the next, and two
+    runs at the same moment scan it once (`test_a_scan_job_that_runs_twice_scans_a_version_once`,
+    `test_two_scan_jobs_at_the_same_time_scan_a_version_once`). No bug was found; the `SKIP LOCKED` and status check hold.
+  - Deterministic time for the fixed-window rate-limit tests (D-120): the fixture `fixed_rate_window` freezes the limiter
+    clock at the start of a UTC day, which is the start of every window it counts in. It is used by the three tests that
+    assert a `429` at an exact request (`statuses[19]` chat uploads, `statuses[30]` socket tickets, `statuses[10]`
+    reports). The other limit tests assert with a limit of one or a clearly exceeded count and do not depend on a boundary.
+  - The 403 state of the feed and forum lists (D-091): two Vitest cases show the forbidden state and no retry button.
+- **Already closed before this branch (the "Open" text of the old decision is out of date):**
+  - Materials upload (30 per hour) and report (10 per hour) limits and two simultaneous `add_version` calls (D-076):
+    `test_uploads_and_reports_are_rate_limited`, `test_concurrent_versions_get_distinct_numbers`.
+  - The browser test of an infected submission (D-093, D-101): `coursework.spec.ts`, D-110.
+  - Screenshot baselines and specimens of the Sprint 12 and 13 screens (D-093, D-101, D-091): D-109.
+  - ÜOMG settings not remembered (D-101): D-107. Notifications for exams and paper decisions (D-101): D-105. The
+    per-subject exam-mode switch (D-101): D-104.
+- **Not test-only, left open (a test would assert behaviour that does not exist yet):** an idempotency key on
+  `POST /feedback` and the size of the support channel (D-076); the keep-text-without-author rule for feed, forum,
+  assignment and quiz rows when an account is deleted, the exam-integrity enforcement beyond the report reason and blocked
+  terms, blocks in the feed and forum (D-091, D-093); notifications for assignments, edit and delete of assignments,
+  the camera path of the scanner in a headless browser (D-093, D-101); worker error reporting, the update banner with a
+  real second deploy, the Safari run and the iOS steps, native-speaker review of the English and Russian text, the
+  at-rest encryption of the stored copy (D-119); the download of a purged file after storage loss and the load-test
+  scripts `prepare.py up/down` (D-076, D-077), which need a decision on the expected behaviour before they are tested.
+- **Branch state (updated 2026-11-03):** `main` was pushed after D-130 and D-131; this branch was then merged with
+  `--no-ff`. The Dependabot question is closed by D-130.
+
 ## D-130 · 2026-11-03 · Dependabot pull requests #13 to #21 joined with the Group C merge
 
 - **Context:** `origin/main` held nine merged Dependabot pull requests that no gate had covered; local `main` held the
@@ -3048,3 +3085,139 @@ Newest entries at the bottom. Spec references point to `docs/ROADMAP.md`.
 - **Consequences:** Dependabot will propose the reverted bumps again; they can be accepted once ten days old and gated.
   The D-014 table has a row for what landed. `pip-audit` reports nothing; `pnpm audit --audit-level high` reports nothing
   at high (the two moderate findings, `glob` and `minimatch` under `@sentry/nextjs`, were there before).
+
+## D-131 · 2026-11-03 · `/api/v1/cabinet` joins the never-stored list of the offline policy
+
+- **Context:** D-127 left the diff to the product owner (D-124): the staff cabinet endpoints answer `no-store` and the
+  writer takes only schedule and channel kinds, so nothing was stored, but the second line of defence did not name them.
+- **Decision (product owner, 2026-11-03): approved as written.** `NEVER_STORED` in `apps/web/src/lib/offline/policy.ts`
+  gains `cabinet` in its second pattern; `policy.test.ts` checks `/api/v1/cabinet/sync-runs` and `/conflicts`.
+- **Consequences:** no header, CSP or service worker change. The student endpoints under `/me/transcript` were
+  already listed.
+
+## D-132 · 2026-11-03 · Dependabot cooldown and the exemption for security fixes
+
+- **Context:** the Dependabot join (D-130) reverted eight bumps that were younger than the ten-day release-age rule
+  of D-014; Dependabot would have proposed them again at once. Separately, running Playwright directly failed in
+  global setup because `POSTGRES_*` was not exported (only `make e2e` exports `.env`).
+- **Decision (product owner, 2026-11-03):** every ecosystem in `.github/dependabot.yml` gets `cooldown:
+  default-days: 10`. **Security fixes are exempt** from the ten days: an advisory reported by `pip-audit`,
+  `pnpm audit` or GitHub may land at once, with a note in `docs/DECISIONS.md` naming the advisory (Dependabot's own
+  security updates already ignore the cooldown). The E2E database helper reads the repository `.env` itself when
+  `POSTGRES_PASSWORD` is not set; variables already set win.
+- **Consequences:** version updates arrive at least ten days after release. No product code changed.
+
+## D-133 · 2026-11-03 · Local HTTPS for WebKit and Firefox (`make up-tls`), dev and CI only
+
+- **Context:** WebKit does not send the app's `Secure` cookies back over `http://localhost` (D-128). The product owner
+  approved a local HTTPS front with changes: committed config, a guard against switching without a reset, and proof
+  in WebKit and Firefox before merging. No change to production nginx or compose, the realm file, cookies, the CSP
+  code or authentication.
+- **Decision:** `nginx.conf` has no `include`, so a server snippet cannot be added without editing it. Instead a
+  second nginx container (`docker-compose.tls.yml`, `infra/nginx/tls.conf`) ends TLS on :443 and proxies to the
+  stack's nginx on :80, which is unchanged. The certificate is a 30-day self-signed one from `make tls-cert`
+  (`openssl`, `infra/tls/`, gitignored). `make up-tls` sets `APP_PUBLIC_URL=https://localhost` and refuses to run while
+  the Postgres or Keycloak volume exists unless `RESET_OK=1`, because Keycloak keeps the redirect URIs of its first
+  start. `down` and `reset` gained `--remove-orphans` so the extra container is removed. `make e2e-pwa-browsers` runs
+  `pwa.spec.ts` in WebKit and Firefox with `E2E_IGNORE_HTTPS_ERRORS=1`.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **HSTS (product owner, 2026-11-03):** the app sends HSTS once it sees https, and for `localhost` that covers every
+  port, so Chromium upgraded the `http://localhost:8080` Keycloak hop to https and timed out. Keycloak is not changed:
+  the TLS front removes the header (`proxy_hide_header Strict-Transport-Security`, dev and CI only; the app's headers are
+  unchanged). A developer whose browser cached an entry clears it at `chrome://net-internals/#hsts` ("Delete domain
+  security policies", `localhost`). Chromium was tried once on the https stack after that: sign-in did not work
+  (8 of 9 cases of `pwa.spec.ts` timed out on `page.evaluate`), so Chromium stays on the http stack; no further work.
+- **Firefox offline:** Playwright's offline switch does not reach the service worker's requests in Firefox (D-128), so
+  in `make e2e-pwa-browsers` (`E2E_STOP_STACK=1`) the TLS front is stopped and started again (same compose files as
+  `up-tls`; in `afterEach`, the tests run in one worker). The front, not the stack's nginx: a stopped nginx behind it
+  would answer 502, an HTTP response. Each test asserts that a `fetch` then fails with a network error. Two more
+  Firefox-only test shims were needed: a stopped front leaves `navigator.onLine` true (the machine's network is up),
+  so the app would say "the connection is back"; a cookie-driven `onLine` stands in for what a browser reports when the
+  connection drops. And the worker's own requests in Firefox do not carry the context's `Accept-Language`, so its
+  stored offline page came in English; the `NEXT_LOCALE` cookie (D-113) fixes the language.
+- **What the Firefox offline tests prove:** `navigator.onLine` is driven by a cookie shim there, so they prove the offline
+  UI and the service worker's fallback page, not the browser's own `onLine` detection.
+- **WebKit freeze (open item, Phase 4):** in the WebKit build Playwright ships, `PushManager.getSubscription()` on an
+  active worker blocks the page's main thread (a heartbeat inside the page stops). The app calls it on mount (the
+  notification settings page, the chat menu). `pwa.spec.ts` replaces it with "no subscription" in WebKit only; the
+  offline specs never use push. **Open:** verify in real iOS Safari (Phase 4). Proposed app fix, not made here: call it
+  lazily, only where the push state is shown, and with a timeout.
+- **WebKit test that failed (explained, not a flake):** "a session that ended without signing out…" went offline as soon as
+  `/offline` was in the cache. The worker stores the page first and its scripts and styles after it, so the test could
+  go offline before the scripts were stored, and the page then showed its server-rendered text without starting
+  ("connection is back", no stored content). The app reports the shell as stored only after the worker's answer, which
+  comes after the assets, so the product is correct; the test now waits until every script and stylesheet named by the
+  stored page is in the static cache (`shellScriptsStored`). Passed twice in a row in WebKit after the change.
+- **Two more test-helper defects found by the gate:** `offlineDb` checked `indexedDB.databases()` and then opened the
+  database; when the app deleted it in between (what the test waits for), the open recreated an empty one and the next
+  read failed with "'meta' is not a known object store name" (Firefox). The upgrade is now aborted, so the helper never
+  creates it. The install test had the default 30 s timeout while a first sign-in after idle takes longer in WebKit
+  (about 5 s when warm); it now has 120 s like its siblings.
+- **Found by the http gate on this branch (two functional failures, no app code changed):**
+  - `ERR_CONNECTION_RESET` on the first request of the first test right after `make reset && make up && make seed`;
+    nginx's log starts with the next request, so the reset happened between the host and the container (Docker Desktop's
+    port forwarding in the first seconds). The Playwright global setup now waits until `/healthz` answers 200 (60 s
+    limit); it is a readiness check, not a retry. Not seen on the three earlier from-scratch gates of 2026-11-03.
+  - `onboarding.spec.ts` closed the tour and navigated at once. The tour hides on click (`onMutate`) and saves with
+    `PUT /me/onboarding` in the background; a navigation that starts before the save lands aborts it, so the tour
+    returns on the next page. The test now waits for the save. **Open, app side (not fixed here):** a person who
+    closes the tour and leaves the page within the save time sees it again; the proposed fix is `keepalive: true` on
+    that request or keeping the page until it settles.
+- **OPEN, not explained (like D-125): the WebKit service worker stays `installing`.** In about 2 of 16 fresh WebKit
+  contexts on the https stack the registration never leaves `installing` (no active worker, no controller, no caches
+  after 25 s), although `/sw.js` was requested, answered 200 and finished. Firefox: 0 of 16. Any WebKit test that needs
+  the worker can hit it, and it is the cause of an intermittent `signing out deletes Cache Storage…` failure. Not shown
+  to be the self-signed certificate (the script loads); not shown to be the app (the install handler is empty). To
+  establish: run the same probe with a certificate WebKit trusts (the local-CA fallback), and in real iOS Safari
+  (Phase 4). Until then those WebKit results are reported as they come; nothing is retried.
+- **Proven on the https stack:** sign-in completes in WebKit and Firefox; the `wss://` chat connects and messages
+  round-trip, including a network drop, in both (`CSP connect-src` is `'self' wss://localhost`, derived from
+  `APP_URL`, no CSP change); a presigned upload and scan works in both (D-068); the service worker registers, activates
+  and controls the page under the self-signed certificate in WebKit, and IndexedDB and Cache Storage work.
+- **Numbers:** see the gate result in the report of 2026-11-03.
+
+- **Update (2026-11-03): the local-CA experiment could not be run here.** A local CA and a leaf signed by it verify with
+  `openssl`, but the WebKit build Playwright ships on Windows ignores `SSL_CERT_FILE` and `CURL_CA_BUNDLE` and rejects
+  the leaf ("SSL peer certificate or SSH remote key was not OK"); trusting it would mean adding the CA to the Windows
+  certificate store, which was not done without the product owner's approval. So whether the "installing" stall
+  follows the self-signed certificate is still unknown. The throwaway CA files were deleted.
+- **Decision (product owner, 2026-11-03):** no CA is added to the system certificate store. The two WebKit questions, the
+  worker that stays `installing` and the `PushManager.getSubscription()` freeze, are left to the real iOS Safari check
+  in Phase 4; until then they stay open and the test shims stay as recorded.
+
+## D-134 · 2026-11-03 · Host ports bind to IPv4 loopback by default (`BIND_ADDR`), and the test cleanup no longer depends on other services
+
+- **Context:** the http gate on `chore/local-tls` failed with `ERR_CONNECTION_RESET`, `ECONNRESET` and timeouts that never
+  reached nginx. Without any browser, 3000 new connections in parallel (32 threads) showed: `127.0.0.1` 0 failures,
+  `::1` 26 timeouts, `localhost` (tries `::1` first) 13 to 20. Docker Desktop's IPv6 loopback forwarding on this box drops
+  a share of new connections.
+- **Decision (product owner, 2026-11-03):** every published host port in `docker-compose.yml` uses
+  `${BIND_ADDR:-127.0.0.1}` (database, both Redis instances, storage, ClamAV, Keycloak, Mailpit); nginx uses
+  `${NGINX_BIND_ADDR:-${BIND_ADDR:-127.0.0.1}}`, and so does the https front of `docker-compose.tls.yml`. Monitoring was
+  loopback-bound already (D-080). The pilot server sets `NGINX_BIND_ADDR=0.0.0.0` and nothing else
+  (`docs/runbooks/pilot.md`, section 7). Side benefit: the infrastructure ports are no longer reachable from the LAN.
+- **Measured after the change** (same test): `127.0.0.1` 3000 of 3000 answered in 3.9 s; `localhost` 3000 of 3000 answered,
+  but the sequential Python client waited about 2 s per connection on the refused `::1` first (191 s in all; curl takes
+  0.2 s per request and Node `fetch` about 12 ms, because they try both families at once, as browsers do); `::1` is
+  refused for all 3000 (nothing listens there any more), which is the intended effect.
+- **Status of D-125:** linked as the probable cause, not proven (see D-125).
+- **Cleanup defect found on the way:** after the failed runs `users (registry)` was 57 → 59 and three course offerings,
+  groups and teachers were left. `TestRecords.removeAll` called Mailpit (`localhost:8025`) and Redis first and outside
+  any `try`, so when one of those calls was reset the whole database cleanup was skipped, contrary to D-045 (records go
+  also when a test fails or times out). `removeAll` now runs the mail and rate-limit steps with their errors collected,
+  always runs the database part, and then reports the collected errors; the Mailpit helper uses `127.0.0.1`.
+  `TestAccounts.deleteAll` continues after a failed Keycloak call instead of leaving the later accounts. Test-only; no
+  app change. Residue from earlier failed runs still needs a `make reset`.
+- **Side effect on WebKit (measured, handled in the test):** with nothing listening on `::1`, the WebKit build Playwright
+  ships on Windows waits for the IPv6 refusal before it falls back to IPv4: about 0.23 s per request (2 s for the first)
+  in the page, against 8 ms in Firefox, which tries both families at once like Chromium. The first offline download
+  (about twenty requests) then outlasted the 5 s default of `toBeChecked`, and five WebKit tests failed at the switch.
+  `enableOfflineStorage` now waits up to 30 s for it. Nothing in the product changes; it is a property of that browser
+  build on `localhost` and does not reach users.
+- **Gate on this branch (2026-11-03):** `make reset`, `make up`, `make seed`, then the functional suite with `--workers=2
+  --retries=0` and the seed check, then `pwa.spec.ts` in Chromium, twice in a row: 91 of 91 and 9 of 9 both times. On the
+  https stack, `make e2e-pwa-browsers`: WebKit 8 passed, 1 skipped (installability check is Chromium-only); Firefox 8
+  passed, 1 skipped (same). The WebKit worker that stays `installing` (D-133) did not appear in that run.

@@ -1,16 +1,28 @@
+import path from "node:path";
+
 import { Pool } from "pg";
 import { createClient } from "redis";
 
 /*
  * Direct access to the stack's database, for test hygiene only: removing what a test imported and checking that a
  * full run leaves the sample data as it found it. The product has no delete for imported academic records, so
- * the tests cannot clean up through the UI. `make e2e` exports the connection settings from .env.
+ * the tests cannot clean up through the UI. The connection settings come from .env (exported by `make e2e`, or read here).
  */
 let pool: Pool | undefined;
 
+/** `make e2e` exports `.env`; a direct `playwright test` run reads it here. Variables already set win. */
+function loadRepositoryEnv(): void {
+  try {
+    process.loadEnvFile(path.resolve(process.cwd(), "../../.env"));
+  } catch {
+    // No .env: the error below says what is missing.
+  }
+}
+
 function database(): Pool {
+  if (!process.env.POSTGRES_PASSWORD) loadRepositoryEnv();
   if (!process.env.POSTGRES_PASSWORD) {
-    throw new Error("POSTGRES_* settings are missing; run the suite through `make e2e`.");
+    throw new Error("POSTGRES_* settings are missing; create .env with `make env`.");
   }
   pool ??= new Pool({
     host: "127.0.0.1",
@@ -229,9 +241,30 @@ export class TestRecords {
     );
   }
 
+  /**
+   * Removes what the test created. The mail and rate-limit steps call other services (Mailpit, Redis) and may fail;
+   * the database part must not depend on them (D-045: records go also when a test fails or times out), so it always
+   * runs and the other failures are reported after it.
+   */
   async removeAll(): Promise<void> {
-    await removeMail(this.mailboxes.splice(0));
-    for (const { rule, emails } of this.limited.splice(0)) await this.resetLimit(rule, emails);
+    const problems: unknown[] = [];
+    const attempt = async (step: () => Promise<void>) => {
+      try {
+        await step();
+      } catch (error) {
+        problems.push(error);
+      }
+    };
+    await attempt(() => removeMail(this.mailboxes.splice(0)));
+    for (const { rule, emails } of this.limited.splice(0)) {
+      await attempt(() => this.resetLimit(rule, emails));
+    }
+    await this.removeFromDatabase();
+    if (problems.length)
+      throw new AggregateError(problems, "Test records: cleanup outside the database failed");
+  }
+
+  private async removeFromDatabase(): Promise<void> {
     const client = await database().connect();
     try {
       await client.query("BEGIN");
@@ -415,28 +448,30 @@ function testCode(code: string): string {
   return code;
 }
 
-const mailpitUrl = `http://localhost:${process.env.MAILPIT_UI_PORT ?? 8025}`;
+// 127.0.0.1, not localhost: the helper runs on the host and must not depend on the IPv6 loopback (D-134).
+// Read on every call, so a test can point the helper at a closed port (records-cleanup.spec.ts).
+const mailpitUrl = () => `http://127.0.0.1:${process.env.MAILPIT_UI_PORT ?? 8025}`;
 
 type MailSummary = { ID: string; Subject: string; To: { Address: string }[] };
 
 /** Messages Mailpit caught for an address (newest first). */
 export async function mailFor(address: string): Promise<MailSummary[]> {
   const response = await fetch(
-    `${mailpitUrl}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
+    `${mailpitUrl()}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
   );
   if (!response.ok) throw new Error(`Mailpit search failed: ${response.status}`);
   return ((await response.json()) as { messages: MailSummary[] }).messages;
 }
 
 export async function mailText(id: string): Promise<string> {
-  const response = await fetch(`${mailpitUrl}/api/v1/message/${id}`);
+  const response = await fetch(`${mailpitUrl()}/api/v1/message/${id}`);
   return ((await response.json()) as { Text: string }).Text;
 }
 
 async function removeMail(addresses: string[]): Promise<void> {
   const ids = (await Promise.all(addresses.map(mailFor))).flat().map((message) => message.ID);
   if (!ids.length) return;
-  await fetch(`${mailpitUrl}/api/v1/messages`, {
+  await fetch(`${mailpitUrl()}/api/v1/messages`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ IDs: ids }),

@@ -23,6 +23,9 @@ out/
 next-env.d.ts
 coverage/
 
+# Local TLS certificate and key (make tls-cert)
+infra/tls/
+
 # Playwright
 test-results/
 playwright-report/

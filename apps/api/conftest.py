@@ -1,6 +1,8 @@
 import asyncio
+import time
 from collections.abc import AsyncIterator
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import pytest_asyncio
@@ -12,6 +14,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.core import ratelimit
 from app.core.config import Settings
 from app.core.db import create_engine
 from app.core.security import TokenVerifier
@@ -93,6 +96,15 @@ async def db(
 @pytest.fixture(scope="session")
 def tokens() -> TokenFactory:
     return TokenFactory()
+
+
+@pytest.fixture
+def fixed_rate_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Freezes the clock of the limiter at the start of a UTC day, which is also the start of every window it
+    counts in (10 s to 24 h). A test that asserts a 429 at an exact request no longer depends on where in a window
+    the run happens to start (D-120)."""
+    start = int(time.time()) // 86400 * 86400
+    monkeypatch.setattr(ratelimit, "time", SimpleNamespace(time=lambda: start))
 
 
 @pytest.fixture

@@ -123,6 +123,16 @@ the product owner and university IT immediately.
    (`docker compose ps worker`), and the smoke test of section 2, step 7, takes two minutes with one test account.
    On Grafana (section 10) the WebSocket connections return to their previous level within five minutes.
 
+### Which ports the server publishes
+
+`docker-compose.yml` publishes every host port on `${BIND_ADDR:-127.0.0.1}` (D-134). On the pilot server set
+**`NGINX_BIND_ADDR=0.0.0.0` in `.env` and nothing else**: only nginx (and, with `docker-compose.tls.yml`, which is for
+development and CI only, its https front) is reachable from the network. PostgreSQL, both Redis instances, storage,
+ClamAV, Mailpit and Keycloak stay on loopback; Prometheus and Grafana are loopback-bound already (D-080). How
+browsers reach Keycloak under `OIDC_PUBLIC_URL` is decided with University IT and is not done by publishing its port
+here. After `make up`, check from another machine that only the nginx port answers (`nc -zv <host> 5433 6379 8080`
+must fail).
+
 ## 8. Backups, restore drill and rollback
 
 - **Manual dump before the pilot and before each deployment:**

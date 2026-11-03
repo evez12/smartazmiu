@@ -7,6 +7,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches the release-age rule of D-014; security updates are not delayed by it (D-132).
+    cooldown:
+      default-days: 10
     groups:
       api-minor-and-patch:
         update-types: [minor, patch]
@@ -16,6 +19,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches the release-age rule of D-014; security updates are not delayed by it (D-132).
+    cooldown:
+      default-days: 10
     groups:
       web-minor-and-patch:
         update-types: [minor, patch]
@@ -25,6 +31,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches the release-age rule of D-014; security updates are not delayed by it (D-132).
+    cooldown:
+      default-days: 10
 
   # Runtime versions are fixed by the spec (§4: Python 3.12, PostgreSQL 16, Redis 7); only patch-level image
   # updates are proposed automatically. Moving to a new runtime line is a deliberate decision (DECISIONS.md).
@@ -35,6 +44,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches the release-age rule of D-014; security updates are not delayed by it (D-132).
+    cooldown:
+      default-days: 10
     ignore:
       - dependency-name: python
         update-types: [version-update:semver-major, version-update:semver-minor]
@@ -46,6 +58,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches the release-age rule of D-014; security updates are not delayed by it (D-132).
+    cooldown:
+      default-days: 10
     ignore:
       - dependency-name: postgres
         update-types: [version-update:semver-major]

@@ -54,7 +54,7 @@ export function belongsTo(userId: string, key: string): boolean {
  */
 const NEVER_STORED = [
   /^\/api\/v1\/me\/(grades|academics|transcript|export|exports|push-subscriptions|notification-settings)/,
-  /^\/api\/v1\/(attendance|exams|gpa|uomg|admin|reports|moderation|privacy|imports|audit)/,
+  /^\/api\/v1\/(attendance|exams|gpa|uomg|admin|reports|moderation|privacy|imports|audit|cabinet)/,
   /^\/api\/v1\/chat\/(ws-ticket|attachments)/,
   /^\/api\/v1\/chat\/messages\/.*\/attachments/,
   /^\/api\/v1\/.*\/(download|attachments|export|files)(\/|$)/,
