@@ -44,7 +44,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v7.1.0
@@ -69,7 +69,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           cache-dependency-glob: apps/api/uv.lock
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v7.1.0
@@ -91,7 +91,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ env.UV_VERSION }}
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v7.1.0
@@ -130,7 +130,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
           cache-dependency-glob: apps/api/uv.lock
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v7.1.0
