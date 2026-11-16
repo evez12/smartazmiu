@@ -297,7 +297,7 @@ services:
   # development stack stays as light as before; the pilot server runs it permanently.
   prometheus:
     profiles: ["monitoring"]
-    image: prom/prometheus:v3.15.1
+    image: prom/prometheus:v3.16.0
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=30d
